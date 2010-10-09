@@ -1,0 +1,7 @@
+; $Id: i18nprofile.info,v 1.6.2.4 2008/11/16 11:05:19 jareyero Exp $
+name = Profile translation
+description = Enables multilingual profile fields.
+dependencies[] = profile
+dependencies[] = i18nstrings
+package = Multilanguage
+core = 6.x

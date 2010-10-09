@@ -1,0 +1,9 @@
+; $Id: i18npoll.info,v 1.1.2.4 2008/09/25 16:09:28 jareyero Exp $
+name = Poll aggregate
+description = Aggregates poll results for all translations.
+dependencies[] = translation
+dependencies[] = poll
+package = Multilanguage
+core = 6.x
+
+

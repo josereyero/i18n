@@ -1,0 +1,8 @@
+; $Id: i18n_test.info,v 1.1.2.2 2010/05/17 13:55:38 jareyero Exp $
+name = Internationalization tests
+description = Helper module for testing i18n (do not enable manually)
+dependencies[] = locale
+dependencies[] = translation
+dependencies[] = i18n
+package = Testing
+core = 6.x
