@@ -213,7 +213,7 @@ function i18nstrings_translate_edit_form_submit($form, &$form_state) {
   foreach ($form_state['values']['translations'] as $key => $value) {
     if (!empty($value)) {
       // An update has been made, so we assume the translation is now current.
-      db_query("UPDATE {locales_target} SET status = %d WHERE lid = %d AND language = '%s'", I18NSTRINGS_STATUS_CURRENT, $lid, $key);
+      db_query("UPDATE {locales_target} SET i18n_status = %d WHERE lid = %d AND language = '%s'", I18NSTRINGS_STATUS_CURRENT, $lid, $key);
     }
   }
 }
@@ -445,7 +445,7 @@ function i18nstrings_add_string($name, $string, $format = NULL) {
     if ($source->source != $string) {
       // String has changed
       db_query("UPDATE {locales_source} SET source = '%s', location = '%s' WHERE lid = %d", $string, $location, $source->lid);
-      db_query("UPDATE {locales_target} SET status = %d WHERE lid = %d", I18NSTRINGS_STATUS_UPDATE, $source->lid);
+      db_query("UPDATE {locales_target} SET i18n_status = %d WHERE lid = %d", I18NSTRINGS_STATUS_UPDATE, $source->lid);
       $status = SAVED_UPDATED;
     }
     elseif ($source->location != $location) {

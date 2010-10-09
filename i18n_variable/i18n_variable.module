@@ -1,0 +1,260 @@
+<?php
+// $Id: i18nvariable.module,v 1.1.2.2 2010/09/14 11:30:29 jareyero Exp $
+
+/**
+ * @file
+ * Internationalization (i18n) package. Multilingual variables API.
+ */
+
+/**
+ * Implementation of hook_boot()
+ * 
+ * Initialize variables, that will be used to decide on site_frontpage
+ */
+function i18n_variable_boot() {
+
+}
+
+/**
+ * Implementation of hook_language_init()
+ */
+function i18n_variable_language_init() {
+  if (drupal_multilingual()) {
+    i18n_variable_initialize();
+  }
+}
+
+/**
+ * Implementation of hook_exit().
+ */
+function i18n_variable_exit() {
+  _i18n_variable_exit();
+}
+
+/**
+ * Initialization of multilingual variables.
+ *
+ * @param $langcode
+ *   Language to retrieve variables. Defaults to current language.
+ */
+function i18n_variable_initialize($language = NULL) {
+  global $conf;
+
+  $language = $language ? $language : i18n_variable_language();
+  $GLOBALS['language_variable'] = $language;
+  if ($variables = _i18n_variable_initialize($language->language)) {
+    $conf = array_merge(i18n_variable_global(), $variables);
+  }
+}
+
+/**
+ * Get variables language, make sure it is initialized
+ */
+function i18n_variable_language($initialize = TRUE) {
+  if (isset($GLOBALS['language_variable'])) {
+    // If we've got a variables language, it will be that one
+    return $GLOBALS['language_variable'];
+  }
+  elseif (isset($GLOBALS['language'])) {
+    // Interface language will be the next option if available
+    return $GLOBALS['language'];
+  }
+  elseif ($initialize) {
+    // We don't have language yet, initialize the language system and retry
+    drupal_bootstrap(DRUPAL_BOOTSTRAP_LANGUAGE);
+    return i18n_variable_language(FALSE);
+  }
+}
+
+/**
+ * Get original value for global variable/s
+ */
+function i18n_variable_global($name = NULL, $default = NULL) {
+  static $original;
+  if (!isset($original)) {
+    $original = &drupal_static('i18n_variable_global', array());
+    $original += $GLOBALS['conf'];
+  }
+  if ($name) {
+    return isset($original[$name]) ? $original[$name] : $default;
+  }
+  else {
+    return $original;
+  }
+}
+
+/**
+ * Implementation of hook_form_alter();
+ *
+ * This is the place to add language fields to all forms.
+ */
+function i18n_variable_form_alter(&$form, $form_state, $form_id) {
+  // Multilingual variables in settings form.
+  if (isset($form['#theme']) && $form['#theme'] == 'system_settings_form' && $variables = i18n_variable_list()) {
+    if ($i18n_variables = i18n_variable_form_alter_settings($form, $variables)) {
+      array_unshift($form['#submit'], 'i18n_variable_form_submit');
+      $form['#i18n_variables'] = $i18n_variables;
+    }
+  }  
+}
+
+/**
+ * Get list of multilingual variables or check whether a variable is multilingual
+ */
+function i18n_variable_list($name = NULL) {
+  $variables = variable_get('i18n_variables', array());
+  return $name ? in_array($name, $variables) : $variables;
+}
+
+/**
+ * Check for multilingual variables in form.
+ */
+function i18n_variable_form_alter_settings(&$form, &$variables) {
+  $result = array();
+  foreach (element_children($form) as $field) {
+    if (count(element_children($form[$field])) && empty($form[$field]['#tree'])) {
+      $result += i18n_variable_form_alter_settings($form[$field], $variables);
+    }
+    elseif (in_array($field, $variables)) {
+      // Add form field class: i18n-variable
+      $form[$field]['#attributes']['class'] = !empty($form[$field]['#attributes']['class']) ? $form[$field]['#attributes']['class'] . ' i18n-variable' : 'i18n-variable';
+      $form[$field]['#description'] = !empty($form[$field]['#description']) ? $form[$field]['#description'] : '';
+      $form[$field]['#description'] .= ' <strong>'. t('This is a multilingual variable.') .'</strong>';
+      // Addd field => name to result
+      $result[$field] = !empty($form[$field]['#title']) ? $form[$field]['#title'] : $field;
+    }
+  }
+  return $result;
+}
+
+/**
+ * Save multilingual variables and remove them from form.
+ */
+function i18n_variable_form_submit($form, &$form_state) {
+  $op = isset($form_state['values']['op']) ? $form_state['values']['op'] : '';
+  $variables = i18n_variable_list();
+  $language = i18n_get_lang();
+  $is_default = $language == language_default('language');
+  foreach ($form_state['values'] as $key => $value) {
+    if (i18n_variable_list($key)) {
+      if ($op == t('Reset to defaults')) {
+        i18n_variable_del($key, $language);
+      }
+      else {
+        if (is_array($value) && isset($form_state['values']['array_filter'])) {
+          $value = array_keys(array_filter($value));
+        }
+        i18n_variable_set($key, $value, $language);
+      }
+      // If current is default language, we allow global (without language) variables to be set too
+      if (!$is_default) {
+        unset($form_state['values'][$key]);
+      }
+    }
+  }
+  // The form will go now through system_settings_form_submit()
+}
+
+/**
+ * Set a persistent language dependent variable.
+ *
+ * @param $name
+ *   The name of the variable to set.
+ * @param $value
+ *   The value to set. This can be any PHP data type; these functions take care
+ *   of serialization as necessary.
+ * @param $langcode
+ *   Language code.
+ */
+function i18n_variable_set($name, $value, $langcode) {
+  global $conf, $i18n_conf;
+
+  $serialized_value = serialize($value);
+  db_query("UPDATE {i18n_variable} SET value = '%s' WHERE name = '%s' AND language = '%s'", $serialized_value, $name, $langcode);
+  if (!db_affected_rows()) {
+    @db_query("INSERT INTO {i18n_variable} (name, language, value) VALUES ('%s', '%s', '%s')", $name, $langcode, $serialized_value);
+  }
+
+  cache_clear_all('variables:'. $langcode, 'cache');
+
+  $conf[$name] = $value;
+  $i18n_conf[$name] = $value;
+}
+
+/**
+ * Get single multilingual variable
+ */
+function i18n_variable_get($name, $langcode, $default = NULL) {
+  if ($variables = _i18n_variable_init($langcode)) {
+    return isset($variables[$name]) ? $variables[$name] : $default;
+  }
+  else {
+    return $default;
+  }
+}
+
+/**
+ * Unset a persistent multilingual variable.
+ *
+ * @param $name
+ *   The name of the variable to undefine.
+ * @param $langcode
+ *   Language code.
+ */
+function i18n_variable_del($name, $langcode) {
+  global $conf;
+  $i18n_conf = &drupal_static('i18n_variable');
+
+  db_query("DELETE FROM {i18n_variable} WHERE name = '%s' AND language='%s'", $name, $langcode);
+  cache_clear_all('variables:'. $langcode, 'cache');
+  unset($conf[$name]);
+  unset($i18n_conf[$name]);
+}
+
+/**
+ * Load language variables into array.
+ */
+function _i18n_variable_initialize($langcode) {
+  $i18n_conf = &drupal_static('i18n_variable');
+  if (!isset($i18n_conf[$langcode])) {
+    $cacheid = 'variables:'. $langcode;
+    if ($cached = cache_get($cacheid)) {
+      $i18n_conf[$langcode] = $cached->data;
+    }
+    else {
+      $result = db_query("SELECT * FROM {i18n_variable} WHERE language = '%s'", $langcode);
+      $i18n_conf[$langcode] = array();
+      while ($variable = db_fetch_object($result)) {
+        $i18n_conf[$langcode][$variable->name] = unserialize($variable->value);
+      }
+      cache_set($cacheid, $i18n_conf[$langcode]);
+    }
+  }
+
+  return $i18n_conf[$langcode];
+}
+
+/**
+ * Save multilingual variables that may have been changed by other methods than settings pages.
+ */
+function _i18n_variable_exit() {
+  global $conf;
+  $i18n_conf = &drupal_static('i18n_variable');
+
+  $langcode = i18n_variable_language()->language;
+  if (isset($i18n_conf[$langcode])) {  
+    $refresh = FALSE;
+    // Rewritten because array_diff_assoc may fail with array variables.
+    foreach (i18n_variable_list() as $name) {
+      if (isset($conf[$name]) && isset($i18n_conf[$langcode][$name]) && $conf[$name] != $i18n_conf[$langcode][$name]) {  
+        $refresh = TRUE;
+        $i18n_conf[$langcode][$name] = $conf[$name];
+        db_query("DELETE FROM {i18n_variable} WHERE name='%s' AND language='%s'", $name, $langcode);
+        db_query("INSERT INTO {i18n_variable} (language, name, value) VALUES('%s', '%s', '%s')", $langcode, $name, serialize($conf[$name]));
+      }
+    }
+    if ($refresh) {
+      cache_set('variables:'. $langcode, $i18n_conf[$langcode]);
+    }
+  }
+}

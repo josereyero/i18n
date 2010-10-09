@@ -14,7 +14,7 @@
  * @param $node
  *   Node object.
  */
-function i18n_translation_node_overview($node) {
+function i18n_node_translation_overview($node) {
   if ($node->tnid) {
     // Already part of a set, grab that set.
     $tnid = $node->tnid;

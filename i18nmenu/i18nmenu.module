@@ -1,5 +1,5 @@
 <?php
-// $Id: i18nmenu.module,v 1.2.2.28 2010/09/09 14:47:16 jareyero Exp $
+// $Id: i18nmenu.module,v 1.2.2.27 2010/08/18 17:54:39 neochief Exp $
 
 /**
  * @file
@@ -346,8 +346,8 @@ function _i18nmenu_update_item($item) {
 /**
  * Helper function: load the menu item associated to the current node.
  */
-function _i18nmenu_node_prepare(&$node) {
-  menu_nodeapi($node, 'prepare');
+function _i18nmenu_node_prepare($node) {
+  module_invoke('menu', 'nodeapi', $node, 'prepare');
 }
 
 /**

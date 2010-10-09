@@ -1,5 +1,5 @@
 <?php
-// $Id: i18ntaxonomy.module,v 1.5.2.51 2010/09/09 23:54:56 mirodietiker Exp $
+// $Id: i18ntaxonomy.module,v 1.5.2.49 2010/08/12 02:06:20 mirodietiker Exp $
 
 /**
  * @file
@@ -516,7 +516,7 @@ function i18ntaxonomy_form_all_localize(&$item) {
         if ($tree && (count($tree) > 0)) {
           foreach ($tree as $term) {
             if (isset($options[$vname][$term->tid])) {
-              $options[$vname][$term->tid] = str_repeat('-', $term->depth) . i18ntaxonomy_translate_term_name($term->tid, $term->name);
+              $options[$vname][$term->tid] = str_repeat('-', $term->depth) . i18n_taxonomy_translate_term_name($term->tid, $term->name);
             }
           }
         }
@@ -530,6 +530,9 @@ function i18ntaxonomy_form_all_localize(&$item) {
  */
 function i18ntaxonomy_node_form(&$form) {
   $node = $form['#node'];
+  if (!isset($node->vid)) {
+    return;
+  }
   if (!isset($node->taxonomy)) {
     $terms = taxonomy_node_get_terms($node);
   }
