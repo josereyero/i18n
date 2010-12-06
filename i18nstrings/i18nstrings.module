@@ -53,7 +53,7 @@ define('I18NSTRINGS_STATUS_CURRENT', 0);
 define('I18NSTRINGS_STATUS_UPDATE', 1);
 
 /**
- * Implements of hook_help().
+ * Implements hook_help().
  */
 function i18nstrings_help($path, $arg) {
   switch ($path) {
@@ -91,7 +91,7 @@ function i18nstrings_help($path, $arg) {
 }
 
 /**
- * Implements of hook_menu().
+ * Implements hook_menu().
  */
 function i18nstrings_menu() {
   $items['admin/build/translate/refresh'] = array(
@@ -133,7 +133,7 @@ function i18nstrings_menu() {
 }
 
 /**
- * Implements of hook_form_alter().
+ * Implements hook_form_alter().
  *
  * Add English language in some string forms when it is not the default.
  */
@@ -154,7 +154,11 @@ function i18nstrings_form_alter(&$form, &$form_state, $form_id) {
 
     case 'locale_translate_edit_form':
       // Restrict filter permissions and handle validation and submission for i18n strings
-      $context = db_fetch_object(db_query("SELECT * FROM {i18n_strings} WHERE lid = %d", $form['lid']['#value']));
+      $context = db_select('i18n_strings', 'i18ns')
+        ->fields('i18ns')
+        ->condition('lid', $form['lid']['#value'])
+        ->execute()
+        ->fetchObject();
       if ($context) {
         $form['i18nstrings_context'] = array('#type' => 'value', '#value' => $context);
         // Replace validate callback
@@ -213,7 +217,11 @@ function i18nstrings_translate_edit_form_submit($form, &$form_state) {
   foreach ($form_state['values']['translations'] as $key => $value) {
     if (!empty($value)) {
       // An update has been made, so we assume the translation is now current.
-      db_query("UPDATE {locales_target} SET i18n_status = %d WHERE lid = %d AND language = '%s'", I18NSTRINGS_STATUS_CURRENT, $lid, $key);
+      db_update('locales_target')
+        ->fields(array('i18n_status' => I18NSTRINGS_STATUS_CURRENT))
+        ->condition('lid', $lid)
+        ->condition('language', $key)
+        ->execute();
     }
   }
 }
@@ -401,7 +409,13 @@ function i18nstrings_update_string($context, $string, $format = 0) {
  */
 function i18nstrings_update_translation($context, $langcode, $translation) {
   if ($source = i18nstrings_get_source($context, $translation)) {
-    db_query("INSERT INTO {locales_target} (lid, language, translation) VALUES(%d, '%s', '%s')", $source->lid, $langcode, $translation);
+    db_insert('locales_target')
+      ->fields(array(
+        'lid' => $source->lid,
+        'language' => $langcode,
+        'translation' => $translation,
+      ))
+      ->execute();
   }
 }
 
@@ -444,20 +458,39 @@ function i18nstrings_add_string($name, $string, $format = NULL) {
   if ($source) {
     if ($source->source != $string) {
       // String has changed
-      db_query("UPDATE {locales_source} SET source = '%s', location = '%s' WHERE lid = %d", $string, $location, $source->lid);
-      db_query("UPDATE {locales_target} SET i18n_status = %d WHERE lid = %d", I18NSTRINGS_STATUS_UPDATE, $source->lid);
+      db_update('locales_source')
+        ->fields(array(
+          'source' => $string,
+      		'location' => $location,
+        ))
+        ->condition('lid', $source->lid)
+        ->execute();
+      db_update('locales_target')
+        ->fields(array('i18n_status' => I18NSTRINGS_STATUS_UPDATE))
+        ->condition('lid', $source->lid)
+        ->execute();
       $status = SAVED_UPDATED;
     }
     elseif ($source->location != $location) {
       // It's not changed but it didn't have location set
-      db_query("UPDATE {locales_source} SET location = '%s' WHERE lid = %d", $location, $source->lid);
+      db_update('locales_source')
+        ->fields(array('location' => $location))
+        ->condition('lid', $source->lid)
+        ->execute();
       $status = SAVED_UPDATED;
     }
     // Complete metadata.
     $context->lid = $source->lid;
   }
   else {
-    db_query("INSERT INTO {locales_source} (location, source, textgroup, version) VALUES ('%s', '%s', '%s', '%s')", $location, $string, $context->textgroup, 1);
+    db_insert('locales_source')
+      ->fields(array(
+        'location' => $location,
+      	'source' => $string,
+        'textgroup' => $context->textgroup,
+        'version' => 1,
+      ))
+      ->execute();
     // Mysql just gets last id for latest query
     $context->lid = db_last_insert_id('locales_source', 'lid');
     // Clear locale cache so this string can be added in a later request.
@@ -502,10 +535,30 @@ function i18nstrings_allowed_format($format = NULL, $textgroup = NULL) {
  */
 function i18nstrings_save_context($context) {
   if (db_result(db_query('SELECT lid FROM {i18n_strings} WHERE lid = %d', $context->lid))) {
-    @db_query("UPDATE {i18n_strings} SET type = '%s', objectid = '%s', objectindex = %d, property = '%s', format = %d WHERE lid = %d", $context->type, $context->objectid, (int)$context->objectid, $context->property, $context->format, $context->lid);
+    //@db_query("UPDATE {i18n_strings} SET type = '%s', objectid = '%s', objectindex = %d, property = '%s', format = %d WHERE lid = %d", $context->type, $context->objectid, (int)$context->objectid, $context->property, $context->format, $context->lid);
+    db_update('i18n_strings')
+      ->fields(array(
+        'type' => $context->type,
+        'objectid' => $context->objectid,
+        'objectindex' => (int)$context->objectid,
+        'property' => $context->property,
+        'format' => $context->format,
+      ))
+      ->condition('lid', $context->lid)
+      ->execute();
   }
   else {
-    @db_query("INSERT INTO {i18n_strings} (lid, type, objectid, objectindex, property, format) VALUES(%d, '%s', '%s', %d, '%s', %d)", $context->lid, $context->type, $context->objectid, (int)$context->objectid, $context->property, $context->format);
+    //@db_query("INSERT INTO {i18n_strings} (lid, type, objectid, objectindex, property, format) VALUES (%d, '%s', '%s', %d, '%s', %d)", $context->lid, $context->type, $context->objectid, (int)$context->objectid, $context->property, $context->format);
+    db_insert('i18n_strings')
+      ->fields(array(
+      	'lid' => $context->lid,
+        'type' => $context->type,
+        'objectid' => $context->objectid,
+        'objectindex' => (int)$context->objectid,
+        'property' => $context->property,
+        'format' => $context->format,
+      ))
+      ->execute();
   }
 }
 
@@ -523,13 +576,27 @@ function i18nstrings_save_context($context) {
 function i18nstrings_get_source($context, $string = NULL) {
   $context = i18nstrings_context($context, $string);
   // Check if we have the string for this location.
-  list($where, $args) = i18nstrings_context_query($context);
-  if ($source = db_fetch_object(db_query("SELECT s.*, i.type, i.objectid, i.property, i.format  FROM {locales_source} s LEFT JOIN {i18n_strings} i ON s.lid = i.lid WHERE " . implode(' AND ', $where), $args))) {
+  $conditions = i18nstrings_context_query($context);
+  $source = db_select('locales_source', 's')
+    ->leftJoin('i18n_strings', 'i', 's.lid = i.lid')
+    ->fields('s')
+    ->fields('i', array('type', 'objectid', 'property', 'format'))
+    ->condition($conditions)
+    ->execute()
+    ->fetchObject();
+  if ($source) {
     $source->context = $context;
     return $source;
   }
   // Search for the same string for this textgroup without object data.
-  if ($string && $source = db_fetch_object(db_query("SELECT s.*, i.type, i.objectid, i.property, i.format FROM {locales_source} s  LEFT JOIN {i18n_strings} i ON s.lid = i.lid WHERE s.textgroup = '%s' AND s.source = '%s' AND i.lid IS NULL", $context->textgroup, $string))) {
+  $query = db_select('locales_source', 's')
+    ->leftJoin('i18n_strings', 'i', 's.lid = i.lid')
+    ->fields('s')
+    ->fields('i', array('type', 'objectid', 'property', 'format'))
+    ->condition('s.textgroup', $context->textgroup)
+    ->condition('s.source', $string)
+    ->where('i.lid IS NULL');
+  if ($string && $source = $query->execute()->fetchObject()) {
     $source->context = NULL;
     return $source;
   }
@@ -557,11 +624,18 @@ function i18nstrings_get_string($context, $langcode) {
   }
   else {
     // Search translation and add it to the cache.
-    list($where, $args) = i18nstrings_context_query($context);
-    $where[] = "t.language = '%s'";
-    $args[] = $langcode;
+    $condition = i18nstrings_context_query($context);
+    $condition->condition('t.language', $langcode);
+
     // Get translation that may have an input format to apply
-    $text = db_fetch_object(db_query("SELECT s.lid, t.translation FROM {locales_source} s INNER JOIN {locales_target} t ON s.lid = t.lid WHERE ". implode(' AND ', $where), $args));
+    $text = db_select('locales_source', 's')
+      ->join('locales_target', 't', 's.lid = t.lid')
+      ->fields('s', array('lid'))
+      ->fields('t', array('translation'))
+      ->condition($condition)
+      ->execute()
+      ->fetchObject();
+
     if ($text && $text->translation) {
       i18nstrings_cache($context, $langcode, NULL, $text->translation);
       return $text->translation;
@@ -584,7 +658,21 @@ function i18nstrings_get_translation($context, $langcode) {
   list($where, $args) = i18nstrings_context_query($context);
   $where[] = "t.language = '%s'";
   $args[] = $langcode;
-  return db_fetch_object(db_query("SELECT s.lid, t.translation, i.format FROM {locales_source} s INNER JOIN {locales_target} t ON s.lid = t.lid INNER JOIN {i18n_strings} i ON s.lid = i.lid WHERE ". implode(' AND ', $where), $args));
+
+  // Search translation and add it to the cache.
+  $condition = i18nstrings_context_query($context);
+  $condition->condition('t.language', $langcode);
+
+  // Get translation that may have an input format to apply
+  return db_select('locales_source', 's')
+    ->join('locales_target', 't', 's.lid = t.lid')
+    ->join('i18n_strings', 'i', 's.lid = i.lid')
+    ->fields('s', array('lid'))
+    ->fields('t', array('translation'))
+    ->fields('i', array('format'))
+    ->condition($condition)
+    ->execute()
+    ->fetchObject();
 }
 
 /**
@@ -593,9 +681,11 @@ function i18nstrings_get_translation($context, $langcode) {
 function i18nstrings_remove_string($context, $string = NULL) {
   $context = i18nstrings_context($context, $string);
   if ($source = i18nstrings_get_source($context, $string)) {
-    db_query("DELETE FROM {locales_target} WHERE lid = %d", $source->lid);
-    db_query("DELETE FROM {i18n_strings} WHERE lid = %d", $source->lid);
-    db_query("DELETE FROM {locales_source} WHERE lid = %d", $source->lid);
+
+    db_delete('locales_target')->condition('lid', $source->lid)->execute();
+    db_delete('i18n_strings')->condition('lid', $source->lid)->execute();
+    db_delete('locales_source')->condition('lid', $source->lid)->execute();
+
     cache_clear_all('locale:'. $context->textgroup .':', 'cache', TRUE);
     return SAVED_DELETED;
   }
@@ -627,17 +717,41 @@ function i18nstrings_update_context($oldname, $newname) {
 
   // Query and replace if there are any fields. It is possible that under some circumstances fields are the same
   if (!empty($replace)) {
-    $result = db_query("SELECT s.*, i.type, i.objectid, i.property FROM {locales_source} s  LEFT JOIN {i18n_strings} i ON s.lid = i.lid WHERE s.textgroup = '%s' AND s.location LIKE '%s'", $oldcontext->textgroup, $location);
-    while ($source = db_fetch_object($result)) {
+
+    $result = db_select('locales_source', 's')
+      ->leftJoin('i18n_strings', 'i', 's.lid = i.lid')
+      ->fields('s')
+      ->fields('i', array('type', 'objectid', 'property'))
+      ->condition('s.textgroup', $oldcontext->textgroup)
+      ->condition('s.location', $location, 'LIKE')
+      ->execute()
+      ->fetchAll(PDO::FETCH_OBJ);
+
+    foreach ($result as $source) {
       // Make sure we have string and context.
       $context = i18nstrings_context($oldcontext->textgroup .':'. $source->location);
       foreach ($replace as $field => $value) {
         $context->$field = $value;
       }
+
       // Update source string.
-      db_query("UPDATE {locales_source} SET textgroup = '%s', location = '%s' WHERE lid = %d", $context->textgroup, i18nstrings_location($context), $source->lid);
+      db_update('locales_source')
+        ->fields(array(
+          'textgroup' => $context->textgroup,
+        	'location' => i18nstrings_location($context),
+        ))
+        ->condition('lid', $source->lid)
+        ->execute();
+
       // Update object data.
-      db_query("UPDATE {i18n_strings} SET type = '%s', objectid = '%s', property = '%s' WHERE lid = %d", $context->type, $context->objectid, $context->property, $source->lid);
+      db_update('i18n_strings')
+      ->fields(array(
+        'type' => $context->type,
+      	'objectid' => $context->objectid,
+      	'property' => $context->property,
+      ))
+      ->condition('lid', $source->lid)
+      ->execute();
     }
     drupal_set_message(t('Updating string names from %oldname to %newname.', array('%oldname' => $oldname, '%newname' => $newname)));
   }
@@ -683,8 +797,16 @@ function i18nstrings_textgroup($textgroup, $string = NULL, $langcode = NULL) {
         // Refresh database stored cache of translations for given language.
         // We only store short strings used in current version, to improve
         // performance and consume less memory.
-        $result = db_query("SELECT s.source, t.translation, t.language FROM {locales_source} s LEFT JOIN {locales_target} t ON s.lid = t.lid AND t.language = '%s' WHERE s.textgroup = '%s' AND s.version = '%s' AND LENGTH(s.source) < 75", $langcode, $textgroup, VERSION);
-        while ($data = db_fetch_object($result)) {
+        $result = db_select('locales_source', 's')
+          ->leftJoin('locales_target', 't', 's.lid = t.lid AND t.language = :language', array(':language' => $langcode))
+          ->fields('s', array('source'))
+          ->fields('t', array('translation', 'language'))
+          ->condition('s.textgroup', $textgroup)
+          ->condition('s.version', VERSION)
+          ->where('LENGTH(s.source) < 75')
+          ->execute()
+          ->fetchAll(PDO::FETCH_OBJ);
+        foreach ($result as $data) {
           $locale_t[$textgroup][$langcode][$data->source] = (empty($data->translation) ? TRUE : $data->translation);
         }
         cache_set('locale:'. $textgroup .':'. $langcode, $locale_t[$textgroup][$langcode]);
@@ -696,7 +818,15 @@ function i18nstrings_textgroup($textgroup, $string = NULL, $langcode = NULL) {
   if (!isset($locale_t[$textgroup][$langcode][$string])) {
 
     // We do not have this translation cached, so get it from the DB.
-    $translation = db_fetch_object(db_query("SELECT s.lid, t.translation, s.version FROM {locales_source} s LEFT JOIN {locales_target} t ON s.lid = t.lid AND t.language = '%s' WHERE s.source = '%s' AND s.textgroup = '%s'", $langcode, $string, $textgroup));
+    $translation = db_select('locales_source', 's')
+      ->leftJoin('locales_target', 't', 's.lid = t.lid AND t.language = :language', array(':language' => $langcode))
+      ->fields('s', array('lid', 'version'))
+      ->fields('t', array('translation'))
+      ->condition('s.source', $string)
+      ->condition('s.textgroup', $textgroup)
+      ->execute()
+      ->fetchObject();
+
     if ($translation) {
       // We have the source string at least.
       // Cache translation string or TRUE if no translation exists.
@@ -712,7 +842,14 @@ function i18nstrings_textgroup($textgroup, $string = NULL, $langcode = NULL) {
     }
     else {
       // We don't have the source string, cache this as untranslated.
-      db_query("INSERT INTO {locales_source} (location, source, textgroup, version) VALUES ('%s', '%s', '%s', '%s')", request_uri(), $string,  $textgroup, VERSION);
+      db_insert('locales_source')
+        ->fields(array(
+          'location' => request_uri(),
+          'source' => $string,
+          'textgroup' => $textgroup,
+          'version' => VERSION,
+        ))
+        ->execute();
       $locale_t[$langcode][$string] = TRUE;
       // Clear locale cache so this string can be added in a later request.
       cache_clear_all('locale:'. $textgroup .':', 'cache', TRUE);
@@ -790,15 +927,17 @@ function i18nstrings_params($context, $string = NULL) {
 
 /**
  * Get query conditions for this context.
+ *
+ * @return DatabaseCondition
  */
 function i18nstrings_context_query($context, $alias = 's') {
-  $where = array("$alias.textgroup = '%s'", "$alias.location = '%s'");
-  $args  = array($context->textgroup, $context->location);
+  $condition = db_condition('AND');
+  $condition->condition("$alias.textgroup", $context->textgroup);
+  $condition->condition("$alias.location", $context->location);
   if (!empty($context->source)) {
-    $where[] = "s.source = '%s'";
-    $args[] = $context->source;
+    $condition->condition("$alias.source", $context->source);
   }
-  return array($where, $args);
+  return $condition;
 }
 
 /**
@@ -857,10 +996,10 @@ function i18nstrings_prefetch($context, $langcode = NULL, $join = array(), $cond
   $sql = "SELECT s.textgroup, s.source, i.type, i.objectid, i.property, t.translation FROM {locales_source} s";
   $sql .=" INNER JOIN {i18n_strings} i ON s.lid = i.lid INNER JOIN {locales_target} t ON s.lid = t.lid ";
   $sql .= implode(' ', $join) .' '. implode(' AND ', $where);
-  $result = db_query($sql, $params);
+  $result = db_query($sql, $params)->fetchAll(PDO::FETCH_OBJ);
 
   // Fetch all rows and store in cache.
-  while ($t = db_fetch_object($result)) {
+  foreach ($result as $t) {
     i18nstrings_cache($t, $langcode, $t->source, $t->translation);
   }
 
@@ -967,10 +1106,16 @@ function i18nstrings_refresh_group($group, $delete = FALSE) {
 
   // Now delete all source strings that were not refreshed
   if ($result && $delete) {
-    $result = db_query("SELECT s.* FROM {locales_source} s LEFT JOIN {i18n_strings} i ON s.lid = i.lid WHERE s.textgroup = '%s' AND i.lid IS NULL", $group);
-    while ($source = db_fetch_object($result)) {
-      db_query("DELETE FROM {locales_target} WHERE lid = %d", $source->lid);
-      db_query("DELETE FROM {locales_source} WHERE lid = %d", $source->lid);
+    $result = db_select('locales_source', 's')
+      ->leftJoin('i18n_strings', 'i', 's.lid = i.lid')
+      ->fields('s')
+      ->condition('s.textgroup', $group)
+      ->condition('i.lid', NULL)
+      ->execute()
+      ->fetchAll(PDO::FETCH_OBJ);
+    foreach ($result as $source) {
+      db_delete('locales_target')->condition('lid', $source->lic)->execute();
+      db_delete('locales_source')->condition('lid', $source->lic)->execute();
     }
   }
 
@@ -1046,19 +1191,43 @@ function i18nstrings_save_string() {
 function i18nstrings_save_translation($langcode, $source, $translation, $textgroup) {
   include_once 'includes/locale.inc';
 
-  $result = db_query("SELECT s.lid, i.format FROM {locales_source} s LEFT JOIN {i18n_strings} i ON s.lid = i.lid WHERE s.source = '%s' AND s.textgroup = '%s'", $source, $textgroup);
+  $result = db_select('locales_source', 's')
+    ->leftJoin('i18n_strings', 'i', 's.lid = i.lid')
+    ->fields('s', array('lid'))
+    ->fields('i', array('format'))
+    ->condition('s.source', $source)
+    ->condition('s.textgroup', $textgroup)
+    ->execute()
+    ->fetchAll(PDO::FETCH_OBJ);
+
+
   $count = 0;
-  while ($source = db_fetch_object($result)) {
+  foreach ($result as $source) {
     // If we have a format, check format access. Otherwise do regular check.
     if ($source->format ? filter_access($source->format) : locale_string_is_safe($translation)) {
-      $exists = (bool) db_result(db_query("SELECT lid FROM {locales_target} WHERE lid = %d AND language = '%s'", $source->lid, $langcode));
+      $exists = (bool) db_select('locales_target', 'l')
+        ->fields('l', array('lid'))
+        ->condition('lid', $source->lid)
+        ->condition('language', $langcode)
+        ->execute()
+        ->fetchColumn();
       if (!$exists) {
         // No translation in this language.
-        db_query("INSERT INTO {locales_target} (lid, language, translation) VALUES (%d, '%s', '%s')", $source->lid, $langcode, $translation);
+        db_insert('locales_target')
+          ->fields(array(
+            'lid' => $source->lid,
+            'language' => $langcode,
+            'translation' => $translation,
+          ))
+          ->execute();
       }
       else {
         // Translation exists, overwrite
-        db_query("UPDATE {locales_target} SET translation = '%s' WHERE language = '%s' AND lid = %d", $translation, $langcode, $source->lid);
+        db_update('locales_target')
+          ->fields(array('translation' => $translation))
+          ->condition('language', $langcode)
+          ->condition('lid', $source->lid)
+          ->execute();
       }
       $count ++;
     }

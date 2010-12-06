@@ -22,7 +22,7 @@ function i18ntaxonomy_install() {
 }
 
 /**
- * Implementation of hook_uninstall().
+ * Implements hook_uninstall().
  */
 function i18ntaxonomy_uninstall() {
   $ret = array();
@@ -34,7 +34,7 @@ function i18ntaxonomy_uninstall() {
 }
 
 /**
- * Implementation of hook_schema_alter().
+ * Implements hook_schema_alter().
  */
 function i18ntaxonomy_schema_alter(&$schema) {
   $schema['vocabulary']['fields']['language'] = array('type' => 'varchar', 'length' => 12, 'not null' => TRUE, 'default' => '');
@@ -43,7 +43,7 @@ function i18ntaxonomy_schema_alter(&$schema) {
 }
 
 /**
- * Implementation of hook_enable().
+ * Implements hook_enable().
  *
  * Just add strings to locale tables.
  */

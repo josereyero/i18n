@@ -11,7 +11,7 @@
 _i18n_test_variable_init();
 
 /**
- * Implementation of hook_init()
+ * Implements hook_init()
  */
 function i18n_test_init() {
   // We just implement this hook so this one is loaded always on bootstap
@@ -28,7 +28,7 @@ function _i18n_test_variable_init() {
 }
 
 /**
- * Implementation of hook_locale()
+ * Implements hook_locale()
  */
 function i18n_test_locale() {
   switch ($op) {

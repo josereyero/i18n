@@ -28,7 +28,7 @@ function _block_types() {
 }
 
 /**
- * Implementation of hook_help().
+ * Implements hook_help().
  */
 function i18nblocks_help($path, $arg) {
   switch ($path) {
@@ -45,18 +45,18 @@ function i18nblocks_help($path, $arg) {
 }
 
 /**
- * Implementation of hook_db_rewrite_sql().
+ * Implements hook_query_alter().
  */
-function i18nblocks_db_rewrite_sql($query, $primary_table, $primary_key) {
-  if ($primary_table == 'b' && $primary_key == 'bid') {
-    $return['join'] = 'LEFT JOIN {i18n_blocks} i18n ON (b.module = i18n.module AND b.delta = i18n.delta)';
-    $return['where'] = i18n_db_rewrite_where('i18n', 'block', 'simple');
-    return $return;
+function i18nblocks_query_alter(QueryAlterableInterface $query) {
+  //&& $query->getMetaData('base_table') == 'bid'
+  if ($query->getMetaData('base_table') == 'b') {
+    $query->leftJoin('i18n_blocks', 'i18n', 'b.module = i18n.module AND b.delta = i18n.delta');
+    $query->where(i18n_db_rewrite_where('i18n', 'block', 'simple'));
   }
 }
 
 /**
- * Implementation of hook_locale().
+ * Implements hook_locale().
  *
  * This one doesn't need locale refresh because strings are stored from module config form.
  */
@@ -75,8 +75,16 @@ function i18nblocks_locale($op = 'groups', $group = NULL) {
  * Refresh all strings.
  */
 function i18nblocks_locale_refresh() {
-  $result = db_query("SELECT DISTINCT b.module, b.delta, b.title, bx.body, bx.format, i.ibid, i.language FROM {blocks} b LEFT JOIN {boxes} bx ON b.module = 'block' AND b.delta = bx.bid LEFT JOIN {i18n_blocks} i ON b.module = i.module AND b.delta = i.delta");
-  while ($block = db_fetch_object($result)) {
+  $result = db_select('blocks', 'b')
+    ->distinct()
+    ->leftJoin('block_custom', 'bc', 'b.module = \'block\' AND b.delta = bx.bid')
+    ->leftJoin('i18n_blocks', 'i18nb', 'b.module = i18nb.module AND b.delta = i18nb.delta')
+    ->fields('b', array('module', 'delta', 'title'))
+    ->fields('bc', array('body', 'format'))
+    ->fields('i18nb', array('ibid', 'language'))
+    ->execute()
+    ->fetchAll(PDO::FETCH_OBJ);
+  foreach ($result as $block) {
     if (!$block->language) {
       // If the block has a custom title and no language it must be translated
       if ($block->title && $block->title != '<none>') {
@@ -92,10 +100,14 @@ function i18nblocks_locale_refresh() {
 }
 
 /**
- * Implementation of hook_form_FORM_ID_alter().
+ * Implements hook_form_FORM_ID_alter().
  */
 function i18nblocks_form_block_box_delete_alter(&$form, $form_state) {
-  $delta = db_result(db_query("SELECT ibid FROM {i18n_blocks} WHERE delta = '%d'", arg(4)));
+  $delta = db_select('i18n_blocks', 'i18nb')
+    ->fields('i18nb', 'ibid')
+    ->condition('delta', arg(4))
+    ->execute()
+    ->fetchColumn();
   $form['delta'] = array(
     '#type' => 'value',
     '#value' => $delta,
@@ -164,7 +176,7 @@ function i18nblocks_form_submit($form, &$form_state) {
   if (!$values['delta'] && $values['module'] == 'block') {
     // The last insert id will return a different value in mysql
     //$values['delta'] = db_last_insert_id('boxes', 'bid');
-    $values['delta'] = db_result(db_query("SELECT MAX(bid) FROM {boxes}"));
+    $values['delta'] = db_result(db_query("SELECT MAX(bid) FROM {block_custom}"));
   }
   i18nblocks_save($values);
 }
@@ -173,7 +185,11 @@ function i18nblocks_form_submit($form, &$form_state) {
  * Get block language data.
  */
 function i18nblocks_load($module, $delta) {
-  $block = db_fetch_object(db_query("SELECT * FROM {i18n_blocks} WHERE module = '%s' AND delta = '%s'", $module, $delta));
+  $block = db_select('i18n_blocks', 'i18nb')
+    ->condition('module', $module)
+    ->condition('delta', $delta)
+    ->execute()
+    ->fetchObject();
   // If no result, return default settings
   if ($block && !$block->language) {
     $block->language = I18N_BLOCK_LOCALIZE;
@@ -202,7 +218,10 @@ function i18nblocks_save($block) {
   }
   else {
     // No language, delete all i18n information.
-    db_query("DELETE FROM {i18n_blocks} WHERE module = '%s' AND delta = '%s'", $block['module'], $block['delta']);
+    db_delete('i18n_blocks', 'i18nb')
+      ->condition('module',  $block['module'])
+      ->condition('delta',  $block['delta'])
+      ->execute();
   }
   // If localize block or block without language
   if (!$block['language']) {
@@ -239,7 +258,7 @@ function i18nblocks_translate_block($block) {
 }
 
 /**
- * Implementation of hook_preprocess_block().
+ * Implements hook_preprocess_block().
  *
  * Translate blocks.
  *
@@ -284,8 +303,12 @@ function _i18nblocks_list($langcode = '') {
 
   if (!isset($list[$index])) {
     $list[$index] = array();
-    $result = db_query("SELECT * FROM {i18n_blocks} WHERE language = '%s'", $langcode);
-    while ($info = db_fetch_object($result)) {
+    $results = db_select('i18n_blocks', 'i18nb')
+      ->fields('i18nb')
+      ->condition('language', $langcode)
+      ->execute()
+      ->fetchAll(PDO::FETCH_OBJ);
+    foreach($results as $info) {
       $list[$index][$info->module][$info->delta] = $info;
     }
   }

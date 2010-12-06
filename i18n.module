@@ -20,7 +20,7 @@ define('LANGUAGE_SUPPORT_EXTENDED', 2);
 define('LANGUAGE_SUPPORT_EXTENDED_NOT_DISPLAYED', 3);
 
 /**
- * Implementation of hook_init().
+ * Implements hook_init().
  *
  * Special fix for site_frontpage, that may have been used before the language variables are loaded.
  */
@@ -60,7 +60,7 @@ function _i18n_init_mode() {
 }
 
 /**
- * Implementation of hook_help().
+ * Implements hook_help().
  */
 function i18n_help($path = 'admin/help#i18n', $arg) {
   switch ($path) {
@@ -80,7 +80,7 @@ function i18n_help($path = 'admin/help#i18n', $arg) {
       $output .= '<p>'. t('For more information, see the online handbook entry for <a href="@i18n">Internationalization module</a>.', array('@i18n' => 'http://drupal.org/node/133977')) .'</p>';
       return $output;
 
-    case 'admin/settings/language/i18n':
+    case 'admin/config/language/i18n':
       $output = '<ul>';
       $output .= '<li>'. t('To enable multilingual support for specific content types go to <a href="@configure_content_types">configure content types</a>.', array('@configure_content_types' => url('admin/content/types'))) .'</li>';
       $output .= '</ul>';
@@ -89,10 +89,10 @@ function i18n_help($path = 'admin/help#i18n', $arg) {
 }
 
 /**
- * Implementation of hook_menu().
+ * Implements hook_menu().
  */
 function i18n_menu() {
-  $items['admin/settings/language/i18n'] = array(
+  $items['admin/config/language/i18n'] = array(
     'title' => 'Multilingual system',
     'description' => 'Configure extended options for multilingual content and translations.',
     'page callback' => 'drupal_get_form',
@@ -102,7 +102,7 @@ function i18n_menu() {
     'type' => MENU_LOCAL_TASK,
     'weight' => 10,
   );
-  $items['admin/settings/language/i18n/configure'] = array(
+  $items['admin/config/language/i18n/configure'] = array(
     'title' => 'Multilingual system',
     'description' => 'Configure extended options for multilingual content and translations.',
     //'page callback' => 'drupal_get_form',
@@ -115,7 +115,7 @@ function i18n_menu() {
 }
 
 /**
- * Implementation of hook_user_login().
+ * Implements hook_user_login().
  *
  * Switch to user's language after login.
  */
@@ -186,7 +186,7 @@ function i18n_selection_mode($mode = NULL, $params = NULL) {
 }
 
 /**
- * Implementation of hook_db_rewrite_sql().
+ * Implements hook_db_rewrite_sql().
  *
  * Rewrite node queries so language selection options are enforced.
  */
@@ -277,7 +277,7 @@ function i18n_db_rewrite_where($alias, $type, $mode = NULL) {
 }
 
 /**
- * Implementation of hook_preprocess_page().
+ * Implements hook_preprocess_page().
  *
  * Add the language code to the classes for the <body> tag. Unfortunately, some
  * themes will not respect the variable we're modifying to achieve this - in
@@ -292,7 +292,7 @@ function i18n_preprocess_page(&$variables) {
 
 
 /**
- * Implementation of hook_permission().
+ * Implements hook_permission().
  *
  * Permissions defined
  * - administer all languages

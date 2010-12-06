@@ -131,7 +131,7 @@ class Drupali18nTestCase extends DrupalWebTestCase {
 //    drupal_save_session(FALSE);
 //    $user = user_load(1);
     session_save_session(FALSE);
-    $user = user_load(array('uid' => 1));
+    $user = user_load(1);
 
     // Restore necessary variables.
     variable_set('install_profile', 'default');
@@ -146,7 +146,7 @@ class Drupali18nTestCase extends DrupalWebTestCase {
     // Create the files directory.
     file_check_directory($directory, FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS);
 
-    set_time_limit($this->timeLimit);
+    drupal_set_time_limit($this->timeLimit);
 
     // Some more includes
     require_once 'includes/language.inc';
@@ -195,9 +195,9 @@ class Drupali18nTestCase extends DrupalWebTestCase {
    */
   public function switchLanguage($newlang = NULL) {
     $newlang = $newlang ? $newlang : $this->install_locale;
-    $GLOBALS['language'] = $this->getLanguage($newlang); 
+    $GLOBALS['language'] = $this->getLanguage($newlang);
   }
-  
+
   /**
    * Get all languages that are not default
    */
@@ -222,7 +222,7 @@ class Drupali18nTestCase extends DrupalWebTestCase {
     $source = i18nstrings_get_source($name);
     if ($source) {
       if ($update) {
-        db_query("UPDATE {locales_target} SET translation = '%s' WHERE lid = %d AND language = '%s'", $translation, $source->lid, $lang);    
+        db_query("UPDATE {locales_target} SET translation = '%s' WHERE lid = %d AND language = '%s'", $translation, $source->lid, $lang);
       } else {
         db_query("INSERT INTO {locales_target} (translation, lid, language) VALUES ('%s', %d, '%s')", $translation, $source->lid, $lang);
       }

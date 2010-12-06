@@ -17,7 +17,7 @@
  */
 
 /**
- * Implementation of hook_help().
+ * Implements hook_help().
  */
 function i18nsync_help($path, $arg) {
   switch ($path) {
@@ -38,7 +38,7 @@ function i18nsync_help($path, $arg) {
 }
 
 /**
- * Implementation of hook_theme().
+ * Implements hook_theme().
  */
 function i18nsync_theme() {
   return array(
@@ -49,7 +49,7 @@ function i18nsync_theme() {
 }
 
 /**
- * Implementation of hook_form_alter().
+ * Implements hook_form_alter().
  * - Vocabulary options
  * - Content type options
  */
@@ -146,7 +146,7 @@ function theme_i18nsync_workflow_checkbox($element) {
 }
 
 /**
- * Implementation of hook_nodeapi().
+ * Implements hook_nodeapi().
  */
 function i18nsync_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
   global $i18nsync; // This variable will be true when a sync operation is in progress.
@@ -559,7 +559,7 @@ function _i18nsync_node_translations($node, $exclude = FALSE) {
 }
 
 /**
- * Implementation of hook_file_references()
+ * Implements hook_file_references()
  *
  * Inform CCK's filefield that we have other nodes using that file so it won't be deleted
  */
