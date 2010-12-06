@@ -56,7 +56,7 @@ function _i18n_init_mode() {
         i18n_selection_mode('off');
       }
     }
-  }  
+  }
 }
 
 /**
@@ -115,12 +115,12 @@ function i18n_menu() {
 }
 
 /**
- * Implementation of hook_user().
+ * Implementation of hook_user_login().
  *
  * Switch to user's language after login.
  */
-function i18n_user($op, &$edit, &$account, $category = NULL) {
-  if ($op == 'login' && $account->language) {
+function i18n_user_login(&$edit, &$account) {
+  if ($account->language) {
     $_SESSION['language'] = $account->language;
     i18n_get_lang($account->language);
   }
@@ -292,7 +292,7 @@ function i18n_preprocess_page(&$variables) {
 
 
 /**
- * Implementation of hook_perm().
+ * Implementation of hook_permission().
  *
  * Permissions defined
  * - administer all languages
@@ -301,8 +301,17 @@ function i18n_preprocess_page(&$variables) {
  * - administer translations
  *   Will allow to add/remove existing nodes to/from translation sets.
  */
-function i18n_perm() {
-  return array('administer all languages', 'administer translations');
+function i18n_permission() {
+  return array(
+    'administer all languages' => array(
+        'title' => t('Administer all languages'),
+        'description' => t('Administer all languages.'),
+    ),
+    'administer translations' => array(
+      'title' => t('Administer translations'),
+      'description' => t('Administer translations.'),
+    ),
+  );
 }
 
 /**

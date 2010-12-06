@@ -3,4 +3,8 @@ name = String translation
 description = Provides support for translation of user defined strings.
 dependencies[] = locale
 package = Multilanguage
-core = 6.x
+core = 7.x
+
+files[] = i18strings.module
+files[] = i18strings.install
+files[] = i18strings.admin.inc
