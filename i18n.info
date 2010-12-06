@@ -4,4 +4,9 @@ description = Extends Drupal support for multilingual features.
 dependencies[] = locale
 dependencies[] = translation
 package = Multilanguage
-core = 6.x
+core = 7.x
+
+files[] = i18n.module
+files[] = i18n.install
+files[] = i18n.admin.inc
+files[] = i18n.module

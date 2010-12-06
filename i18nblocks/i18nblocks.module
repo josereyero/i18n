@@ -118,7 +118,7 @@ function i18nblocks_block_delete_submit(&$form, $form_state) {
  *
  * Remove block title for multilingual blocks.
  */
-function i18nblocks_form_alter(&$form, $form_state, $form_id) {
+function i18nblocks_form_alter(&$form, &$form_state, $form_id) {
   if (($form_id == 'block_admin_configure' || $form_id == 'block_box_form' || $form_id == 'block_add_block_form')) {
     $module = $form['module']['#value'];
     $delta = $form['delta']['#value'];
