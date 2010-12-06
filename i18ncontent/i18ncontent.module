@@ -15,7 +15,7 @@
  */
 
 /**
- * Implementation of hook_help().
+ * Implements hook_help().
  */
 function i18ncontent_help($path, $arg) {
   switch ($path) {
@@ -41,7 +41,7 @@ function i18ncontent_help($path, $arg) {
 }
 
 /**
- * Implementation of hook_locale().
+ * Implements hook_locale().
  */
 function i18ncontent_locale($op = 'groups', $group = NULL) {
   switch ($op) {
@@ -73,7 +73,7 @@ function i18ncontent_locale_refresh() {
 }
 
 /**
- * Implementation of hook_form_alter().
+ * Implements hook_form_alter().
  */
 function i18ncontent_form_alter(&$form, $form_state, $form_id) {
   switch ($form_id) {
@@ -118,7 +118,7 @@ function i18ncontent_form_alter(&$form, $form_state, $form_id) {
 }
 
 /**
- * Implementation of hook_node_type().
+ * Implements hook_node_type().
  */
 function i18ncontent_node_type($op, $info) {
   $language = language_default('language');
@@ -151,7 +151,7 @@ function i18ncontent_node_type($op, $info) {
 
 
 /**
- * Implementation of hook_menu_alter().
+ * Implements hook_menu_alter().
  *
  * Take over the node add pages.
  */

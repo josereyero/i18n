@@ -7,7 +7,7 @@
  */
 
 /**
- * Implementation of hook_enable().
+ * Implements hook_enable().
  *
  * Create all strings from CCK for translation.
  */

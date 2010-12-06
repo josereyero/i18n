@@ -12,7 +12,7 @@ function i18ncontent_install() {
 }
 
 /**
- * Implementation of hook_enable().
+ * Implements hook_enable().
  */
 function i18ncontent_enable() {
   // Make sure i18nstrings module is loaded, which may not be when enabling both modules at the same time
@@ -21,7 +21,7 @@ function i18ncontent_enable() {
 }
 
 /**
- * Implementation of hook_disable().
+ * Implements hook_disable().
  *
  * This function depends on i18nstrings, so it must be run on _disable() better than uninstall().
  */

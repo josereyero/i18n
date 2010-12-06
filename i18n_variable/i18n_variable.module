@@ -7,7 +7,7 @@
  */
 
 /**
- * Implementation of hook_boot()
+ * Implements hook_boot()
  * 
  * Initialize variables, that will be used to decide on site_frontpage
  */
@@ -16,7 +16,7 @@ function i18n_variable_boot() {
 }
 
 /**
- * Implementation of hook_language_init()
+ * Implements hook_language_init()
  */
 function i18n_variable_language_init() {
   if (drupal_multilingual()) {
@@ -25,7 +25,7 @@ function i18n_variable_language_init() {
 }
 
 /**
- * Implementation of hook_exit().
+ * Implements hook_exit().
  */
 function i18n_variable_exit() {
   _i18n_variable_exit();
@@ -84,7 +84,7 @@ function i18n_variable_global($name = NULL, $default = NULL) {
 }
 
 /**
- * Implementation of hook_form_alter();
+ * Implements hook_form_alter();
  *
  * This is the place to add language fields to all forms.
  */

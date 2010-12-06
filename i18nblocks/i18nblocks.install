@@ -6,19 +6,8 @@
  * Installation file for i18nblocks module.
  */
 
-// @ TODO Update scripts
 /**
- * Implementation of hook_install().
- */
-function i18nblocks_install() {
-  // Create database tables.
-  drupal_install_schema('i18nblocks');
-  // We dont need to change module weight
-  //db_query("UPDATE {system} SET weight = 20 WHERE name = 'i18nblocks' AND type = 'module'");
-}
-
-/**
- * Implementation of hook_schema().
+ * Implements hook_schema().
  */
 function i18nblocks_schema() {
   $schema['i18n_blocks'] = array(
