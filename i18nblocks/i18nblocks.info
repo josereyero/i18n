@@ -3,4 +3,8 @@ description = Enables multilingual blocks and block translation.
 dependencies[] = i18n
 dependencies[] = i18nstrings
 package = Multilanguage
-core = 6.x
+core = 7.x
+
+
+files[] = i18nblocks.module
+files[] = i18nblocks.install
