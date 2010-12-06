@@ -7,7 +7,7 @@
  */
 
 /**
- * Implementation of hook_locale().
+ * Implements hook_locale().
  */
 function i18ncck_locale($op = 'groups', $group = NULL) {
   switch ($op) {

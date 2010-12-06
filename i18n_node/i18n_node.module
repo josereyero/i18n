@@ -7,7 +7,7 @@
  */
 
 /**
- * Implementation of hook_menu().
+ * Implements hook_menu().
  */
 function i18n_node_menu() {
   // Autocomplete callback for nodes
@@ -22,7 +22,7 @@ function i18n_node_menu() {
 }
 
 /**
- * Implementation of hook_menu_alter().
+ * Implements hook_menu_alter().
  *
  * Take over the node translation page.
  */
@@ -82,7 +82,7 @@ function i18n_node_language_list($node, $translate = FALSE) {
 
 
 /**
- * Implementation of hook_nodeapi().
+ * Implements hook_nodeapi().
  */
 function i18n_node_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
   global $language;
@@ -96,7 +96,7 @@ function i18n_node_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
 }
 
 /**
- * Implementation of hook_alter_translation_link().
+ * Implements hook_alter_translation_link().
  *
  * Handles links for extended language. The links will have current language.
  */
@@ -132,7 +132,7 @@ function i18n_node_translation_link_alter(&$links, $path) {
 
 
 /**
- * Implementation of hook_link_alter().
+ * Implements hook_link_alter().
  *
  * Handles links for extended languages. Sets current interface language.
  */
@@ -167,7 +167,7 @@ function i18n_node_link_alter(&$links, $node) {
 
 
 /**
- * Implementation of hook_elements().
+ * Implements hook_elements().
  *
  * Add a process callback for textfields.
  */
@@ -219,7 +219,7 @@ function i18n_node_textfield_process($element) {
 }
 
 /**
- * Implementation of hook_form_alter();
+ * Implements hook_form_alter();
  *
  * This is the place to add language fields to all forms.
  */
@@ -310,7 +310,7 @@ function i18n_node_language_list($type = 'enabled', $field = 'name') {
 }
 
 /**
- * Implementation of hook_theme().
+ * Implements hook_theme().
  */
 function i18n_node_theme() {
   return array(

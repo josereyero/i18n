@@ -29,7 +29,7 @@ define('I18N_TAXONOMY_LANGUAGE', 2);
 define('I18N_TAXONOMY_TRANSLATE', 3);
 
 /**
- * Implementation of hook_help().
+ * Implements hook_help().
  */
 function i18ntaxonomy_help($path, $arg) {
   switch ($path) {
@@ -79,7 +79,7 @@ function _i18ntaxonomy_vocabulary_options() {
 }
 
 /**
- * Implementation of hook_menu().
+ * Implements hook_menu().
  */
 function i18ntaxonomy_menu() {
   $items['admin/content/taxonomy/%taxonomy_vocabulary/translation'] = array(
@@ -96,7 +96,7 @@ function i18ntaxonomy_menu() {
 }
 
 /**
- * Implementation of hook_menu_alter().
+ * Implements hook_menu_alter().
  *
  * Take over the taxonomy pages
  */
@@ -123,7 +123,7 @@ function _i18ntaxonomy_translation_tab($vocabulary) {
 }
 
 /**
- * Implementation of hook_locale().
+ * Implements hook_locale().
  */
 function i18ntaxonomy_locale($op = 'groups', $group = NULL) {
   switch ($op) {
@@ -160,7 +160,7 @@ function i18ntaxonomy_locale_refresh() {
 }
 
 /**
- * Implementation of hook_alter_translation_link().
+ * Implements hook_alter_translation_link().
  *
  * Replaces links with pointers to translated versions of the content.
  */
@@ -175,7 +175,7 @@ function i18ntaxonomy_translation_link_alter(&$links, $path) {
 }
 
 /**
- * Implementation of hook_theme().
+ * Implements hook_theme().
  */
 function i18ntaxonomy_theme() {
   return array(
@@ -259,7 +259,7 @@ function i18ntaxonomy_translation_tids($str_tids, $lang) {
 }
 
 /**
- * Implementation of hook_taxonomy().
+ * Implements hook_taxonomy().
  *
  * $edit parameter may be an array or an object !!
  */
@@ -333,7 +333,7 @@ function i18ntaxonomy_taxonomy($op, $type, $edit = NULL) {
 }
 
 /**
- * Implementation of hook_db_rewrite_sql().
+ * Implements hook_db_rewrite_sql().
  */
 function i18ntaxonomy_db_rewrite_sql($query, $primary_table, $primary_key) {
   // No rewrite for administration pages or mode = off.
@@ -355,7 +355,7 @@ function i18ntaxonomy_db_rewrite_sql($query, $primary_table, $primary_key) {
 }
 
 /**
- * Implementation of hook_form_alter().
+ * Implements hook_form_alter().
  *
  * This is the place to add language fields to all forms.
  *
@@ -696,7 +696,7 @@ function i18ntaxonomy_nat_get_terms($nid) {
 }
 
 /**
- * Implementation of hook_nodeapi().
+ * Implements hook_nodeapi().
  *
  * Prepare node for translation.
  */
@@ -963,7 +963,7 @@ function i18ntaxonomy_get_tree($vid, $lang, $parent = 0, $depth = -1, $max_depth
 }
 
 /**
- * Implementation of hook_token_values().
+ * Implements hook_token_values().
  */
 function i18ntaxonomy_token_values($type, $object = NULL, $options = array()) {
   $values = array();
@@ -1028,7 +1028,7 @@ function i18ntaxonomy_token_values($type, $object = NULL, $options = array()) {
 }
 
 /**
- * Implementation of hook_token_list().
+ * Implements hook_token_list().
  */
 function i18ntaxonomy_token_list($type = 'all') {
   if ($type == 'node' || $type == 'all') {

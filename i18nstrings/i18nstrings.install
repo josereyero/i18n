@@ -39,7 +39,7 @@ function i18nstrings_uninstall() {
 }
 
 /**
- * Implements of hook_schema().
+ * Implements hook_schema().
  */
 function i18nstrings_schema() {
   $schema['i18n_strings'] = array(
@@ -92,7 +92,7 @@ function i18nstrings_schema() {
 }
 
 /**
- * Implements of hook_schema_alter().
+ * Implements hook_schema_alter().
  */
 function i18nstrings_schema_alter(&$schema) {
   // Add index for textgroup and location to {locales_source}.

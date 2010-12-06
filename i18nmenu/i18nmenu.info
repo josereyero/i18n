@@ -6,4 +6,8 @@ dependencies[] = menu
 dependencies[] = i18nblocks
 dependencies[] = i18nstrings
 package = Multilanguage
-core = 6.x
+core = 7.x
+
+
+files[] = i18nmenu.module
+files[] = i18nmenu.install

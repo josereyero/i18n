@@ -15,7 +15,7 @@
  */
 
 /**
- * Implementation of hook_help().
+ * Implements hook_help().
  */
 function i18nprofile_help($path, $arg) {
   switch ($path) {
@@ -27,7 +27,7 @@ function i18nprofile_help($path, $arg) {
 }
 
 /**
- * Implementation of hook_locale().
+ * Implements hook_locale().
  */
 function i18nprofile_locale($op = 'groups', $group = NULL) {
   switch ($op) {
@@ -59,7 +59,7 @@ function i18nprofile_locale_refresh() {
 }
 
 /**
- * Implementation of hook_menu_alter().
+ * Implements hook_menu_alter().
  *
  * Replace title callbacks for profile categories.
  */
@@ -82,7 +82,7 @@ function i18nprofile_translate_category($title) {
 }
 
 /**
- * Implementation of hook_profile_alter().
+ * Implements hook_profile_alter().
  *
  * Translates categories and fields.
  */
@@ -115,7 +115,7 @@ function i18nprofile_profile_alter(&$account) {
 }
 
 /**
- * Implementation of hook_form_alter().
+ * Implements hook_form_alter().
  */
 function i18nprofile_form_alter(&$form, $form_state, $form_id) {
   switch ($form_id) {
