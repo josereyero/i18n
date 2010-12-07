@@ -93,9 +93,13 @@ function i18nmenu_help($path, $arg) {
 
 /**
  * Get localized menu tree.
+ * @param $menu_name
+ *   The menu the translated tree has to be fetched from.
+ * @param $reset
+ * 	 Whether to reset the internal cache for the translated tree.
  */
-function i18nmenu_translated_tree($menu_name) {
-  static $menu_output = array();
+function i18nmenu_translated_tree($menu_name, $reset = FALSE) {
+  $menu_output = &drupal_static(__FUNCTION__ , array(), $reset);
 
   if (!isset($menu_output[$menu_name])) {
     $tree = menu_tree_page_data($menu_name);
@@ -240,12 +244,17 @@ function _i18nmenu_delete_item($mlid) {
  *
  * We need the untranslated title to compare, and this will be fast.
  * There's no api function to do this?
+ *
+ * @param $path
+ *   The patch to fetch from the router.
+ * @param $reset
+ * 	 Whether to reset the internal cache for the menu router.
  */
-function i18nmenu_get_router($path) {
-  static $cache = array();
+function i18nmenu_get_router($path, $reset = FALSE) {
+  $cache = &drupal_static(__FUNCTION__ , array(), $reset);
   if (!array_key_exists($path, $cache)) {
     $cache[$path] = db_select('menu_router', 'mr')
-      ->fields('mr', 'title')
+      ->fields('mr', array('title'))
       ->condition('path', $path)
       ->execute()
       ->fetchAssoc();
