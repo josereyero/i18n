@@ -46,12 +46,52 @@ function i18nblocks_help($path, $arg) {
 
 /**
  * Implements hook_query_alter().
+ *
+ * @TODO Maybe solve with hook_block_info_alter().
  */
 function i18nblocks_query_alter(QueryAlterableInterface $query) {
-  //&& $query->getMetaData('base_table') == 'bid'
-  if ($query->getMetaData('base_table') == 'b') {
-    $query->leftJoin('i18n_blocks', 'i18n', 'b.module = i18n.module AND b.delta = i18n.delta');
-    $query->where(i18n_db_rewrite_where('i18n', 'block', 'simple'));
+  $x = 1;
+//  //&& $query->getMetaData('base_table') == 'bid'
+//  $tables = $query->getTables();
+//  if (in_array('b', $tables) || in_array('block', $tables)) {
+//    $query->leftJoin('i18n_blocks', 'i18n', 'b.module = i18n.module AND b.delta = i18n.delta');
+//    $query->where(i18n_db_rewrite_where('i18n', 'block', 'simple'));
+//  }
+}
+
+/**
+ * Implements hook_block_info_alter().
+ *
+ * @TODO Replace this ugly pice of code by a smarter solution.
+ */
+function i18nblocks_block_info_alter (&$blocks, $theme, $code_blocks) {
+  $current = i18n_get_lang();
+
+  $conditions = db_condition('OR');
+  foreach ($blocks as $module => $block) {
+    $conditions->condition(db_condition('AND')
+      ->condition('b.module', $module)
+      ->condition('b.delta', key($block))
+    );
+  }
+
+  $query = db_select('block', 'b')
+    ->fields('b', array('module', 'delta'))
+    ->condition(db_condition('OR')
+      ->condition('ib.language', '')
+      ->condition('ib.language', NULL)
+      ->condition('ib.language', $current)
+    )
+    ->condition($conditions);
+  $query->leftJoin('i18n_blocks', 'ib', 'b.module = ib.module AND b.delta = ib.delta');
+  $query->addExpression("CONCAT(b.module, :db_expr_palceholder, b.delta)", 'md', array(':db_expr_palceholder' => '_'));
+  $i18n_blocks = $query->execute()
+    ->fetchAllAssoc('md');
+
+  foreach ($blocks as $module => $block) {
+    if (!isset($i18n_blocks[ $module .  '_' . key($block)])) {
+      unset($blocks[$module][key($block)]);
+    }
   }
 }
 
@@ -75,14 +115,14 @@ function i18nblocks_locale($op = 'groups', $group = NULL) {
  * Refresh all strings.
  */
 function i18nblocks_locale_refresh() {
-  $result = db_select('blocks', 'b')
+  $query = db_select('blocks', 'b')
     ->distinct()
-    ->leftJoin('block_custom', 'bc', 'b.module = \'block\' AND b.delta = bx.bid')
-    ->leftJoin('i18n_blocks', 'i18nb', 'b.module = i18nb.module AND b.delta = i18nb.delta')
     ->fields('b', array('module', 'delta', 'title'))
     ->fields('bc', array('body', 'format'))
-    ->fields('i18nb', array('ibid', 'language'))
-    ->execute()
+    ->fields('i18nb', array('ibid', 'language'));
+  $query->leftJoin('block_custom', 'bc', 'b.module = :db_join_placeholder AND b.delta = bx.bid', array(':db_join_placeholder' => 'block'));
+  $query->leftJoin('i18n_blocks', 'i18nb', 'b.module = i18nb.module AND b.delta = i18nb.delta');
+  $result = $query->execute()
     ->fetchAll(PDO::FETCH_OBJ);
   foreach ($result as $block) {
     if (!$block->language) {
@@ -104,7 +144,7 @@ function i18nblocks_locale_refresh() {
  */
 function i18nblocks_form_block_box_delete_alter(&$form, $form_state) {
   $delta = db_select('i18n_blocks', 'i18nb')
-    ->fields('i18nb', 'ibid')
+    ->fields('i18nb', array('ibid'))
     ->condition('delta', arg(4))
     ->execute()
     ->fetchColumn();
@@ -126,45 +166,76 @@ function i18nblocks_block_delete_submit(&$form, $form_state) {
 }
 
 /**
- * Implementation of block form_alter().
+ * Implements block hook_form_FORM_ID_alter().
  *
  * Remove block title for multilingual blocks.
  */
-function i18nblocks_form_alter(&$form, &$form_state, $form_id) {
-  if (($form_id == 'block_admin_configure' || $form_id == 'block_box_form' || $form_id == 'block_add_block_form')) {
-    $module = $form['module']['#value'];
-    $delta = $form['delta']['#value'];
-    $form['i18n'] = array(
+function i18nblocks_form_block_admin_configure_alter(&$form, &$form_state, $form_id) {
+  i18nblocks_alter_forms($form, $form_state, $form_id);
+}
+
+/**
+ * Implements block hook_form_FORM_ID_alter().
+ *
+ * Remove block title for multilingual blocks.
+ * @deprecated Looks like this is a D6 artefact
+ */
+function i18nblocks_form_block_box_form_alter(&$form, &$form_state, $form_id) {
+  i18nblocks_alter_forms($form, $form_state, $form_id);
+}
+
+/**
+ * Implements block hook_form_FORM_ID_alter().
+ *
+ * Remove block title for multilingual blocks.
+ */
+function i18nblocks_form_block_add_block_form_alter(&$form, &$form_state, $form_id) {
+  i18nblocks_alter_forms($form, $form_state, $form_id);
+}
+
+
+/**
+ * Central function to do form alterations.
+ *
+ * Remove block title for multilingual blocks.
+ * Affected forms:
+ * - block_admin_configure
+ * - block_box_form
+ * - block_add_block_form
+ */
+function i18nblocks_alter_forms(&$form, &$form_state, $form_id) {
+  $module = $form['module']['#value'];
+  $delta = $form['delta']['#value'];
+  $form['i18n'] = array(
       '#type' => 'fieldset',
       '#title' => t('Multilingual settings'),
       '#collapsible' => TRUE,
       '#weight' => -1,
-    );
+  );
 
-    $i18nblock = i18nblocks_load($module, $delta);
-    $form['i18n'] = array(
+  $i18nblock = i18nblocks_load($module, $delta);
+  $form['i18n'] = array(
       '#type' => 'fieldset',
       '#title' => t('Multilingual settings'),
       '#collapsible' => TRUE,
       '#weight' => 0,
-    );
-    // Language options will depend on block type.
-    $options = array('' => t('All languages'));
-    if ($module == 'block') {
-      $options[I18N_BLOCK_LOCALIZE] = t('All languages (Translatable)');
-    }
-    $options += locale_language_list('name');
+  );
+  // Language options will depend on block type.
+  $options = array('' => t('All languages'));
+  if ($module == 'block') {
+    $options[I18N_BLOCK_LOCALIZE] = t('All languages (Translatable)');
+  }
+  $options += locale_language_list('name');
 
-    $form['i18n']['language'] = array(
+  $form['i18n']['language'] = array(
       '#type' => 'radios',
       '#title' => t('Language'),
       '#default_value' => $i18nblock->language,
       '#options' => $options,
-    );
-    // Pass i18ndelta value.
-    $form['i18n']['ibid'] = array('#type' => 'value', '#value' => $i18nblock->ibid);
-    $form['#submit'][] = 'i18nblocks_form_submit';
-  }
+  );
+  // Pass i18ndelta value.
+  $form['i18n']['ibid'] = array('#type' => 'value', '#value' => $i18nblock->ibid);
+  $form['#submit'][] = 'i18nblocks_form_submit';
 }
 
 /**
@@ -294,9 +365,11 @@ function i18nblocks_preprocess_block(&$variables) {
 
 /**
  * Get list of blocks i18n properties
+ * @param $reset
+ * 	 Whether to reset the internal cache for the block list.
  */
-function _i18nblocks_list($langcode = '') {
-  static $list = array();
+function _i18nblocks_list($langcode = '', $reset = FALSE) {
+  $list = &drupal_static(__FUNCTION__, array(), $reset);
 
   // Handle issues when no $langcode, use a different array index
   $index = $langcode ? $langcode : I18N_BLOCK_LOCALIZE;

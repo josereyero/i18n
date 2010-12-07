@@ -82,7 +82,7 @@ function i18n_help($path = 'admin/help#i18n', $arg) {
 
     case 'admin/config/language/i18n':
       $output = '<ul>';
-      $output .= '<li>'. t('To enable multilingual support for specific content types go to <a href="@configure_content_types">configure content types</a>.', array('@configure_content_types' => url('admin/content/types'))) .'</li>';
+      $output .= '<li>'. t('To enable multilingual support for specific content types go to <a href="@configure_content_types">configure content types</a>.', array('@configure_content_types' => url('admin/structure/types'))) .'</li>';
       $output .= '</ul>';
       return $output;
   }
@@ -92,17 +92,16 @@ function i18n_help($path = 'admin/help#i18n', $arg) {
  * Implements hook_menu().
  */
 function i18n_menu() {
-  $items['admin/config/language/i18n'] = array(
+  $items['admin/config/regional/i18n'] = array(
     'title' => 'Multilingual system',
     'description' => 'Configure extended options for multilingual content and translations.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('i18n_admin_settings'),
     'access arguments' => array('administer site configuration'),
     'file' => 'i18n.admin.inc',
-    'type' => MENU_LOCAL_TASK,
     'weight' => 10,
   );
-  $items['admin/config/language/i18n/configure'] = array(
+  $items['admin/config/regional/i18n/configure'] = array(
     'title' => 'Multilingual system',
     'description' => 'Configure extended options for multilingual content and translations.',
     //'page callback' => 'drupal_get_form',
@@ -158,11 +157,14 @@ function i18n_language_property($code, $property) {
  *  params = Gets the stored params.
  *  reset = Returns to previous.
  *  custom = add custom where clause, like "%alias.language = 'en'".
+ *
+ * @param $reset
+ * 	 Whether to reset the internal cache for the selection mode.
  */
-function i18n_selection_mode($mode = NULL, $params = NULL) {
-  static $current_mode;
-  static $current_value = '';
-  static $store = array();
+function i18n_selection_mode($mode = NULL, $params = NULL, $reset = FALSE) {
+  $current_mode = &drupal_static(__FUNCTION__ . '_mode', NULL, $reset);
+  $current_mode = &drupal_static(__FUNCTION__ . '_value', '', $reset);
+  $store = &drupal_static(__FUNCTION__ . '_store', '', $reset);
 
   // Initialization, first time this runs
   if (!isset($current_mode)) {

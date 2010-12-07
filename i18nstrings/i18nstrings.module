@@ -104,7 +104,7 @@ function i18nstrings_menu() {
   );
   // Direct copy of the Configure tab from locale module to
   // make space for the "Localization sharing" tab below.
-  $items['admin/config/language/configure/language'] = array(
+  $items['admin/config/regional/configure/language'] = array(
     'title' => 'Language negotiation',
     'page callback' => 'locale_inc_callback',
     'page arguments' => array('drupal_get_form', 'locale_languages_configure_form'),
@@ -112,7 +112,7 @@ function i18nstrings_menu() {
     'weight' => -10,
     'type' => MENU_DEFAULT_LOCAL_TASK,
   );
-  $items['admin/config/language/configure/strings'] = array(
+  $items['admin/config/regional/configure/strings'] = array(
     'title' => 'String translation',
     'weight' => 20,
     'type' => MENU_LOCAL_TASK,
@@ -236,6 +236,10 @@ function i18nstrings_translate_edit_form_submit($form, &$form_state) {
  * hand, you can enable/disable translation for a specific language by adding
  * the following to your settings.php
  *
+ * @param $langcode
+ * @param $reset
+ *   Whether to reset the internal cache for the translated langcode.
+ *
  * @code
  *   // Enable translation of specific language. Language code is 'xx'
  *   $conf['i18nstrings_translate_langcode_xx'] = TRUE;
@@ -243,8 +247,8 @@ function i18nstrings_translate_edit_form_submit($form, &$form_state) {
  *   $conf['i18nstrings_translate_langcode_yy'] = FALSE;
  * @endcode
  */
-function i18nstrings_translate_langcode($langcode) {
-  static $translate = array();
+function i18nstrings_translate_langcode($langcode, $reset = FALSE) {
+  $translate = &drupal_static(__FUNCTION__ , array(), $reset);
   if (!isset($translate[$langcode])) {
     $translate[$langcode] = variable_get('i18nstrings_translate_langcode_' . $langcode, language_default('language') != $langcode);
   }
@@ -577,25 +581,24 @@ function i18nstrings_get_source($context, $string = NULL) {
   $context = i18nstrings_context($context, $string);
   // Check if we have the string for this location.
   $conditions = i18nstrings_context_query($context);
-  $source = db_select('locales_source', 's')
-    ->leftJoin('i18n_strings', 'i', 's.lid = i.lid')
+  $query = db_select('locales_source', 's')
     ->fields('s')
     ->fields('i', array('type', 'objectid', 'property', 'format'))
-    ->condition($conditions)
-    ->execute()
-    ->fetchObject();
+    ->condition($conditions);
+  $query->leftJoin('i18n_strings', 'i', 's.lid = i.lid');
+  $source = $query->execute()->fetchObject();
   if ($source) {
     $source->context = $context;
     return $source;
   }
   // Search for the same string for this textgroup without object data.
   $query = db_select('locales_source', 's')
-    ->leftJoin('i18n_strings', 'i', 's.lid = i.lid')
     ->fields('s')
     ->fields('i', array('type', 'objectid', 'property', 'format'))
     ->condition('s.textgroup', $context->textgroup)
     ->condition('s.source', $string)
     ->where('i.lid IS NULL');
+  $query->leftJoin('i18n_strings', 'i', 's.lid = i.lid');
   if ($string && $source = $query->execute()->fetchObject()) {
     $source->context = NULL;
     return $source;
@@ -628,13 +631,12 @@ function i18nstrings_get_string($context, $langcode) {
     $condition->condition('t.language', $langcode);
 
     // Get translation that may have an input format to apply
-    $text = db_select('locales_source', 's')
-      ->join('locales_target', 't', 's.lid = t.lid')
+    $query = db_select('locales_source', 's')
       ->fields('s', array('lid'))
       ->fields('t', array('translation'))
-      ->condition($condition)
-      ->execute()
-      ->fetchObject();
+      ->condition($condition);
+    $query->join('locales_target', 't', 's.lid = t.lid');
+    $text = $query->execute()->fetchObject();
 
     if ($text && $text->translation) {
       i18nstrings_cache($context, $langcode, NULL, $text->translation);
@@ -664,15 +666,14 @@ function i18nstrings_get_translation($context, $langcode) {
   $condition->condition('t.language', $langcode);
 
   // Get translation that may have an input format to apply
-  return db_select('locales_source', 's')
-    ->join('locales_target', 't', 's.lid = t.lid')
-    ->join('i18n_strings', 'i', 's.lid = i.lid')
+  $query = db_select('locales_source', 's')
     ->fields('s', array('lid'))
     ->fields('t', array('translation'))
     ->fields('i', array('format'))
-    ->condition($condition)
-    ->execute()
-    ->fetchObject();
+    ->condition($condition);
+  $query->join('locales_target', 't', 's.lid = t.lid');
+  $query->join('i18n_strings', 'i', 's.lid = i.lid');
+  return $query->execute()->fetchObject();
 }
 
 /**
@@ -718,14 +719,13 @@ function i18nstrings_update_context($oldname, $newname) {
   // Query and replace if there are any fields. It is possible that under some circumstances fields are the same
   if (!empty($replace)) {
 
-    $result = db_select('locales_source', 's')
-      ->leftJoin('i18n_strings', 'i', 's.lid = i.lid')
+    $query = db_select('locales_source', 's')
       ->fields('s')
       ->fields('i', array('type', 'objectid', 'property'))
       ->condition('s.textgroup', $oldcontext->textgroup)
-      ->condition('s.location', $location, 'LIKE')
-      ->execute()
-      ->fetchAll(PDO::FETCH_OBJ);
+      ->condition('s.location', $location, 'LIKE');
+    $query->leftJoin('i18n_strings', 'i', 's.lid = i.lid');
+    $result = $query->execute()->fetchAll(PDO::FETCH_OBJ);
 
     foreach ($result as $source) {
       // Make sure we have string and context.
@@ -770,10 +770,12 @@ function i18nstrings_update_context($oldname, $newname) {
  *   used on the page.
  * @param $langcode
  *   Language code to use for the lookup.
+ * @param $reset
+ * 	 Whether to reset the internal cache for the textgroup.
  */
-function i18nstrings_textgroup($textgroup, $string = NULL, $langcode = NULL) {
+function i18nstrings_textgroup($textgroup, $string = NULL, $langcode = NULL, $reset = FALSE) {
   global $language;
-  static $locale_t;
+  $locale_t = &drupal_static(__FUNCTION__ , NULL, $reset);
 
   // Return all cached strings if no string was specified.
   if (!isset($string)) {
@@ -797,15 +799,14 @@ function i18nstrings_textgroup($textgroup, $string = NULL, $langcode = NULL) {
         // Refresh database stored cache of translations for given language.
         // We only store short strings used in current version, to improve
         // performance and consume less memory.
-        $result = db_select('locales_source', 's')
-          ->leftJoin('locales_target', 't', 's.lid = t.lid AND t.language = :language', array(':language' => $langcode))
+        $query = db_select('locales_source', 's')
           ->fields('s', array('source'))
           ->fields('t', array('translation', 'language'))
           ->condition('s.textgroup', $textgroup)
           ->condition('s.version', VERSION)
-          ->where('LENGTH(s.source) < 75')
-          ->execute()
-          ->fetchAll(PDO::FETCH_OBJ);
+          ->where('LENGTH(s.source) < 75');
+        $query->leftJoin('locales_target', 't', 's.lid = t.lid AND t.language = :language', array(':language' => $langcode));
+        $result = $query->execute()->fetchAll(PDO::FETCH_OBJ);
         foreach ($result as $data) {
           $locale_t[$textgroup][$langcode][$data->source] = (empty($data->translation) ? TRUE : $data->translation);
         }
@@ -818,15 +819,13 @@ function i18nstrings_textgroup($textgroup, $string = NULL, $langcode = NULL) {
   if (!isset($locale_t[$textgroup][$langcode][$string])) {
 
     // We do not have this translation cached, so get it from the DB.
-    $translation = db_select('locales_source', 's')
-      ->leftJoin('locales_target', 't', 's.lid = t.lid AND t.language = :language', array(':language' => $langcode))
+    $query= db_select('locales_source', 's')
       ->fields('s', array('lid', 'version'))
       ->fields('t', array('translation'))
       ->condition('s.source', $string)
-      ->condition('s.textgroup', $textgroup)
-      ->execute()
-      ->fetchObject();
-
+      ->condition('s.textgroup', $textgroup);
+    $query->leftJoin('locales_target', 't', 's.lid = t.lid AND t.language = :language', array(':language' => $langcode));
+    $translation = $query->execute()->fetchObject();
     if ($translation) {
       // We have the source string at least.
       // Cache translation string or TRUE if no translation exists.
@@ -1016,13 +1015,15 @@ function i18nstrings_prefetch($context, $langcode = NULL, $join = array(), $cond
  *   Source string when available
  * @param $translation
  *   Translated string to store into the cache
+ * @param $reset
+ * 	 Whether to reset the internal cache for the strings.
  *
  * @return
  *   - Translation if chached (may be false if no translation)
  *   - NULL if no value cached
  */
-function i18nstrings_cache($context, $langcode, $string = NULL, $translation = NULL) {
-  static $strings;
+function i18nstrings_cache($context, $langcode, $string = NULL, $translation = NULL, $reset = FALSE) {
+  $strings = &drupal_static(__FUNCTION__ , NULL, $reset);
 
   $context = i18nstrings_context($context, $string);
 
@@ -1106,13 +1107,12 @@ function i18nstrings_refresh_group($group, $delete = FALSE) {
 
   // Now delete all source strings that were not refreshed
   if ($result && $delete) {
-    $result = db_select('locales_source', 's')
-      ->leftJoin('i18n_strings', 'i', 's.lid = i.lid')
+    $query = db_select('locales_source', 's')
       ->fields('s')
       ->condition('s.textgroup', $group)
-      ->condition('i.lid', NULL)
-      ->execute()
-      ->fetchAll(PDO::FETCH_OBJ);
+      ->condition('i.lid', NULL);
+    $query->leftJoin('i18n_strings', 'i', 's.lid = i.lid');
+    $result = $query->execute()->fetchAll(PDO::FETCH_OBJ);
     foreach ($result as $source) {
       db_delete('locales_target')->condition('lid', $source->lic)->execute();
       db_delete('locales_source')->condition('lid', $source->lic)->execute();
@@ -1127,11 +1127,13 @@ function i18nstrings_refresh_group($group, $delete = FALSE) {
  * Get refresh callback for a text group.
  *
  * @param $group
+ * @param $reset
+ *   Whether to reset the internal cache for the textgroup.
  *
  * @return callback
  */
-function i18nstrings_group_info($group = NULL, $property = NULL) {
-  static $info;
+function i18nstrings_group_info($group = NULL, $property = NULL, $reset = FALSE) {
+  $info = &drupal_static(__FUNCTION__ , NULL, $reset);
 
   if (!isset($info)) {
     $info = module_invoke_all('locale', 'info');
@@ -1191,15 +1193,13 @@ function i18nstrings_save_string() {
 function i18nstrings_save_translation($langcode, $source, $translation, $textgroup) {
   include_once 'includes/locale.inc';
 
-  $result = db_select('locales_source', 's')
-    ->leftJoin('i18n_strings', 'i', 's.lid = i.lid')
+  $query = db_select('locales_source', 's')
     ->fields('s', array('lid'))
     ->fields('i', array('format'))
     ->condition('s.source', $source)
-    ->condition('s.textgroup', $textgroup)
-    ->execute()
-    ->fetchAll(PDO::FETCH_OBJ);
-
+    ->condition('s.textgroup', $textgroup);
+  $query->leftJoin('i18n_strings', 'i', 's.lid = i.lid');
+  $result->execute()->fetchAll(PDO::FETCH_OBJ);
 
   $count = 0;
   foreach ($result as $source) {
