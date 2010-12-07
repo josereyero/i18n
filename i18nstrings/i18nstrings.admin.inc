@@ -10,8 +10,7 @@ include_once './includes/locale.inc';
  */
 function i18nstrings_admin_refresh_page() {
   $output = '';
-  $output .= drupal_get_form('i18nstrings_admin_refresh');
-  return $output;
+  return drupal_get_form('i18nstrings_admin_refresh');
 }
 
 /**
@@ -84,19 +83,33 @@ function i18nstrings_admin_refresh_submit($form, &$form_state) {
  * Update strings for language.
  */
 function i18nstrings_admin_update($language, $groups) {
-  $params = $groups;
-  $params[] = $language;
-  $sql = 'SELECT g.*, t.translation, t.lid as tlid, i.format FROM {locales_source} g INNER JOIN {locales_source} s ON g.source = s.source AND s.lid <> g.lid ';
-  $sql .= 'INNER JOIN {locales_target} t ON s.lid = t.lid LEFT JOIN {locales_target} t2 ON g.lid = t2.lid ';
-  $sql .= 'INNER JOIN {i18n_strings} i ON i.lid = g.lid ';
-  $sql .= 'WHERE t2.lid IS NULL AND g.textgroup IN ('. db_placeholders($groups, 'varchar') .") AND t.language = '%s'";
-  $result = db_query($sql, $params);
+
+  $query = db_select('locales_source', 'g')
+    ->fields('g')
+    ->fields('t', array('translation'))
+    ->fields('i', array('format'))
+    ->condition('t2.lid', NULL)
+    ->condition('g.textgroup', $groups)
+    ->condition('t.language', $language);
+  $query->addField('t', 'lid', 'tlid');
+  $query->join('locales_source', 's', 'g.source = s.source AND s.lid <> g.lid');
+  $query->join('locales_target', 't', 's.lid = t.lid');
+  $query->join('locales_target', 't2', 'g.lid = t2.lid');
+  $query->join('i18n_strings', 'i', 'i.lid = g.lid');
+  $result = $query->execute()->fetchAll(PDO::FETCH_OBJ);
+
   $count = 0;
-  while ($string = db_fetch_object($result)) {
+  foreach($result as $string) {
     // Just update strings when no input format, otherwise it could be dangerous under some circumstances.
     if (empty($string->format) && !empty($string->translation)) {
       $count++;
-      db_query("INSERT INTO {locales_target} (translation, lid, language) VALUES('%s', %d, '%s')", $string->translation, $string->lid, $language);
+      db_insert(locales_target)
+      ->fields(array(
+        'translation' => $string->translation,
+      	'lid' => $string->lid,
+      	'language' => $language,
+      ))
+      ->execute();
     }
   }
   return $count;
@@ -104,7 +117,7 @@ function i18nstrings_admin_update($language, $groups) {
 
 /**
  * Configure filters for string translation.
- * 
+ *
  * This has serious security implications so this form needs the 'administer filters' permission
  */
 function i18nstrings_admin_settings() {

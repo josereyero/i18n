@@ -61,7 +61,7 @@ function i18nstrings_help($path, $arg) {
       $output = '<p>' . t('This module adds support for other modules to translate user defined strings. Depending on which modules you have enabled that use this feature you may see different text groups to translate.') . '<p>';
       $output .= '<p>' . t('This works differently to Drupal standard localization system: The strings will be translated from the default language (which may not be English), so changing the default language may cause all these translations to be broken.') . '</p>';
       $output .= '<ul>';
-      $output .= '<li>' . t('To search and translate strings, use the <a href="@translate-interface">translation interface</a> pages.', array('@translate-interface' => url('admin/build/translate'))) . '</li>';
+      $output .= '<li>' . t('To search and translate strings, use the <a href="@translate-interface">translation interface</a> pages.', array('@translate-interface' => url('admin/config/regional/translate'))) . '</li>';
       $output .= '<li>' . t('If you are missing strings to translate, use the <a href="@refresh-strings">refresh strings</a> page.', array('@refresh-strings' => url('admin/build/translate/refresh'))) . '</li>';
       $output .= '</ul>';
       $output .= '<p>' . t('Read more on the <em>Internationalization handbook</em>: <a href="http://drupal.org/node/313293">Translating user defined strings</a>.') . '</p>';
@@ -73,20 +73,20 @@ function i18nstrings_help($path, $arg) {
       $output .= '<li>' . t('Use the refresh option when you are missing strings to translate for a given text group. All the strings will be re-created keeping existing translations.') . '</li>';
       $output .= '<li>' . t('Use the update option when some of the strings had been previously translated with the localization system, but the translations are not showing up for the configurable strings.') . '</li>';
       $output .= '</ul>';
-      $output .= '<p>' . t('To search and translate strings, use the <a href="@translate-interface">translation interface</a> pages.', array('@translate-interface' => url('admin/build/translate'))) . '</p>';
-      $output .= '<p>' . t('<strong>Important:</strong> To configure which Input formats are safe for translation, visit the <a href="@configure-strings">configure strings</a> page before refreshing your strings.', array('@configure-strings' => url('admin/config/language/configure/strings'))) . '</p>';
+      $output .= '<p>' . t('To search and translate strings, use the <a href="@translate-interface">translation interface</a> pages.', array('@translate-interface' => url('admin/config/regional/translate'))) . '</p>';
+      $output .= '<p>' . t('<strong>Important:</strong> To configure which Input formats are safe for translation, visit the <a href="@configure-strings">configure strings</a> page before refreshing your strings.', array('@configure-strings' => url('admin/config/regional/i18n/strings'))) . '</p>';
       return $output;
 
     case 'admin/config/language':
       $output = '<p>' . t('<strong>Warning</strong>: Changing the default language may have unwanted effects on string translations. Read more about <a href="@i18nstrings-help">String translation</a>', array('@i18nstrings-help' => url('admin/help/i18nstrings'))) . '</p>';
       return $output;
-    case 'admin/config/language/configure/strings':
+    case 'admin/config/regional/i18n/strings':
       $output = '<p>' . t('When translating user defined strings that have an Input format associated, translators will be able to edit the text before it is filtered which may be a security risk for some filters. An obvious example is when using the PHP filter but other filters may also be dangerous.') . '</p>';
       $output .= '<p>' . t('As a general rule <strong>do not allow any filtered text to be translated unless the translators already have access to that Input format</strong>. However if you are doing all your translations through this site\'s translation UI or the Localization client, and never importing translations for other textgroups than <i>default</i>, filter access will be checked for translators on every translation page.') . '</p>';
       $output .= '<p>' . t('<strong>Important:</strong> After disallowing some Input format, use the <a href="@refresh-strings">refresh strings</a> page so forbidden strings are deleted and not allowed anymore for translators.', array('@refresh-strings' => url('admin/build/translate/refresh'))) . '</p>';
       return $output;
     case 'admin/config/filters':
-      return '<p>' . t('After updating your Input formats do not forget to review the list of formats allowed for string translations on the <a href="@configure-strings">configure translatable strings</a> page.', array('@configure-strings' => url('admin/config/language/configure/strings'))) . '</p>';
+      return '<p>' . t('After updating your Input formats do not forget to review the list of formats allowed for string translations on the <a href="@configure-strings">configure translatable strings</a> page.', array('@configure-strings' => url('admin/config/regional/i18n/strings'))) . '</p>';
   }
 }
 
@@ -102,17 +102,7 @@ function i18nstrings_menu() {
     'file' => 'i18nstrings.admin.inc',
     'access arguments' => array('translate interface'),
   );
-  // Direct copy of the Configure tab from locale module to
-  // make space for the "Localization sharing" tab below.
-  $items['admin/config/regional/configure/language'] = array(
-    'title' => 'Language negotiation',
-    'page callback' => 'locale_inc_callback',
-    'page arguments' => array('drupal_get_form', 'locale_languages_configure_form'),
-    'access arguments' => array('administer languages'),
-    'weight' => -10,
-    'type' => MENU_DEFAULT_LOCAL_TASK,
-  );
-  $items['admin/config/regional/configure/strings'] = array(
+  $items['admin/config/regional/i18n/strings'] = array(
     'title' => 'String translation',
     'weight' => 20,
     'type' => MENU_LOCAL_TASK,
@@ -487,7 +477,7 @@ function i18nstrings_add_string($name, $string, $format = NULL) {
     $context->lid = $source->lid;
   }
   else {
-    db_insert('locales_source')
+    $context->lid = db_insert('locales_source')
       ->fields(array(
         'location' => $location,
       	'source' => $string,
@@ -495,8 +485,6 @@ function i18nstrings_add_string($name, $string, $format = NULL) {
         'version' => 1,
       ))
       ->execute();
-    // Mysql just gets last id for latest query
-    $context->lid = db_last_insert_id('locales_source', 'lid');
     // Clear locale cache so this string can be added in a later request.
     cache_clear_all('locale:' . $context->textgroup . ':', 'cache', TRUE);
     // Create string.
@@ -538,7 +526,7 @@ function i18nstrings_allowed_format($format = NULL, $textgroup = NULL) {
  * There seems to be a race condition sometimes so skip errors, #277711
  */
 function i18nstrings_save_context($context) {
-  if (db_result(db_query('SELECT lid FROM {i18n_strings} WHERE lid = %d', $context->lid))) {
+  if (db_query('SELECT lid FROM {i18n_strings} WHERE lid = :lid', array(':lid' => $context->lid))->fetchField()) {
     //@db_query("UPDATE {i18n_strings} SET type = '%s', objectid = '%s', objectindex = %d, property = '%s', format = %d WHERE lid = %d", $context->type, $context->objectid, (int)$context->objectid, $context->property, $context->format, $context->lid);
     db_update('i18n_strings')
       ->fields(array(
@@ -546,7 +534,7 @@ function i18nstrings_save_context($context) {
         'objectid' => $context->objectid,
         'objectindex' => (int)$context->objectid,
         'property' => $context->property,
-        'format' => $context->format,
+        'format' => (int)$context->format,
       ))
       ->condition('lid', $context->lid)
       ->execute();
@@ -560,7 +548,7 @@ function i18nstrings_save_context($context) {
         'objectid' => $context->objectid,
         'objectindex' => (int)$context->objectid,
         'property' => $context->property,
-        'format' => $context->format,
+        'format' => (int)$context->format,
       ))
       ->execute();
   }
@@ -835,7 +823,11 @@ function i18nstrings_textgroup($textgroup, $string = NULL, $langcode = NULL, $re
         // This is the first use of this string under current Drupal version. Save version
         // and clear cache, to include the string into caching next time. Saved version is
         // also a string-history information for later pruning of the tables.
-        db_query_range("UPDATE {locales_source} SET version = '%s' WHERE lid = %d", VERSION, $translation->lid, 0, 1);
+        db_query_range(
+        	"UPDATE {locales_source} SET version = :version WHERE lid = :lid",
+          0, 1,
+          array(':version' => VERSION, ':lid' => $translation->lid)
+        );
         cache_clear_all('locale:'. $textgroup .':', 'cache', TRUE);
       }
     }
@@ -966,36 +958,33 @@ function i18nstrings_prefetch($context, $langcode = NULL, $join = array(), $cond
   global $language;
 
   $langcode = $langcode ? $langcode : $language->language;
+
+  $conditions = db_condition('AND');
   // Add language condition.
-  $conditions['t.language'] = $langcode;
+  $conditions->condition('t.language', $langcode);
   // Get context conditions.
   $context = (array)i18nstrings_context($context);
   foreach ($context as $key => $value) {
     if ($value) {
       if ($key == 'textgroup') {
-        $conditions['s.textgroup'] = $value;
+        $conditions->condition('s.textgroup', $value);
       }
       else {
-        $conditions['i.'. $key] = $value;
+        $conditions->condition('i.'. $key, $value);
       }
     }
   }
-  // Prepare where clause
-  $where = $params = array();
-  foreach ($conditions as $key => $value) {
-    if (is_array($value)) {
-      $where[] = $key .' IN ('. db_placeholders($value, is_int($value[0]) ? 'int' : 'string') .')';
-      $params = array_merge($params, $value);
-    }
-    else {
-      $where[] = $key .' = '. is_int($value) ? '%d' : "'%s'";
-      $params[] = $value;
-    }
-  }
-  $sql = "SELECT s.textgroup, s.source, i.type, i.objectid, i.property, t.translation FROM {locales_source} s";
-  $sql .=" INNER JOIN {i18n_strings} i ON s.lid = i.lid INNER JOIN {locales_target} t ON s.lid = t.lid ";
-  $sql .= implode(' ', $join) .' '. implode(' AND ', $where);
-  $result = db_query($sql, $params)->fetchAll(PDO::FETCH_OBJ);
+
+  // Create query
+  $query = db_select('locales_source', 's')
+    ->fields('s', array('textgroup', 'source'))
+    ->fields('i', array('type', 'objectid', 'property'))
+    ->fields('t', array('translation'))
+    ->condition($conditions);
+  $query->join('i18n_strings', 'i', 's.lid = i.lid');
+  $query->join('locales_target', 't', 's.lid = t.lid');
+
+  $result = $query->execute()->fetchAll(PDO::FETCH_OBJ);
 
   // Fetch all rows and store in cache.
   foreach ($result as $t) {
@@ -1101,7 +1090,7 @@ function i18nstrings_refresh_group($group, $delete = FALSE) {
     return FALSE;
   }
   // Delete data from i18n_strings so it is recreated
-  db_query("DELETE FROM {i18n_strings} WHERE lid IN (SELECT lid FROM {locales_source} WHERE textgroup = '%s')", $group);
+  db_query("DELETE FROM {i18n_strings} WHERE lid IN (SELECT lid FROM {locales_source} WHERE textgroup = :textgroup)", array(':textgroup' => $group));
 
   $result = call_user_func($refresh_callback);
 

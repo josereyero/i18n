@@ -33,13 +33,13 @@ function _block_types() {
 function i18nblocks_help($path, $arg) {
   switch ($path) {
     case 'admin/help#i18nblocks':
-      $output = '<p>'. t('This module provides support for multilingual blocks.') .'</p>';
-      $output .= '<p>'. t('You can set up a language for a block or define it as translatable:') .'</p>';
+      $output = '<p>' . t('This module provides support for multilingual blocks.') . '</p>';
+      $output .= '<p>' . t('You can set up a language for a block or define it as translatable:') . '</p>';
       $output .= '<ul>';
-      $output .= '<li>'. t('Blocks with a language will be displayed only in pages with that language.') .'</li>';
-      $output .= '<li>'. t('Translatable blocks can be translated using the localization interface.') .'</li>';
+      $output .= '<li>' . t('Blocks with a language will be displayed only in pages with that language.') . '</li>';
+      $output .= '<li>' . t('Translatable blocks can be translated using the localization interface.') . '</li>';
       $output .= '</ul>';
-      $output .= '<p>'. t('To search and translate strings, use the <a href="@translate-interface">translation interface</a> pages.', array('@translate-interface' => url('admin/build/translate'))) .'</p>';
+      $output .= '<p>' . t('To search and translate strings, use the <a href="@translate-interface">translation interface</a> pages.', array('@translate-interface' => url('admin/build/translate'))) . '</p>';
       return $output;
   }
 }
@@ -58,7 +58,8 @@ function i18nblocks_query_alter(QueryAlterableInterface $query) {
 /**
  * Implements hook_locale().
  *
- * This one doesn't need locale refresh because strings are stored from module config form.
+ * This one doesn't need locale refresh because strings are stored from module
+ * config form.
  */
 function i18nblocks_locale($op = 'groups', $group = NULL) {
   switch ($op) {
@@ -75,12 +76,12 @@ function i18nblocks_locale($op = 'groups', $group = NULL) {
  * Refresh all strings.
  */
 function i18nblocks_locale_refresh() {
-  $query = db_select('blocks', 'b')
+  $query = db_select('block', 'b')
     ->distinct()
     ->fields('b', array('module', 'delta', 'title'))
     ->fields('bc', array('body', 'format'))
     ->fields('i18nb', array('ibid', 'language'));
-  $query->leftJoin('block_custom', 'bc', 'b.module = :db_join_placeholder AND b.delta = bx.bid', array(':db_join_placeholder' => 'block'));
+  $query->leftJoin('block_custom', 'bc', 'b.module = :db_join_placeholder AND b.delta = bc.bid', array(':db_join_placeholder' => 'block'));
   $query->leftJoin('i18n_blocks', 'i18nb', 'b.module = i18nb.module AND b.delta = i18nb.delta');
   $result = $query->execute()
     ->fetchAll(PDO::FETCH_OBJ);
@@ -203,11 +204,12 @@ function i18nblocks_alter_forms(&$form, &$form_state, $form_id) {
  */
 function i18nblocks_form_submit($form, &$form_state) {
   $values = $form_state['values'];
-  // Dirty trick to act on new created blocks. Delta may be zero for other modules than block.
+  // Dirty trick to act on new created blocks.
+  // Delta may be zero for other modules than block.
   if (!$values['delta'] && $values['module'] == 'block') {
     // The last insert id will return a different value in mysql
-    //$values['delta'] = db_last_insert_id('boxes', 'bid');
-    $values['delta'] = db_result(db_query("SELECT MAX(bid) FROM {block_custom}"));
+    // $values['delta'] = db_last_insert_id('boxes', 'bid');
+    $values['delta'] = db_query("SELECT MAX(bid) FROM {block_custom}")->fetchField();
   }
   i18nblocks_save($values);
 }
@@ -226,14 +228,15 @@ function i18nblocks_load($module, $delta) {
   if ($block && !$block->language) {
     $block->language = I18N_BLOCK_LOCALIZE;
   }
-  return $block ? $block : (object)array('language' => '', 'ibid' => 0);
+  return $block ? $block : (object) array('language' => '', 'ibid' => 0);
 }
 
 /**
  * Set block language data.
  *
  * @param array $block
- *   Array of block parameters: module, delata, ibid (internal i18nblocks delta).
+ *   Array of block parameters: module, delata,
+ *   ibid (internal i18nblocks delta).
  */
 function i18nblocks_save($block) {
   if (!empty($block['language'])) {
@@ -251,8 +254,8 @@ function i18nblocks_save($block) {
   else {
     // No language, delete all i18n information.
     db_delete('i18n_blocks')
-      ->condition('module',  $block['module'])
-      ->condition('delta',  $block['delta'])
+      ->condition('module', $block['module'])
+      ->condition('delta', $block['delta'])
       ->execute();
   }
   // If localize block or block without language
@@ -342,7 +345,7 @@ function _i18nblocks_list($langcode = '', $reset = FALSE) {
       ->condition('language', $langcode)
       ->execute()
       ->fetchAll(PDO::FETCH_OBJ);
-    foreach($results as $info) {
+    foreach ($results as $info) {
       $list[$index][$info->module][$info->delta] = $info;
     }
   }
