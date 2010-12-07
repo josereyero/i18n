@@ -295,13 +295,13 @@ function i18nmenu_menu_edit_menu_submit($form, &$form_state) {
  * callback to process items.
  */
 function i18nmenu_form_menu_edit_item_alter(&$form, $form_state) {
-  if ($form['menu']['#item'] && isset($form['menu']['#item']['options']['langcode'])) {
-    $language = $form['menu']['#item']['options']['langcode'];
+  if (!empty($form) && isset($form['options']['langcode'])) {
+    $language = $form['options']['langcode'];
   }
   else {
     $language = '';
   }
-  $form['menu']['language'] = array(
+  $form['language'] = array(
     '#type' => 'select',
     '#title' => t('Language'),
     '#description' => t('Select a language for this menu item. Choose "All languages" to make the menu item translatable into different languages.'),
@@ -317,7 +317,7 @@ function i18nmenu_form_menu_edit_item_alter(&$form, $form_state) {
  * troubles when a node and it's translation has the same url alias.
  */
 function i18nmenu_menu_item_prepare_normal_path($form, &$form_state) {
-  $item = &$form_state['values']['menu'];
+  $item = &$form_state['values'];
   $normal_path = drupal_get_normal_path($item['link_path'], $item['language']);
   if ($item['link_path'] != $normal_path) {
     drupal_set_message(t('The menu system stores system paths only, but will use the URL alias for display. %link_path has been stored as %normal_path', array('%link_path' => $item['link_path'], '%normal_path' => $normal_path)));
@@ -332,8 +332,8 @@ function i18nmenu_menu_item_prepare_normal_path($form, &$form_state) {
  */
 function i18nmenu_menu_item_update($form, &$form_state) {
   // Ensure we have a menu item to work with.
-  if (isset($form_state['values']['menu'])) {
-    $item = $form_state['values']['menu'];
+  if (isset($form_state['values'])) {
+    $item = $form_state['values'];
     _i18nmenu_update_item($item);
   }
 }
