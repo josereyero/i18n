@@ -7,8 +7,6 @@
  */
 
 function i18nstrings_install() {
-  // Create database tables.
-  drupal_install_schema('i18nstrings');
 
   // Set module weight for it to run after core modules.
   db_query("UPDATE {system} SET weight = 10 WHERE name = 'i18nstrings' AND type = 'module'");
@@ -25,8 +23,6 @@ function i18nstrings_install() {
 function i18nstrings_uninstall() {
   $ret = array();
 
-  // Create database tables.
-  drupal_uninstall_schema('i18nstrings');
   // @TODO locale table cleanup, think about it.
   // Should we drop all strings for groups other than 'default' ?
 
