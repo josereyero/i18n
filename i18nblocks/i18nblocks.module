@@ -46,52 +46,12 @@ function i18nblocks_help($path, $arg) {
 
 /**
  * Implements hook_query_alter().
- *
- * @TODO Maybe solve with hook_block_info_alter().
  */
 function i18nblocks_query_alter(QueryAlterableInterface $query) {
-  $x = 1;
-//  //&& $query->getMetaData('base_table') == 'bid'
-//  $tables = $query->getTables();
-//  if (in_array('b', $tables) || in_array('block', $tables)) {
-//    $query->leftJoin('i18n_blocks', 'i18n', 'b.module = i18n.module AND b.delta = i18n.delta');
-//    $query->where(i18n_db_rewrite_where('i18n', 'block', 'simple'));
-//  }
-}
-
-/**
- * Implements hook_block_info_alter().
- *
- * @TODO Replace this ugly pice of code by a smarter solution.
- */
-function i18nblocks_block_info_alter (&$blocks, $theme, $code_blocks) {
   $current = i18n_get_lang();
-
-  $conditions = db_condition('OR');
-  foreach ($blocks as $module => $block) {
-    $conditions->condition(db_condition('AND')
-      ->condition('b.module', $module)
-      ->condition('b.delta', key($block))
-    );
-  }
-
-  $query = db_select('block', 'b')
-    ->fields('b', array('module', 'delta'))
-    ->condition(db_condition('OR')
-      ->condition('ib.language', '')
-      ->condition('ib.language', NULL)
-      ->condition('ib.language', $current)
-    )
-    ->condition($conditions);
-  $query->leftJoin('i18n_blocks', 'ib', 'b.module = ib.module AND b.delta = ib.delta');
-  $query->addExpression("CONCAT(b.module, :db_expr_palceholder, b.delta)", 'md', array(':db_expr_palceholder' => '_'));
-  $i18n_blocks = $query->execute()
-    ->fetchAllAssoc('md');
-
-  foreach ($blocks as $module => $block) {
-    if (!isset($i18n_blocks[ $module .  '_' . key($block)])) {
-      unset($blocks[$module][key($block)]);
-    }
+  if ($query->hasTag('block_load')) {
+    $query->leftJoin('i18n_blocks', 'i18n', 'b.module = i18n.module AND b.delta = i18n.delta');
+    $query->condition(i18n_db_rewrite_where('i18n', 'block', 'simple'));
   }
 }
 
@@ -256,9 +216,10 @@ function i18nblocks_form_submit($form, &$form_state) {
  * Get block language data.
  */
 function i18nblocks_load($module, $delta) {
-  $block = db_select('i18n_blocks', 'i18nb')
-    ->condition('module', $module)
-    ->condition('delta', $delta)
+  $block = db_select('i18n_blocks', 'ib')
+    ->fields('ib')
+    ->condition('ib.module', $module)
+    ->condition('ib.delta', $delta)
     ->execute()
     ->fetchObject();
   // If no result, return default settings
@@ -289,7 +250,7 @@ function i18nblocks_save($block) {
   }
   else {
     // No language, delete all i18n information.
-    db_delete('i18n_blocks', 'i18nb')
+    db_delete('i18n_blocks')
       ->condition('module',  $block['module'])
       ->condition('delta',  $block['delta'])
       ->execute();
