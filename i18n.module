@@ -233,6 +233,8 @@ function i18n_db_rewrite_sql($query, $primary_table, $primary_key, $args = array
 
 /**
  * Rewrites queries depending on rewriting mode.
+ *
+ * @return DatabaseCondition
  */
 function i18n_db_rewrite_where($alias, $type, $mode = NULL) {
   if (!$mode) {
@@ -258,20 +260,33 @@ function i18n_db_rewrite_where($alias, $type, $mode = NULL) {
       return '';
 
     case 'simple':
-      return "$alias.language ='$current' OR $alias.language ='' OR $alias.language IS NULL" ;
+      return db_condition('OR')
+        ->condition($alias . '.language', $current)
+        ->condition($alias . '.language', '')
+        ->condition($alias . '.language', NULL);
 
     case 'mixed':
-      return "$alias.language ='$current' OR $alias.language ='$default' OR $alias.language ='' OR $alias.language IS NULL" ;
+      return db_condition('OR')
+        ->condition($alias . '.language', $current)
+        ->condition($alias . '.language', $default)
+        ->condition($alias . '.language', '')
+        ->condition($alias . '.language', NULL);
 
     case 'strict':
-      return "$alias.language ='$current'" ;
+      return db_condition('AND')->condition($alias . '.language', $current);
 
     case 'node':
     case 'translation':
-      return "$alias.language ='". i18n_selection_mode('params') ."' OR $alias.language ='' OR $alias.language IS NULL" ;
+      return db_condition('OR')
+        ->condition($alias . '.language', i18n_selection_mode('params'))
+        ->condition($alias . '.language', '')
+        ->condition($alias . '.language', NULL);
 
     case 'default':
-      return "$alias.language ='$default' OR $alias.language ='' OR $alias.language IS NULL" ;
+      return db_condition('OR')
+        ->condition($alias . '.language', $default)
+        ->condition($alias . '.language', '')
+        ->condition($alias . '.language', NULL);
 
     case 'custom':
       return str_replace('%alias', $alias, i18n_selection_mode('params'));
