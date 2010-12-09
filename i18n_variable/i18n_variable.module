@@ -222,9 +222,12 @@ function _i18n_variable_initialize($langcode) {
       $i18n_conf[$langcode] = $cached->data;
     }
     else {
-      $result = db_query("SELECT * FROM {i18n_variable} WHERE language = '%s'", $langcode);
+      $result = db_select('i18n_variable')
+        ->fields('i18n_variable')
+        ->condition('language', $langcode)
+        ->execute();
       $i18n_conf[$langcode] = array();
-      while ($variable = db_fetch_object($result)) {
+      foreach ($result as $variable) {
         $i18n_conf[$langcode][$variable->name] = unserialize($variable->value);
       }
       cache_set($cacheid, $i18n_conf[$langcode]);
