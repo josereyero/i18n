@@ -267,7 +267,7 @@ function i18nblocks_save($block) {
       i18nstrings_update("blocks:$module:$delta:title", $block['title']);
     }
     if (isset($block['body'])) {
-      i18nstrings_update("blocks:$module:$delta:body", $block['body'], $block['format']);
+      i18nstrings_update("blocks:$module:$delta:body", $block['body']['value'], $block['body']['format']);
     }
   }
 }
