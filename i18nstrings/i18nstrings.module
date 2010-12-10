@@ -508,7 +508,7 @@ function i18nstrings_add_string($name, $string, $format = NULL) {
 function i18nstrings_allowed_format($format = NULL, $textgroup = NULL) {
   $allowed_formats = variable_get('i18nstrings_allowed_formats', array(variable_get('filter_default_format', 1)));
   if (isset($format)) {
-    return in_array(filter_resolve_format($format), $allowed_formats);
+    return in_array($format, $allowed_formats);
   }
   elseif ($textgroup) {
     $allowed_groups = variable_get('i18nstrings_allowed_textgroups', array());
