@@ -198,7 +198,7 @@ function i18nprofile_form_translate_field(&$form, $field) {
       $form[$field]['#value'] = i18nstrings("profile:field:$field:title", $form[$field]['#value']);
     }
   }
-  
+
   if (!empty($form[$field]['#description'])) {
     $form[$field]['#description'] = i18nstrings("profile:field:$field:description", $form[$field]['#description']);
   }
@@ -217,13 +217,13 @@ function i18nprofile_field_options($field, $source = array()) {
   if ($translation = i18nstrings("profile:field:$field:options", '')) {
     // Troubles when doing the split, produces empty lines, quick fix
     $translation = str_replace("\r", '', $translation);
-    $translation = split("\n", $translation);
+    $translation = explode("\n", $translation);
     if ($source) {
       $options = $source;
     }
     elseif ($source = db_result(db_query("SELECT options FROM {profile_fields} WHERE name = '%s'", $field))) {
       $source = str_replace("\r", '', $source);
-      $source = split("\n", $source);
+      $source = explode("\n", $source);
       $options = array();
     }
     else {
