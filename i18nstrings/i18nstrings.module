@@ -888,7 +888,7 @@ function i18nstrings_context($context, $string = NULL, $format = 0) {
   }
   else {
     // Split the name in four parts, remaining elements will be in the last one
-    $parts = split(':', $context);
+    $parts = explode(':', $context);
     $context = new Stdclass();
     $context->textgroup = array_shift($parts);
     $context->type = array_shift($parts);
