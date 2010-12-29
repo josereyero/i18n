@@ -109,15 +109,15 @@ function i18n_variable_list($name = NULL) {
 /**
  * Check for multilingual variables in form.
  */
-function i18n_variable_form_alter_settings(&$form, &$variables) {
+function i18n_variable_form_alter_settings(&$form, $variables) {
   $result = array();
   foreach (element_children($form) as $field) {
     if (count(element_children($form[$field])) && empty($form[$field]['#tree'])) {
       $result += i18n_variable_form_alter_settings($form[$field], $variables);
     }
     elseif (in_array($field, $variables)) {
-      // Add form field class: i18n-variable
-      $form[$field]['#attributes']['class'] = !empty($form[$field]['#attributes']['class']) ? $form[$field]['#attributes']['class'] . ' i18n-variable' : 'i18n-variable';
+      // Add form field class (i18n-variable) and description text.
+      $form[$field]['#attributes']['class'][] = 'i18n-variable';
       $form[$field]['#description'] = !empty($form[$field]['#description']) ? $form[$field]['#description'] : '';
       $form[$field]['#description'] .= ' <strong>'. t('This is a multilingual variable.') .'</strong>';
       // Addd field => name to result
@@ -132,23 +132,23 @@ function i18n_variable_form_alter_settings(&$form, &$variables) {
  */
 function i18n_variable_form_submit($form, &$form_state) {
   $op = isset($form_state['values']['op']) ? $form_state['values']['op'] : '';
-  $variables = i18n_variable_list();
-  $language = i18n_get_lang();
-  $is_default = $language == language_default('language');
-  foreach ($form_state['values'] as $key => $value) {
-    if (i18n_variable_list($key)) {
+  $language = i18n_variable_language();
+  $variables = array_keys($form['#i18n_variables']);
+  foreach ($variables as $name) {
+    if (isset($form_state['values'][$name])) {
       if ($op == t('Reset to defaults')) {
-        i18n_variable_del($key, $language);
+        i18n_variable_del($name, $language);
       }
       else {
+        $value = $form_state['values'][$name];
         if (is_array($value) && isset($form_state['values']['array_filter'])) {
           $value = array_keys(array_filter($value));
         }
-        i18n_variable_set($key, $value, $language);
+        i18n_variable_set($name, $value, $language->language);
       }
       // If current is default language, we allow global (without language) variables to be set too
-      if (!$is_default) {
-        unset($form_state['values'][$key]);
+      if ($language->language === language_default('language')) {
+        unset($form_state['values'][$name]);
       }
     }
   }
@@ -167,18 +167,15 @@ function i18n_variable_form_submit($form, &$form_state) {
  *   Language code.
  */
 function i18n_variable_set($name, $value, $langcode) {
-  global $conf, $i18n_conf;
+  global $conf;
+  $i18n_conf = &drupal_static('i18n_variable');
 
-  $serialized_value = serialize($value);
-  db_query("UPDATE {i18n_variable} SET value = '%s' WHERE name = '%s' AND language = '%s'", $serialized_value, $name, $langcode);
-  if (!db_affected_rows()) {
-    @db_query("INSERT INTO {i18n_variable} (name, language, value) VALUES ('%s', '%s', '%s')", $name, $langcode, $serialized_value);
-  }
+  db_merge('i18n_variable')->key(array('name' => $name, 'language' => $langcode))->fields(array('value' => serialize($value)))->execute();
 
   cache_clear_all('variables:'. $langcode, 'cache');
 
   $conf[$name] = $value;
-  $i18n_conf[$name] = $value;
+  $i18n_conf[$langcode][$name] = $value;
 }
 
 /**
@@ -205,7 +202,9 @@ function i18n_variable_del($name, $langcode) {
   global $conf;
   $i18n_conf = &drupal_static('i18n_variable');
 
-  db_query("DELETE FROM {i18n_variable} WHERE name = '%s' AND language='%s'", $name, $langcode);
+  db_query("DELETE FROM {i18n_variable} WHERE name = ':name' AND language=':language'", 
+    array(':name' => $name, ':language' => $langcode)
+  );
   cache_clear_all('variables:'. $langcode, 'cache');
   unset($conf[$name]);
   unset($i18n_conf[$name]);
@@ -233,7 +232,6 @@ function _i18n_variable_initialize($langcode) {
       cache_set($cacheid, $i18n_conf[$langcode]);
     }
   }
-
   return $i18n_conf[$langcode];
 }
 
