@@ -482,7 +482,7 @@ function i18nmenu_node_delete($node) {
       ->execute()
       ->fetchAllAssoc('mlid');
     foreach ($result as $m) {
-      _i18nmenu_delete_item($m['mlid']);
+      _i18nmenu_delete_item($m->mlid);
     }
 }
 

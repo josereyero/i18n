@@ -622,7 +622,7 @@ function i18nstrings_context($context, $string = NULL, $langcode = NULL, $format
     // Split the name in four parts, remaining elements will be in the last one
     $context = new Stdclass();
     $context->context = $context;
-    $parts = split(':', $context);
+    $parts = explode(':', $context);
     $context->textgroup = array_shift($parts);
     $context->type = array_shift($parts);
     $context->objectid = $parts ? array_shift($parts) : '';
