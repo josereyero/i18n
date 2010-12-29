@@ -5,6 +5,5 @@ dependencies[] = locale
 package = Multilanguage
 core = 7.x
 
-files[] = i18strings.module
-files[] = i18strings.install
-files[] = i18strings.admin.inc
+files[] = i18nstrings.admin.inc
+files[] = i18nstrings.inc
