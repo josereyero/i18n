@@ -303,7 +303,7 @@ function i18nstrings_translate_string($name, $string, $langcode) {
   // Search for existing translation (result will be cached in this function call)
   $translation = i18nstrings_get_string($context);
   // Add for l10n client if available
-  i18nstrings_add_l10n_client($langcode, $string, $translation, $context, FALSE);
+  i18nstrings_l10n_client_add($langcode, $string, $translation, $context, FALSE);
 
   return $translation ? $translation : $string;
 }
@@ -612,25 +612,28 @@ function i18nstrings_remove_string($context) {
  * @return
  *   Context object with textgroup, type, objectid, property and location names.
  */
-function i18nstrings_context($context, $string = NULL, $langcode = NULL, $format = 0) {
+function i18nstrings_context($name, $string = NULL, $langcode = NULL, $format = 0) {
   global $language;
   // Context may be already an object.
-  if (is_object($context)) {
-    return $context;
+  if (is_object($name)) {
+    return $name;
   }
   else {
     // Split the name in four parts, remaining elements will be in the last one
     $context = new Stdclass();
-    $context->context = $context;
-    $parts = explode(':', $context);
+    // Location will be the full string name
+    $context->location = $name;
+    // Now we take out 'textgroup'. Context will be the remaining string
+    $parts = explode(':', $name);
     $context->textgroup = array_shift($parts);
+    $context->context = implode(':', $parts);
+    
     $context->type = array_shift($parts);
     $context->objectid = $parts ? array_shift($parts) : '';
     // Ramaining elements glued again with ':'
     $context->property = $parts ? implode(':', $parts) : '';
-    // Store also source, format, location
+    // Store also source, format
     $context->format = $format;
-    $context->location = i18nstrings_location($context);
     $context->source = $string;
     $context->language = $langcode ? $langcode : $language->language;
     return $context;
@@ -701,18 +704,18 @@ function i18nstrings_location($context) {
  * Set string object into cache
  */
 function i18nstrings_cache_set($context) {
-  $strings = &drupal_static('i18nstrings');
+  $strings = &drupal_static('i18nstrings_cache');
   $context->cache = TRUE;
-  $strings[$context->language][$context->textgroup][$context->location] = $context;
+  $strings[$context->language][$context->textgroup][$context->context] = $context;
 }
 
 /**
  * Get string object from cache
  */
 function i18nstrings_cache_get($context) {
-  $strings = &drupal_static('i18nstrings');
-  if (isset($strings[$context->language][$context->textgroup][$context->location])) {
-    return $strings[$context->language][$context->textgroup][$context->location];
+  $strings = &drupal_static('i18nstrings_cache');
+  if (isset($strings[$context->language][$context->textgroup][$context->context])) {
+    return $strings[$context->language][$context->textgroup][$context->context];
   }
   else {
     // Store for next time, mark as cached
@@ -893,7 +896,7 @@ function i18nstrings_l10n_client_add($context) {
 
   // If current language add to l10n client list for later on page translation.
   // If langcode translation was disabled we are not supossed to reach here.
-  if ($language->language == $context->language && function_exists('l10_client_add_string_to_page')) {
+  if (($language->language == $context->language) && function_exists('l10_client_add_string_to_page')) {
     $translation = !empty($context->translation) ? $context->translation : TRUE;
     if (!$context->source == FALSE) {
       // This means it is a plain string, we don't need to check the format
