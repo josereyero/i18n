@@ -151,7 +151,7 @@ function i18n_node_link_alter(&$links, $node) {
   }
 
   if (!empty($node->tnid)) {
-    foreach (array_keys(i18n_node_language_list('extended')) as $langcode) {
+    foreach (i18n_node_language_list($node) as $langcode) {
       $index = 'node_translation_'. $langcode;
       if (!empty($links[$index])) {
         if ($language_support != LANGUAGE_SUPPORT_EXTENDED && $links[$index]['language']->enabled == 0) {
