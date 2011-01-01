@@ -269,8 +269,8 @@ function i18nstrings_default($name, $langcode = NULL, $default = '') {
   $langcode = $langcode ? $langcode : $language->language;
   $translation = NULL;
 
-  if ($translation = i18nstrings_translate_string($name, $string, $langcode)) {
-    return $translation->translation;
+  if ($translation = i18nstrings_translate_string($name, $default, $langcode)) {
+    return $translation;
   }
   elseif ($source = i18nstrings_get_source()) {
     return $source->source;
@@ -297,6 +297,9 @@ function _i18nstrings($name, $string, $langcode = NULL) {
  *   String in default language
  * @param $langcode
  *   Language code to get translation for
+ *
+ * @return
+ *   Translated string if available, otherwise $string
  */
 function i18nstrings_translate_string($name, $string, $langcode) {
   $context = i18nstrings_context($name, $string, $langcode);
@@ -305,7 +308,7 @@ function i18nstrings_translate_string($name, $string, $langcode) {
   // Add for l10n client if available
   i18nstrings_l10n_client_add($context);
 
-  return $translation ? $translation : $string;
+  return isset($translation->translation) ? $translation->translation : $string;
 }
 
 
@@ -324,7 +327,7 @@ function i18nstrings_translate_object($context, &$object, $properties = array(),
       $context->property = $property;
       $context->location = i18nstrings_location($context);
       if (!empty($object->$property)) {
-        $object->$property = i18nstrings_translate_string($context, $object->$property, $langcode);
+        $object->$property = i18nstrings_translate_string($context->location, $object->$property, $langcode);
       }
     }
   }
@@ -495,7 +498,6 @@ function i18nstrings_save_context($context) {
     return SAVED_UPDATED;
   }
   else {
-    // unset($context->lid);
     drupal_write_record('locales_source', $context, 'lid');
     drupal_write_record('i18n_strings', $context, 'lid');
     return SAVED_NEW;
@@ -511,13 +513,10 @@ function i18nstrings_save_context($context) {
  *   Context object if it exists.
  */
 function i18nstrings_get_source($context) {
-  return db_select('locales_target', 'l')
+  return db_select('locales_source', 'l')
     ->fields('l')
-    ->condition('s.lid', $context->lid)
+    ->condition('l.location', $context->location)
     ->execute()->fetchObject();
-  if ($source) {
-    return $source;
-  }
 }
 
 /**
@@ -535,7 +534,7 @@ function i18nstrings_get_source($context) {
  */
 function i18nstrings_get_string($context) {
   // First try the cache
-  if ($translation = i18nstrings_cache_get($context)) {
+  if ($translation = i18nstrings_cache_get($context) && isset($translation->translation)) {
     return $translation;
   }
   elseif ($translation = i18nstrings_translate_query($context)->execute()->fetchObject()) {
@@ -674,10 +673,13 @@ function i18nstrings_context_query($context) {
  * @return DatabaseQuery
  */
 function i18nstrings_translate_query($context) {
-  $query = i18nstrings_context_query($context);
+  $query = db_select('locales_source', 's');
   $query->leftJoin('locales_target', 't', 's.lid = t.lid');
-  $query->fields('t', array('translation'));
+  $query->leftJoin('i18n_strings', 'ins', 'ins.lid = t.lid');
+  $query->fields('t', array('translation', 'lid'));
+  $query->fields('ins', array('format'));
   $query->condition('t.language', $context->language);
+  $query->condition('s.location', $context->location);
   return $query;
 }
 

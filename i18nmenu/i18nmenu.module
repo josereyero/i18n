@@ -70,8 +70,7 @@ function i18nmenu_menu_link_alter(&$item) {
  */
 function i18nmenu_translated_menu_link_alter(&$item, $map) {
   if ($item['module'] == 'menu') {
-    $item['title'] = _i18nmenu_get_item_title($item);
-    $item['title'] = $item['title']->source;
+    $item['link_title'] = $item['title'] = _i18nmenu_get_item_title($item);
     $item['localized_options']['attributes']['title'] = _i18nmenu_get_item_description($item);
   }
 }
