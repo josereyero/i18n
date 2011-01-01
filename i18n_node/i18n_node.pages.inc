@@ -51,7 +51,7 @@ function i18n_node_translation_overview($node) {
       // No such translation in the set yet: help user to create it.
       $title = t('n/a');
       if (node_access('create', $node)) {
-        $options[] = l(t('add translation'), 'node/add/'. str_replace('_', '-', $node->type), array('query' => "translation=$node->nid&language=$language->language") + $params);
+        $options[] = l(t('add translation'), 'node/add/'. str_replace('_', '-', $node->type), array('query' => array('translation' => $node->nid, 'language' => $language->language)) + $params);
       }
       $status = t('Not translated');
     }
@@ -82,7 +82,7 @@ function i18n_node_select_translation($form_state, $node, $translations) {
   );
   foreach (language_list() as $language) {
     if ($language->language != $node->language) {
-      $trans_nid = isset($translations[$language->language]) ? $translations[$language->language]->nid : 0;
+      $trans_nid = isset($translations->language) ? $translations->tnid : 0;
       $form['translations']['nid'][$language->language] = array('#type' => 'value', '#value' => $trans_nid);
       $form['translations']['language'][$language->language] = array('#value' => $language->name);
       $form['translations']['node'][$language->language] = array(

@@ -1,0 +1,7 @@
+; $Id: i18nselect.info,v 1.1.2.1 2010/11/09 10:31:32 brucepearson Exp $
+
+name = Multilingual select
+description = API module for multilingual content selection
+dependencies[] = locale
+package = Multilanguage
+core = 7.x
