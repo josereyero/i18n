@@ -96,7 +96,7 @@ function i18nstrings_schema() {
     ),
     'primary key' => array('lid'),
     'indexes' => array(
-      'source_context' => array(array('source', 30), 'context'),
+      'source_context' => array('context'),
     ),
   );
   return $schema;

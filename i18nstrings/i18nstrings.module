@@ -303,7 +303,7 @@ function i18nstrings_translate_string($name, $string, $langcode) {
   // Search for existing translation (result will be cached in this function call)
   $translation = i18nstrings_get_string($context);
   // Add for l10n client if available
-  i18nstrings_l10n_client_add($langcode, $string, $translation, $context, FALSE);
+  i18nstrings_l10n_client_add($context);
 
   return $translation ? $translation : $string;
 }
@@ -360,7 +360,7 @@ function i18nstrings_update_string($name, $string, $format = 0) {
   $context = i18nstrings_context($name, $string, NULL, $format);
 
   if (isset($string)) {
-    return i18nstrings_add_string($context);
+    return i18nstrings_add_string($context, $string, $format);
   }
   else {
     return i18nstrings_remove_string($context);
@@ -465,7 +465,7 @@ function i18nstrings_add_string($name, $string, $format = NULL) {
 }
 
 /**
- * Check if input format is allowed for translation 
+ * Check if input format is allowed for translation
  *
  * @param $format
  *   Input format key or NULL if not format (will be allowed)
@@ -495,8 +495,9 @@ function i18nstrings_save_context($context) {
     return SAVED_UPDATED;
   }
   else {
-    drupal_write_record('locales_source', $context);
-    drupal_write_record('i18n_strings', $context);
+    // unset($context->lid);
+    drupal_write_record('locales_source', $context, 'lid');
+    drupal_write_record('i18n_strings', $context, 'lid');
     return SAVED_NEW;
   }
 }
@@ -510,8 +511,9 @@ function i18nstrings_save_context($context) {
  *   Context object if it exists.
  */
 function i18nstrings_get_source($context) {
-  $source = i18nstrings_context_query($context)
-    ->fields('s', array('*'))
+  return db_select('locales_target', 'l')
+    ->fields('l')
+    ->condition('s.lid', $context->lid)
     ->execute()->fetchObject();
   if ($source) {
     return $source;
@@ -627,7 +629,7 @@ function i18nstrings_context($name, $string = NULL, $langcode = NULL, $format = 
     $parts = explode(':', $name);
     $context->textgroup = array_shift($parts);
     $context->context = implode(':', $parts);
-    
+
     $context->type = array_shift($parts);
     $context->objectid = $parts ? array_shift($parts) : '';
     // Ramaining elements glued again with ':'
@@ -655,21 +657,20 @@ function i18nstrings_params($context) {
  * Get query conditions for this context.
  *
  * @param $context
- * 
+ *
  * @return DatabaseQuery
  */
 function i18nstrings_context_query($context) {
   return db_select('i18n_strings', 's')
     ->fields('s', array('lid', 'format'))
-    ->condition('s.textgroup', $context->textgroup)
-    ->condition('s.location', $context->location);
+    ->condition('s.textgroup', $context->textgroup);
 }
 
 /**
  * Get string translation
- * 
+ *
  * @param $context
- * 
+ *
  * @return DatabaseQuery
  */
 function i18nstrings_translate_query($context) {
