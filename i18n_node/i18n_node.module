@@ -297,21 +297,6 @@ function i18n_node_form_alter(&$form, $form_state, $form_id) {
 /**
  * Implements hook_theme().
  */
-function i18n_node_language_list($type = 'enabled', $field = 'name') {
-  switch ($type) {
-    case 'enabled':
-      return locale_language_list($field);
-
-    case 'extended':
-      $enabled = locale_language_list($field);
-      $defined = locale_language_list($field, TRUE);
-      return array_diff_assoc($defined, $enabled);
-  }
-}
-
-/**
- * Implements hook_theme().
- */
 function i18n_node_theme() {
   return array(
     'i18n_node_select_translation' => array(
