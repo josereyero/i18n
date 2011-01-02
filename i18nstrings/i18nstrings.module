@@ -99,15 +99,17 @@ function i18nstrings_help($path, $arg) {
  * Implements hook_menu().
  */
 function i18nstrings_menu() {
-  $items['admin/build/translate/refresh'] = array(
-    'title' => 'Refresh',
+  $items['admin/config/regional/translate/i18nstrings'] = array(
+    'title' => 'Strings',
+    'description' => 'Refresh user defined strings.',
     'weight' => 20,
     'type' => MENU_LOCAL_TASK,
-    'page callback' => 'i18nstrings_admin_refresh_page',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('i18nstrings_admin_refresh_form'),
     'file' => 'i18nstrings.admin.inc',
     'access arguments' => array('translate interface'),
   );
-  $items['admin/config/regional/i18n/strings'] = array(
+  $items['admin/config/regional/language/i18nstrings'] = array(
     'title' => 'String translation',
     'weight' => 20,
     'type' => MENU_LOCAL_TASK,
@@ -400,15 +402,13 @@ function i18nstrings_update_translation($context, $langcode, $translation) {
  * @return
  *   Update status.
  */
-function i18nstrings_add_string($name, $string, $format = NULL) {
-  $context = i18nstrings_context($name, $string, NULL, $format);
-
+function i18nstrings_add_string($context) {
   // Check if we have a source string.
   $source = i18nstrings_get_source($context);
   // Default return status if nothing happens
   $status = -1;
   // The string may not be allowed for translation depending on its format.
-  if (isset($format) && !i18nstrings_allowed_format($format)) {
+  if (isset($context->format) && !i18nstrings_allowed_format($context->format)) {
     if ($source) {
       // The format may have changed and it's not allowed now, delete the source string
       return i18nstrings_remove_string($context);
@@ -419,11 +419,11 @@ function i18nstrings_add_string($name, $string, $format = NULL) {
     }
   }
   if ($source) {
-    if ($source->source != $string) {
+    if ($source->source != $context->source) {
       // String has changed
       db_update('locales_source')
         ->fields(array(
-          'source' => $string,
+          'source' => $context->source,
       		'location' => $context->location,
         ))
         ->condition('lid', $source->lid)
@@ -434,7 +434,7 @@ function i18nstrings_add_string($name, $string, $format = NULL) {
         ->execute();
       $status = SAVED_UPDATED;
     }
-    elseif ($source->location != $location) {
+    elseif ($source->location != $context->location) {
       // It's not changed but it didn't have location set
       db_update('locales_source')
         ->fields(array('location' => $location))
@@ -446,6 +446,7 @@ function i18nstrings_add_string($name, $string, $format = NULL) {
     $context->lid = $source->lid;
   }
   else {
+    // We have no source string
     $context->lid = db_insert('locales_source')
       ->fields(array(
         'location' => $location,
@@ -460,7 +461,7 @@ function i18nstrings_add_string($name, $string, $format = NULL) {
     $status = SAVED_NEW;
   }
   // Update metadata
-  i18nstrings_save_context($context);
+  i18nstrings_save_context($context, $source);
   return $status;
 }
 
@@ -479,9 +480,15 @@ function i18nstrings_allowed_format($format = NULL) {
  * Save / update context metadata.
  *
  * There seems to be a race condition sometimes so skip errors, #277711
+ * 
+ * @param $context
+ *   Full string object to be saved
+ * @param $source
+ *   Source string object
  */
-function i18nstrings_save_context($context) {
-  if ($source = i18nstrings_get_source($context)) {
+function i18nstrings_save_context($context, $source = NULL) {
+  $source = $source ? $source : i18nstrings_get_source($context);
+  if ($source) {
     $context->lid = $source->lid;
     drupal_write_record('locales_source', $context, 'lid');
     drupal_write_record('i18n_strings', $context, 'lid');

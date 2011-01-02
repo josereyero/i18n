@@ -9,14 +9,15 @@ include_once './includes/locale.inc';
  * Admin page callbacks for the i18nstrings module.
  */
 function i18nstrings_admin_refresh_page() {
-  $output = '';
+  
   return drupal_get_form('i18nstrings_admin_refresh');
 }
 
 /**
  * Form callback. Refresh textgroups.
  */
-function i18nstrings_admin_refresh() {
+function i18nstrings_admin_refresh_form() {
+  module_load_include('inc', 'i18nstrings');
   // Select textgroup/s. Just the ones that have a 'refresh callback'
   $groups = module_invoke_all('locale', 'groups');
   unset($groups['default']);
@@ -55,7 +56,7 @@ function i18nstrings_admin_refresh() {
 /**
  * Form submission.
  */
-function i18nstrings_admin_refresh_submit($form, &$form_state) {
+function i18nstrings_admin_refresh_form_submit($form, &$form_state) {
   $op = isset($form_state['values']['op']) ? $form_state['values']['op'] : '';
   $groups = array_filter($form_state['values']['groups']);
   $languages = array_filter($form_state['values']['languages']);
@@ -121,6 +122,7 @@ function i18nstrings_admin_update($language, $groups) {
  * This has serious security implications so this form needs the 'administer filters' permission
  */
 function i18nstrings_admin_settings() {
+  module_load_include('inc', 'i18nstrings');
   include_once './includes/locale.inc';
   // As the user has administer filters permissions we get a full list here
   foreach (filter_formats() as $fid => $format) {
