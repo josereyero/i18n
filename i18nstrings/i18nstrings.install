@@ -14,22 +14,14 @@ function i18nstrings_install() {
   db_query("UPDATE {system} SET weight = 10 WHERE name = 'i18nstrings' AND type = 'module'");
   // Add a field to track whether a translation needs updating.
   db_add_field('locales_target', 'i18n_status', array('type' => 'int', 'not null' => TRUE, 'default' => 0));
-  // Add custom index to locales_source table.
-  db_add_index('locales_source', 'textgroup_location', array(array('textgroup', 30), array('location', 30)));
 }
 
 /**
  * Implements hook_uninstall().
  */
 function i18nstrings_uninstall() {
-  // @TODO locale table cleanup, think about it.
-  // Should we drop all strings for groups other than 'default' ?
   // Drop custom field.
   db_drop_field('locales_target', 'i18n_status');
-  // Drop custom index.
-  db_drop_index('locales_source', 'textgroup_location');
-  // May be a left over variable
-  variable_del('i18nstrings_update_skip');
 }
 
 /**
@@ -121,4 +113,5 @@ function i18nstrings_schema_alter(&$schema) {
  * Notes for update script
  */
 // Added fields: context, textgroup
-// Populate fields from old locale table
+// Populate fields from old locale table (textgroup, location)
+// Drop all indexes from locales_source

@@ -35,8 +35,8 @@ function i18nstrings_refresh_group($group, $delete = FALSE) {
     $query->leftJoin('i18n_strings', 'i', 's.lid = i.lid');
     $result = $query->execute()->fetchAll(PDO::FETCH_OBJ);
     foreach ($result as $source) {
-      db_delete('locales_target')->condition('lid', $source->lic)->execute();
-      db_delete('locales_source')->condition('lid', $source->lic)->execute();
+      db_delete('locales_target')->condition('lid', $source->lid)->execute();
+      db_delete('locales_source')->condition('lid', $source->lid)->execute();
     }
   }
 

@@ -69,9 +69,9 @@ function i18ncontent_locale_refresh() {
   foreach (node_type_get_types() as $type) {
     i18nstrings_update("nodetype:type:$type->type:name", $type->name);
     i18nstrings_update("nodetype:type:$type->type:title", $type->title_label);
-    i18nstrings_update("nodetype:type:$type->type:body", $type->body_label);
+    //i18nstrings_update("nodetype:type:$type->type:body", $type->body_label);
     i18nstrings_update("nodetype:type:$type->type:description", $type->description);
-    i18nstrings_update("nodetype:type:$info->type:help", $info->help);
+    i18nstrings_update("nodetype:type:$type->type:help", $type->help);
   }
   return TRUE; // Meaning it completed with no issues
 }
@@ -133,7 +133,7 @@ function i18ncontent_node_type($op, $info) {
     }
     i18nstrings_update("nodetype:type:$info->type:name", $info->name);
     i18nstrings_update("nodetype:type:$info->type:title", $info->title_label);
-    i18nstrings_update("nodetype:type:$info->type:body", $info->body_label);
+    //i18nstrings_update("nodetype:type:$info->type:body", $info->body_label);
     i18nstrings_update("nodetype:type:$info->type:description", $info->description);
     i18nstrings_update("nodetype:type:$info->type:help", $info->help);
   }
@@ -142,7 +142,7 @@ function i18ncontent_node_type($op, $info) {
     i18nstrings_remove("nodetype:type:$info->type:title");
     i18nstrings_remove("nodetype:type:$info->type:name");
     i18nstrings_remove("nodetype:type:$info->type:description");
-    i18nstrings_remove("nodetype:type:$info->type:body");
+    //i18nstrings_remove("nodetype:type:$info->type:body");
     i18nstrings_remove("nodetype:type:$info->type:help");
   }
 }
@@ -219,11 +219,11 @@ function i18ncontent_node_help_source($type) {
  * @param $type
  *   Node type name or full object
  */
-function i18ncontent_translate($type, $property, $source = NULL) {
+function i18ncontent_translate($type, $property, $source = NULL, $options = array()) {
   if (is_object($type)) {
-    return i18nstrings('nodetype:' . $type->type . ':' . $property, $type->$property);
+    return i18nstrings('nodetype:' . $type->type . ':' . $property, $type->$property, $options);
   }
   else {
-    return i18nstrings('nodetype:type:' . $type . ':' . $property, $source);
+    return i18nstrings('nodetype:type:' . $type . ':' . $property, $source, $options);
   }
 }
