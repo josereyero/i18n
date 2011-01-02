@@ -57,7 +57,7 @@ function i18nstrings_schema() {
         'length' => 255,
         'not null' => TRUE,
         'default' => '',
-        'description' => 'Full string ID for quick search: textgroup:type:objectid:property.',
+        'description' => 'Full string ID for quick search: type:objectid:property.',
       ),
       'objectid' => array(
         'type' => 'varchar',
