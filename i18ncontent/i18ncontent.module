@@ -15,6 +15,23 @@
  */
 
 /**
+ * Implements hook_block_view_MODULE_DELTA_alter().
+ * 
+ * Set translated help text for node/add pages, replace node_help() text.
+ */
+function i18ncontent_block_view_system_help_alter(&$block) {
+  $arg = drupal_help_arg(arg(NULL));
+  if ($arg[0] == 'node' && $arg[1] == 'add' && $arg[2]) {
+    if (($type = node_type_get_type(str_replace('-', '_', $arg[2]))) && !empty($type->help)) {
+      $help = i18ncontent_translate($type, 'help');
+      if ($help !== $type->help) {
+        $block['content'] = str_replace(filter_xss_admin($type->help), filter_xss_admin($help), $block['content']);
+      }
+    } 
+  } 
+}
+
+/**
  * Implements hook_help().
  */
 function i18ncontent_help($path, $arg) {
@@ -28,15 +45,6 @@ function i18ncontent_help($path, $arg) {
       $output .= '</ul>';
       $output .= '<p>'. t('To search and translate strings, use the <a href="@translate-interface">translation interface</a> pages.', array('@translate-interface' => url('admin/build/translate'))) .'</p>';
       return $output;
-  }
-  // Add translated help text for node add pages
-  if (!menu_get_object() && $arg[1] == 'add' && $arg[2]) {
-    $type = str_replace('-', '_', $arg[2]);
-    // Fetch default language node type help
-    $source = i18ncontent_node_help_source($type);
-    if ($help = i18nstrings("nodetype:type:$type:help", $source->source)) {
-      return '<p>'. filter_xss_admin($help) .'</p>';
-    }
   }
 }
 
@@ -63,11 +71,7 @@ function i18ncontent_locale_refresh() {
     i18nstrings_update("nodetype:type:$type->type:title", $type->title_label);
     i18nstrings_update("nodetype:type:$type->type:body", $type->body_label);
     i18nstrings_update("nodetype:type:$type->type:description", $type->description);
-    if ($type->help) {
-      i18nstrings_ts("nodetype:type:$type->type:help", $type->help, NULL, TRUE);
-      $type->help = '';
-      node_type_save($type);
-    }
+    i18nstrings_update("nodetype:type:$info->type:help", $info->help);
   }
   return TRUE; // Meaning it completed with no issues
 }
@@ -75,6 +79,7 @@ function i18ncontent_locale_refresh() {
 /**
  * Implements hook_form_alter().
  */
+/*
 function i18ncontent_form_alter(&$form, $form_state, $form_id) {
   switch ($form_id) {
     case 'node_type_form':
@@ -116,7 +121,7 @@ function i18ncontent_form_alter(&$form, $form_state, $form_id) {
       break;
   }
 }
-
+*/
 /**
  * Implements hook_node_type().
  */
@@ -130,14 +135,7 @@ function i18ncontent_node_type($op, $info) {
     i18nstrings_update("nodetype:type:$info->type:title", $info->title_label);
     i18nstrings_update("nodetype:type:$info->type:body", $info->body_label);
     i18nstrings_update("nodetype:type:$info->type:description", $info->description);
-    if (empty($info->help)) {
-      i18nstrings_remove("nodetype:type:$info->type:help");
-    } else {
-      i18nstrings_ts("nodetype:type:$info->type:help", $info->help, $language, TRUE);
-      // Remove the 'help' text from {node_type} to avoid both the
-      // original text and translation appearing in hook_help().
-      db_query("UPDATE {node_type} set help = '' WHERE type = '%s'", $info->type);
-    }
+    i18nstrings_update("nodetype:type:$info->type:help", $info->help);
   }
 
   if ($op == 'delete') {
@@ -174,17 +172,20 @@ function i18ncontent_menu_alter(&$menu) {
 function i18ncontent_node_add_page() {
   $item = menu_get_item();
   $content = system_admin_menu_block($item);
-  // The node type isn't available in the menu path, but 'title' is equivalent
-  // to the human readable name, so check this against node_get_types() to get
-  // the correct values. First we build an array of node types indexed by names
-  $type_names = array_flip(node_get_types('names'));
-  foreach ($content as $key => $item) {
-    if ($type = $type_names[$item['link_title']]){
-      // We just need to translate the description, the title is translated by the menu system
-      $content[$key]['description'] = i18nstrings("nodetype:type:$type:description", $item['description']);
-    }
+  // Bypass the node/add listing if only one content type is available.
+  if (count($content) == 1) {
+    $item = array_shift($content);
+    drupal_goto($item['href']);
   }
-  return theme('node_add_list', $content);
+  foreach ($content as &$item) {
+    // Type machine name will be the third part of the path
+    $parts = explode('/', $item['path']);
+    $type = $parts[2];
+    // We just need to translate the description, the title is translated by the menu system
+    // The string will be filtered (xss_admin) on the theme layer
+    $item['description'] = i18ncontent_translate($type, 'description', $item['description']);
+  }
+  return theme('node_add_list', array('content' => $content));
 }
 
 /**
@@ -195,16 +196,10 @@ function i18ncontent_node_add_page() {
 function i18ncontent_node_add($type) {
   global $user;
 
-  $types = node_get_types();
-  $type = isset($type) ? str_replace('-', '_', $type) : NULL;
-  // If a node type has been specified, validate its existence.
-  if (isset($types[$type]) && node_access('create', $type)) {
-    // Initialize settings:
-    $node = array('uid' => $user->uid, 'name' => (isset($user->name) ? $user->name : ''), 'type' => $type, 'language' => '');
-
-    drupal_set_title(t('Create @name', array('@name' => i18nstrings("nodetype:type:$type:name", $types[$type]->name))));
-    $output = drupal_get_form($type .'_node_form', $node);
-  }
+  $types = node_type_get_types();
+  $node = (object) array('uid' => $user->uid, 'name' => (isset($user->name) ? $user->name : ''), 'type' => $type, 'language' => LANGUAGE_NONE);
+  drupal_set_title(t('Create @name', array('@name' => i18ncontent_translate($types[$type], 'name'))), PASS_THROUGH);
+  $output = drupal_get_form($type . '_node_form', $node);
 
   return $output;
 }
@@ -216,4 +211,19 @@ function i18ncontent_node_help_source($type) {
   $context = i18nstrings_context("nodetype:type:$type:help");
   $source = i18nstrings_get_source($context);
   return $source;
+}
+
+/**
+ * Shorthand for translating node type strings
+ * 
+ * @param $type
+ *   Node type name or full object
+ */
+function i18ncontent_translate($type, $property, $source = NULL) {
+  if (is_object($type)) {
+    return i18nstrings('nodetype:' . $type->type . ':' . $property, $type->$property);
+  }
+  else {
+    return i18nstrings('nodetype:type:' . $type . ':' . $property, $source);
+  }
 }
