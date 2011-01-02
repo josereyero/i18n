@@ -684,35 +684,6 @@ function i18nstrings_params($context) {
 }
 
 /**
- * Get query conditions for this context.
- *
- * @param $context
- * 
- * @return DatabaseQuery
- */
-function i18nstrings_context_query($context) {
-  return db_select('i18n_strings', 's')
-    ->fields('s', array('lid', 'format'))
-    ->condition('s.textgroup', $context->textgroup)
-    ->condition('s.context', $context->context);
-}
-
-/**
- * Get string translation
- * 
- * @param $context
- * 
- * @return DatabaseQuery
- */
-function i18nstrings_translate_query($context) {
-  $query = i18nstrings_context_query($context);
-  $query->leftJoin('locales_target', 't', 's.lid = t.lid');
-  $query->fields('t', array('translation'));
-  $query->condition('t.language', $context->language);
-  return $query;
-}
-
-/**
  * Get location string from context.
  *
  * Returns the location for the locale table for a string context.
@@ -750,9 +721,7 @@ function i18nstrings_cache_get($context) {
     return $strings[$context->language][$context->textgroup][$context->context];
   }
   else {
-    // Store for next time, mark as cached
-    i18nstrings_cache_set($context);
-    return $context;
+    return NULL;
   }
 }
 
@@ -813,7 +782,7 @@ function i18nstrings($name, $default, $options = array()) {
  * This function is intended to return translations for plain strings that have NO input format
  *
  * @param $name
- *   Textgroup and location glued with ':'
+ *   Textgroup and context glued with ':'
  * @param $string
  *   String in default language
  * @param $options
@@ -830,7 +799,7 @@ function i18nstrings_translate($name, $string, $options = array()) {
     return i18nstrings_format($translation, $options);
   }
   else {
-    return i18nstrings_format($string, $options);
+    return i18nstrings_format($context, $options);
   }
 }
 
@@ -842,7 +811,7 @@ function i18nstrings_translate($name, $string, $options = array()) {
  * @param $options
  *   Array with aditional options
  */
-function i18nstrings_translate_string($i18nstring, $options) {
+function i18nstrings_translate_string($i18nstring, $options = array()) {
   $i18nstring->language = isset($options['langcode']) ? $options['langcode'] : i18nstrings_language()->language;
   // Search for existing translation (result will be cached in this function call)
   if ($translation = i18nstrings_get_translation($i18nstring)) {
@@ -859,7 +828,7 @@ function i18nstrings_translate_string($i18nstring, $options) {
 function i18nstrings_format($context, $options = array()) {
   if (!empty($context->translation)) {
     $string = $context->translation;
-    if (isset($context->format)) {
+    if (!empty($context->format)) {
       $string = check_markup($string, $context->format, $options['langcode'], FALSE);
     }
     if (isset($options['filter'])) {
