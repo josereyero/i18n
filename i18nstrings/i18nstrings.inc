@@ -4,44 +4,280 @@
  *   API for internationalization strings
  */
 
-
 /**
- * Refresh all user defined strings for a given text group.
- *
- * @param $group
- *   Text group to refresh
- * @param $delete
- *   Optional, delete existing (but not refresed, strings and translations)
- * @return Boolean
- *   True if the strings have been refreshed successfully. False otherwise.
+ * Class wrapper for i18nstrings API
  */
-function i18nstrings_refresh_group($group, $delete = FALSE) {
-  // Check for the refresh callback
-  $refresh_callback = i18nstrings_group_info($group, 'refresh callback');
-  if (!$refresh_callback) {
-    return FALSE;
+class i18nstrings {
+  /**
+   * Add source string to the locale tables for translation.
+   *
+   * It will also add data into i18n_strings table for faster retrieval and indexing of groups of strings.
+   * Some string context doesn't have a numeric oid (I.e. content types), it will be set to zero.
+   *
+   * This function checks for already existing string without context for this textgroup and updates it accordingly.
+   * It is intended for backwards compatibility, using already created strings.
+   *
+   * @param $name
+   *   Textgroup and location glued with ':'
+   * @param $string
+   *   Source string (string in default language)
+   * @param $format
+   *   Input format, for strings that will go through some filter
+   * @return
+   *   Update status.
+   */
+  protected static function add_string($context, $options = array()) {
+    $options += array('watchdog' => TRUE);
+    // Default return status if nothing happens
+    $status = -1;
+    // The string may not be allowed for translation depending on its format.
+    if (!i18nstrings_check_string($context, $options)) {
+      // The format may have changed and it's not allowed now, delete the source string
+      return self::remove_string($context, $options);
+    }
+    elseif ($source = self::get_source($context)) {
+      $context->lid = $source->lid;
+      if ($source->source != $context->source || $source->location != $context->location) {
+        // String has changed, mark translations for update
+        $status = self::save_source($source);
+        db_update('locales_target')
+          ->fields(array('i18n_status' => I18NSTRINGS_STATUS_UPDATE))
+          ->condition('lid', $source->lid)
+          ->execute();
+      }
+    }
+    else {
+      // We have no source string, create it
+      $status = self::save_source($context);
+    }
+    // Update metadata and log to watchdog
+    self::save_context($context, $source);
+  
+    if ($options['watchdog']) {
+      $params = i18nstrings_params($context);
+      switch ($status) {
+        case SAVED_UPDATED:
+          watchdog('i18nstrings', 'Updated string %location for textgroup %textgroup: %string', $params);
+          break;
+        case SAVED_NEW:
+          watchdog('i18nstrings', 'Created string %location for text group %textgroup: %string', $params);
+          break;
+      }     
+    }  
+    return $status;
   }
-  // Delete data from i18n_strings so it is recreated
-  db_query("DELETE FROM {i18n_strings} WHERE lid IN (SELECT lid FROM {locales_source} WHERE textgroup = :textgroup)", array(':textgroup' => $group));
-
-  $result = call_user_func($refresh_callback);
-
-  // Now delete all source strings that were not refreshed
-  if ($result && $delete) {
-    $query = db_select('locales_source', 's')
-      ->fields('s')
-      ->condition('s.textgroup', $group)
-      ->condition('i.lid', NULL);
-    $query->leftJoin('i18n_strings', 'i', 's.lid = i.lid');
-    $result = $query->execute()->fetchAll(PDO::FETCH_OBJ);
-    foreach ($result as $source) {
+  /**
+   * Set string object into cache
+   */
+  protected static function cache_set($context) {
+    $strings = &drupal_static('i18nstrings_cache');
+    $context->cache = TRUE;
+    $strings[$context->language][$context->textgroup][$context->context] = $context;
+  }
+  
+  /**
+   * Get string object from cache
+   */
+  protected static function cache_get($context) {
+    $strings = &drupal_static('i18nstrings_cache');
+    if (isset($strings[$context->language][$context->textgroup][$context->context])) {
+      return $strings[$context->language][$context->textgroup][$context->context];
+    }
+    else {
+      return NULL;
+    }
+  }  
+  /**
+   * Check if string is ok for translation
+   */
+  protected static function check_string($i18nstring, $options = array()) {
+    $options += array('messages' => FALSE, 'watchdog' => TRUE);
+    if (isset($i18nstring->format) && !i18nstrings_allowed_format($i18nstring->format)) {
+      // This format is not allowed, so we remove the string, in this case we produce a warning
+      drupal_set_message(t('The string %location for textgroup %textgroup is not allowed for translation because of its input format.', i18nstrings_params($i18nstring)), 'warning');
+      return FALSE;
+    }
+    else {
+      return TRUE;
+    }
+  }
+  /**
+   * Get source string provided a string context.
+   *
+   * @param $context
+   *   Context string or object.
+   * @return
+   *   Context object if it exists.
+   */
+  protected static function get_source($context) {
+    // Search the database using lid if we've got it or textgroup, context otherwise
+    $query = db_select('locales_source', 's')->fields('s');
+    if (!empty($context->lid)) {
+      $query->condition('s.lid', $context->lid);
+    }
+    else {
+      $query->condition('s.textgroup', $context->textgroup);
+      $query->condition('s.context', $context->context);
+    }
+  }
+  /**
+   * Get translation from the database. Full object with input format.
+   *
+   * This one doesn't return anything if we don't have the full i18n strings data there
+   * to prevent missing data resulting in missing input formats
+   */
+  protected static function get_translation($context) {
+    // First try the cache
+    if ($translation = self::cache_get($context)) {
+      return $translation->translation === FALSE ? NULL : $translation;
+    }
+    $query = self::query_string($context);
+    $query->leftJoin('locales_target', 't', 's.lid = t.lid');
+    $query->fields('t', array('translation', 'i18n_status'));
+    $query->condition('t.language', $context->language);    
+    // Speed up the query, we just need a row
+    $query->range(0, 1);
+  
+    if ($translation = $query->execute()->fetchObject()) {
+      $translation->language = $context->language;
+      self::cache_set($translation);
+      return $translation;
+    }
+    else {
+      // Set on the cache so we don't search again
+      $context->translation = FALSE;
+      self::cache_set($context);
+      return NULL;
+    }
+  }  
+  /**
+   * Get string source object
+   *
+   * @param $context
+   *   Context string or object.
+   *
+   * @return
+   *   - Translation string as object if found.
+   *   - FALSE if no translation
+   *
+   */
+  protected static function get_string($context) {
+    return self::query_string($context)->execute()->fetchObject();
+  }
+  
+  /**
+   * Build query for i18n_strings table
+   */
+  protected static function query_string($context) {
+    // Search the database using lid if we've got it or textgroup, context otherwise
+    $query = db_select('i18n_strings', 's')->fields('s');
+    if (!empty($context->lid)) {
+      $query->condition('s.lid', $context->lid);
+    }
+    else {
+      $query->condition('s.textgroup', $context->textgroup);
+      $query->condition('s.context', $context->context);
+    }
+    return $query;  
+  }
+  
+  /**
+   * Remove string object.
+   */
+  public static function remove_string($i18nstring, $options = array()) {
+    $options += array('watchdog' => TRUE);
+    if ($source = self::get_source($i18nstring)) {
       db_delete('locales_target')->condition('lid', $source->lid)->execute();
+      db_delete('i18n_strings')->condition('lid', $source->lid)->execute();
       db_delete('locales_source')->condition('lid', $source->lid)->execute();
+      if ($options['watchdog']) {
+        watchdog('i18nstrings', 'Deleted string %location for textgroup %textgroup: %string', i18nstrings_params($i18nstring));
+      } 
+      return SAVED_DELETED;
+    }
+  }
+  /**
+   * Save / update context metadata.
+   *
+   * There seems to be a race condition sometimes so skip errors, #277711
+   * 
+   * @param $context
+   *   Full string object to be saved
+   * @param $source
+   *   Source string object
+   */
+  protected static function save_context($context, $source = NULL) {
+    $source = $source ? $source : self::get_source($context);
+    if ($source) {
+      $context->lid = $source->lid;
+      drupal_write_record('i18n_strings', $context, 'lid');
+      if ($context->source !== $source->source) {
+        // Mark translations as need update
+        db_update('locales_target')
+          ->condition('lid', $context->lid)
+          ->fields(array('i18n_status' => I18NSTRINGS_STATUS_UPDATE))
+          ->execute();
+      }
+      return SAVED_UPDATED;
+    }
+    else {
+      self::save_source($context);
+      drupal_write_record('i18n_strings', $context);
+      return SAVED_NEW;
     }
   }
 
-  cache_clear_all('locale:'. $group .':', 'cache', TRUE);
-  return $result;
+  /**
+   * Save source string (create / update)
+   */
+  protected static function save_source($source) {
+    if (!isset($source->version)) {
+      $source->version = 1;
+    }
+    return drupal_write_record('locales_source', $source, !empty($source->lid) ? 'lid' : array());
+  }
+
+
+  /**
+   * Translate string object
+   * 
+   * @param $i18nstring
+   *   String object
+   * @param $options
+   *   Array with aditional options
+   */
+  public static function translate_string($i18nstring, $options = array()) {
+    $i18nstring->language = isset($options['langcode']) ? $options['langcode'] : i18nstrings_language()->language;
+    // Search for existing translation (result will be cached in this function call)
+    if ($translation = self::get_translation($i18nstring)) {
+      return $translation;
+    }
+    else {
+      return $i18nstring;
+    }
+  }  
+  /**
+   * Update / create / remove string.
+   *
+   * @param $name
+   *   String context.
+   * @pram $string
+   *   New value of string for update/create. May be empty for removing.
+   * @param $format
+   *   Input format, that must have been checked against allowed formats for translation
+   * @return status
+   *   SAVED_UPDATED | SAVED_NEW | SAVED_DELETED
+   */
+  public static function update_string($i18nstring, $options = array()) {
+    if (!empty($i18nstring->source)) {
+      $status = self::add_string($i18nstring, $options);
+    }
+    else {
+      $status = self::remove_string($i18nstring, $options);
+    }
+    return $status;
+  }
+  
 }
 
 /**

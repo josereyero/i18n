@@ -162,3 +162,42 @@ function i18nstrings_admin_settings() {
   $form['array_filter'] = array('#type' => 'value', '#value' => TRUE);
   return system_settings_form($form);
 }
+
+/**
+ * Refresh all user defined strings for a given text group.
+ *
+ * @param $group
+ *   Text group to refresh
+ * @param $delete
+ *   Optional, delete existing (but not refresed, strings and translations)
+ * @return Boolean
+ *   True if the strings have been refreshed successfully. False otherwise.
+ */
+function i18nstrings_refresh_group($group, $delete = FALSE) {
+  // Check for the refresh callback
+  $refresh_callback = i18nstrings_group_info($group, 'refresh callback');
+  if (!$refresh_callback) {
+    return FALSE;
+  }
+  // Delete data from i18n_strings so it is recreated
+  db_query("DELETE FROM {i18n_strings} WHERE lid IN (SELECT lid FROM {locales_source} WHERE textgroup = :textgroup)", array(':textgroup' => $group));
+
+  $result = call_user_func($refresh_callback);
+
+  // Now delete all source strings that were not refreshed
+  if ($result && $delete) {
+    $query = db_select('locales_source', 's')
+      ->fields('s')
+      ->condition('s.textgroup', $group)
+      ->condition('i.lid', NULL);
+    $query->leftJoin('i18n_strings', 'i', 's.lid = i.lid');
+    $result = $query->execute()->fetchAll(PDO::FETCH_OBJ);
+    foreach ($result as $source) {
+      db_delete('locales_target')->condition('lid', $source->lid)->execute();
+      db_delete('locales_source')->condition('lid', $source->lid)->execute();
+    }
+  }
+
+  cache_clear_all('locale:'. $group .':', 'cache', TRUE);
+  return $result;
+}
