@@ -58,6 +58,18 @@ define('I18NSTRINGS_STATUS_UPDATE', 1);
 define('I18NSTRINGS_STATUS_DELETE', 2);
 
 /**
+ * Get textgroup handler
+ */
+function i18nstrings_textgroup($textgroup) {
+  $groups = &drupal_static(__FUNCTION__);
+  if (!isset($groups[$textgroup])) {
+    $class = i18nstrings_info($textgroup, 'class', 'i18nstrings_default');
+    $groups[$textgroup] = new $class($textgroup);
+  }
+  return $groups[$textgroup];
+}
+
+/**
  * Implements hook_help().
  */
 function i18nstrings_help($path, $arg) {
@@ -304,118 +316,21 @@ function i18nstrings_update_object($context, $object, $properties = array()) {
  *   - 'messages', Whether to print out status messages
  */
 function i18nstrings_update($name, $string, $options = array()) {
-  $options += array('format' => 0, 'messages' => TRUE, 'watchdog' => TRUE);
-  $context = i18nstrings_context($name, $string, $options);
-  if (!i18nstrings::check_string($context, $options)) {
-    $status = i18nstrings_remove($name, $string, $options);
-  }
-  else {
-    $status = i18nstrings::update_string($context, $options);
-  }
-  if ($options['messages']) {
-    $params = i18nstrings_params($context, $string);
-    switch ($status) {
-      case SAVED_UPDATED:
-        drupal_set_message(t('Updated string %location for textgroup %textgroup: %string', $params));
-        break;
-      case SAVED_NEW:
-        drupal_set_message(t('Created string %location for text group %textgroup: %string', $params));
-        break;
-    }     
-  }
-  return $status;
+  list($textgroup, $context) = i18nstrings_context($name);
+  return i18nstrings_textgroup($textgroup)->update($context, $string, $options);
 }
 
 /**
- * Update string translation.
+ * Convert string name into textgroup and string context
+ * 
+ * @param $name
+ *   Array or string concatenated with ':' that contains textgroup and string context
  */
-function i18nstrings_update_translation($context, $langcode, $translation) {
-  if ($source = i18nstrings_get_source($context, $translation)) {
-    db_insert('locales_target')
-      ->fields(array(
-        'lid' => $source->lid,
-        'language' => $langcode,
-        'translation' => $translation,
-      ))
-      ->execute();
-  }
-}
-
-/**
- * Check if input format is allowed for translation 
- *
- * @param $format
- *   Input format key or NULL if not format (will be allowed)
- */
-function i18nstrings_allowed_format($format = NULL) {
-  $allowed_formats = variable_get('i18nstrings_allowed_formats', array(variable_get('filter_default_format', 1)));
-  return !isset($format) || in_array($format, $allowed_formats);
-}
-
-/**
- * Convert context string in a context object.
- *
- * Example:
- *   'taxonomy:term:1:name'
- *
- * will become a $context object where
- *   $context->textgroup = 'taxonomy';
- *   $context->type = 'term';
- *   $context->objectid = 1;
- *   $context->property = 'name';
- *
- * Examples:
- *  'taxonomy:title' -> (taxonomy, title, 0, 0)
- *  'nodetype:type:[type]:name'
- *  'nodetype:type:[type]:description'
- *  'profile:category'
- *  'profile:field:[fid]:title'
- *
- * When we don't have 'objectid' or 'property', like for 'profile:category' we need to use
- * the string itself as a search key, so we store it in $context->source
- *
- * If the name has more than 4 elements glued by ':' we add the remaining ones into property
- *
- * @param $context
- *   Context string or object.
- * @param $string
- *   For some textgroups and objects that don't have ids we use the string itself as index.
- * @param $options
- *   An associative array of additional options, with the following keys:
- *   - 'langcode' (defaults to the current language) The language code to translate to a language other than what is used to display the page.
- *   - 'format' Input format to apply to the resulting string
- *   These properties can also override any of the string properties (textgroup, context...)
- * @return
- *   Context object with textgroup, type, objectid, property and location names.
- */
-function i18nstrings_context($name, $string = NULL, $options = array()) {
-  global $language;
-  // Context may be already an object.
-  if (is_object($name)) {
-    return $name;
-  }
-  else {
-    // Set at least the default language to translate to
-    $context = new Stdclass();
-    // Location will be the full string name
-    $context->location = $name;
-    $context->source = $string;
-    // Split the name in four parts, remaining elements will be in the last one
-    // Now we take out 'textgroup'. Context will be the remaining string
-    $parts = explode(':', $name);
-    $context->textgroup = array_shift($parts);
-    $context->context = implode(':', $parts);
-    $context->type = array_shift($parts);
-    $context->objectid = $parts ? array_shift($parts) : '';
-    $context->objectkey = (int)$context->objectid;
-    // Ramaining elements glued again with ':'
-    $context->property = $parts ? implode(':', $parts) : '';
-    // Set options into the context object.
-    foreach ($options as $name => $value) {
-      $context->$name = $value;
-    }
-    return $context;
-  }
+function i18nstrings_context($name) {
+  $parts = is_array($name) ? $name : split(':', $name);
+  $textgroup = array_shift($parts);
+  $context = $parts;
+  return array($textgroup, $context);
 }
 
 /**
@@ -445,17 +360,6 @@ function i18nstrings_info($group = NULL, $property = NULL, $default = NULL) {
 }
 
 /**
- * Get message parameters from context and string.
- */
-function i18nstrings_params($context) {
-  return array(
-    '%location' => i18nstrings_location($context),
-    '%textgroup' => $context->textgroup,
-    '%string' => isset($context->source) ? $context->source : t('[empty string]'),
-  );
-}
-
-/**
  * @ingroup i18napi
  * @{
  */
@@ -464,7 +368,7 @@ function i18nstrings_params($context) {
  * Translate or update user defined string.
  *
  * @param $name
- *   Textgroup and location glued with ':'.
+ *   Textgroup and context glued with ':'.
  * @param $default
  *   String in default language. Default language may or may not be English.
  * @param $options
@@ -478,13 +382,13 @@ function i18nstrings_params($context) {
  * @return $string
  *   Translated string, $string if not found
  */
-function i18nstrings($name, $default, $options = array()) {
+function i18nstrings($name, $string, $options = array()) {
   $options += array('translate' => TRUE, 'update' => FALSE);
   if ($options['update']) {
-    $result = i18nstrings_update($name, $default, $options);
+    $result = i18nstrings_update($name, $string, $options);
   }
   if ($options['translate']) {
-    $result = i18nstrings_translate($name, $default, $options);
+    $result = i18nstrings_translate($name, $string, $options);
   }
   return $result;
 }
@@ -499,38 +403,44 @@ function i18nstrings($name, $default, $options = array()) {
  * @param $string
  *   String in default language
  * @param $options
- *   Language code to get translation for
+ *   An associative array of additional options, with the following keys:
+ *   - 'langcode' (defaults to the current language) The language code to translate to a language other than what is used to display the page.
+ *   - 'filter' Formatting or filtering callback to apply to the translated string only
+ *   - 'callback' Callback to apply to the result (both to translated or untranslated string
  */
 function i18nstrings_translate($name, $string, $options = array()) {
   $options += array('langcode' => i18nstrings_language()->language);
-  $context = i18nstrings_context($name, $string, $options);
+  list($textgroup, $context) = i18nstrings_context($name);
   // If language is default, just return
   if (i18nstrings_translate_langcode($options['langcode'])) {
-    $translation = i18nstrings::translate_string($context, $options);
+    $translation = i18nstrings_textgroup($textgroup)->translate($context, $string, $options);
     // Add for l10n client if available, we pass translation object that contains the format
     i18nstrings_l10n_client_add($translation, $options);
     return i18nstrings_format($translation, $options);
   }
   else {
-    return i18nstrings_format($context, $options);
+    return i18nstrings_format($string, $options);
   }
 }
 
 /**
- * Format the resulting translation
+ * Format the resulting translation or the default string applying callbacks
  */
-function i18nstrings_format($context, $options = array()) {
-  if (!empty($context->translation)) {
-    $string = $context->translation;
-    if (!empty($context->format)) {
-      $string = check_markup($string, $context->format, $options['langcode'], FALSE);
+function i18nstrings_format($i18nstring, $options = array()) {
+  if (is_string($i18nstring)) {
+    $string = $i18nstring;
+  }
+  elseif (!empty($i18nstring->translation)) {
+    $string = $i18nstring->translation;
+    if (!empty($i18nstring->format)) {
+      $string = check_markup($string, $i18nstring->format, $options['langcode'], FALSE);
     }
     if (isset($options['filter'])) {
       $string = call_user_func($options['filter'], $string);
     }
   }
   else {
-    $string = isset($context->source) ? $context->source : '';
+    $string = isset($i18nstring->source) ? $i18nstring->source : '';
   }
   // Apply callback to any of the strings
   if ($string && isset($options['callback'])) {
@@ -586,18 +496,15 @@ function i18nstrings_string($name, $default, $options = array()) {
  * there are some exceptions (like profile categories) for which we need to use the
  * source string itself as a search key.
  *
- * @param $name
- *   Textgroup and location glued with ':'.
+ * @param $context
+ *   String context
  * @param $string
  *   Optional source string (string in default language).
  */
-function i18nstrings_remove($name, $string = NULL, $options = array()) {
-  $options += array('messages' => TRUE);
-  $context = i18nstrings_context($name, $string, $options);
-  $status = i18nstrings::remove_string($context, $options);
-  if ($options['messages'] && $status === SAVED_DELETED) {
-    drupal_set_message(t('Deleted string %location for textgroup %textgroup: %string', i18nstrings_params($context)));
-  }
+function i18nstrings_remove($textgroup, $context, $string = NULL, $options = array()) {
+
+  $status = i18nstrings($textgroup)->remove($context, $string, $options);
+
   return $status;
 }
 

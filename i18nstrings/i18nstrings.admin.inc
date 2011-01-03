@@ -5,15 +5,6 @@
 include_once './includes/locale.inc';
 
 /**
- * @file
- * Admin page callbacks for the i18nstrings module.
- */
-function i18nstrings_admin_refresh_page() {
-  
-  return drupal_get_form('i18nstrings_admin_refresh');
-}
-
-/**
  * Form callback. Refresh textgroups.
  */
 function i18nstrings_admin_refresh_form() {
@@ -22,7 +13,7 @@ function i18nstrings_admin_refresh_form() {
   $groups = module_invoke_all('locale', 'groups');
   unset($groups['default']);
   foreach (array_keys($groups) as $key) {
-    if (!i18nstrings_group_info($key, 'refresh callback')) {
+    if (!i18nstrings_info($key, 'refresh callback')) {
       unset($groups[$key]);
     }
   }
@@ -179,25 +170,29 @@ function i18nstrings_refresh_group($group, $delete = FALSE) {
   if (!$refresh_callback) {
     return FALSE;
   }
-  // Delete data from i18n_strings so it is recreated
-  db_query("DELETE FROM {i18n_strings} WHERE lid IN (SELECT lid FROM {locales_source} WHERE textgroup = :textgroup)", array(':textgroup' => $group));
+  // Mark data on locales_source setting version = 0
+  db_update('locales_source')
+    ->fields(array('version' => 0))
+    ->condition('textgroup', $group)
+    ->execute();
 
   $result = call_user_func($refresh_callback);
 
-  // Now delete all source strings that were not refreshed
+  // Now delete all source strings that were not refreshed (they don't have a row in i18n_strings)
   if ($result && $delete) {
-    $query = db_select('locales_source', 's')
-      ->fields('s')
-      ->condition('s.textgroup', $group)
-      ->condition('i.lid', NULL);
-    $query->leftJoin('i18n_strings', 'i', 's.lid = i.lid');
-    $result = $query->execute()->fetchAll(PDO::FETCH_OBJ);
-    foreach ($result as $source) {
-      db_delete('locales_target')->condition('lid', $source->lid)->execute();
-      db_delete('locales_source')->condition('lid', $source->lid)->execute();
+    $lids = db_select('locales_source', 's')
+      ->fields('s', array('lid'))
+      ->condition('textgroup', $group)
+      ->condition('version', 0)
+      ->execute()
+      ->fetchCol();
+
+    if ($lids) {
+      drupal_set_message(t('Performing cleanup for text group %textgroup, deleting @count left over strings.', array('%textgroup' => $group, '@count' => count($lids))));
+      db_delete('locales_target')->condition('lid', $lids)->execute();
+      db_delete('locales_source')->condition('lid', $lids)->execute();
+      db_delete('i18n_strings')->condition('lid', $lids)->execute();    
     }
   }
-
-  cache_clear_all('locale:'. $group .':', 'cache', TRUE);
   return $result;
 }
