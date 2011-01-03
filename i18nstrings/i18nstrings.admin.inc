@@ -139,7 +139,7 @@ function i18nstrings_admin_settings() {
   $textgroups = module_invoke_all('locale', 'groups');
   unset($textgroups['default']);
   foreach (array_keys($textgroups) as $group) {
-    $format = i18nstrings_group_info($group, 'format');
+    $format = i18nstrings_info($group, 'format');
     if (isset($format)) {
       // This one already has format information, so remove from list
       unset($textgroups[$group]);
@@ -175,7 +175,7 @@ function i18nstrings_admin_settings() {
  */
 function i18nstrings_refresh_group($group, $delete = FALSE) {
   // Check for the refresh callback
-  $refresh_callback = i18nstrings_group_info($group, 'refresh callback');
+  $refresh_callback = i18nstrings_info($group, 'refresh callback');
   if (!$refresh_callback) {
     return FALSE;
   }

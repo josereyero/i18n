@@ -160,7 +160,7 @@ function i18ncontent_menu_alter(&$menu) {
     if (!empty($item['page callback']) && $item['page callback'] == 'node_add') {
       $menu[$path]['page callback'] = 'i18ncontent_node_add';
       $arg = arg(NULL, $path);
-      $menu[$path]['title callback'] = 'i18nstrings_title_callback';
+      $menu[$path]['title callback'] = 'i18nstrings_translate';
       $menu[$path]['title arguments'] = array('nodetype:type:'. $arg[2] .':name', $item['title']);
     }
   }

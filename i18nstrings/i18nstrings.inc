@@ -281,33 +281,6 @@ class i18nstrings {
 }
 
 /**
- * Get refresh callback for a text group.
- *
- * @param $group
- * @param $reset
- *   Whether to reset the internal cache for the textgroup.
- *
- * @return callback
- */
-function i18nstrings_group_info($group = NULL, $property = NULL, $reset = FALSE) {
-  $info = &drupal_static(__FUNCTION__ , NULL, $reset);
-
-  if (!isset($info)) {
-    $info = module_invoke_all('locale', 'info');
-  }
-
-  if ($group && $property) {
-    return isset($info[$group][$property]) ? $info[$group][$property] : NULL;
-  }
-  elseif ($group) {
-    return isset($info[$group]) ? $info[$group] : array();
-  }
-  else {
-    return $info;
-  }
-}
-
-/**
  * Menu callback. Saves a string translation coming as POST data.
  */
 function i18nstrings_l10n_client_save_string() {

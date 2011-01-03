@@ -254,15 +254,6 @@ function i18nstrings_translate_langcode($langcode, $reset = FALSE) {
 }
 
 /**
- * Debug utility. Marks the translated strings.
- */
-function _i18nstrings($name, $string, $langcode = NULL) {
-  $context = i18nstrings_context($name, $string, $langcode);
-  $context = implode('/', (array) $context);
-  return i18nstrings($name, $string, $langcode) . '[T:' . $string . '(' . $context . ')]';
-}
-
-/**
  * Translate object properties.
  * 
  * @param $options
@@ -428,6 +419,32 @@ function i18nstrings_context($name, $string = NULL, $options = array()) {
 }
 
 /**
+ * Get textgroup info, from hook_locale('info')
+ *
+ * @param $group
+ *   Text group name.
+ * @param $default
+ *   Default value to return for a property if not set.
+ */
+function i18nstrings_info($group = NULL, $property = NULL, $default = NULL) {
+  $info = &drupal_static(__FUNCTION__ , NULL);
+
+  if (!isset($info)) {
+    $info = module_invoke_all('locale', 'info');
+  }
+
+  if ($group && $property) {
+    return isset($info[$group][$property]) ? $info[$group][$property] : $default;
+  }
+  elseif ($group) {
+    return isset($info[$group]) ? $info[$group] : array();
+  }
+  else {
+    return $info;
+  }
+}
+
+/**
  * Get message parameters from context and string.
  */
 function i18nstrings_params($context) {
@@ -436,24 +453,6 @@ function i18nstrings_params($context) {
     '%textgroup' => $context->textgroup,
     '%string' => isset($context->source) ? $context->source : t('[empty string]'),
   );
-}
-
-/**
- * Callback for menu title translation.
- *
- * @param $name
- *   String id
- * @param $string
- *   Default string, title in default language
- * @param $callback
- *   Aditional callback to be run after this one, may be for formatting or filtering
- */
-function i18nstrings_title_callback($name, $string, $callback = NULL) {
-  $string = i18nstrings($name, $string);
-  if ($callback) {
-    $string = $callback($string);
-  }
-  return $string;
 }
 
 /**
