@@ -422,6 +422,7 @@ class i18nstrings_default {
   public function update($context, $string, $options = array()) {
     $options += array('format' => 0, 'messages' => TRUE, 'watchdog' => TRUE);
     $i18nstring = $this->build_string($context, $string, $options);
+    $i18nstring->format = $options['format'];
     if (!$this->check_string($i18nstring, $options)) {
       $status = $this->remove($context, $string, $options);
     }

@@ -79,10 +79,10 @@ function i18nstrings_schema() {
         'description' => 'Integer value of Object ID.',
       ),
       'format' => array(
-        'description' => "The input format used by this string.",
-        'type' => 'int',
-        'not null' => TRUE,
-        'default' => 0
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+        'description' => 'The {filter_format}.format of the string.',
       ),
 
     ),
@@ -98,8 +98,6 @@ function i18nstrings_schema() {
  * Implements hook_schema_alter().
  */
 function i18nstrings_schema_alter(&$schema) {
-  // Add index for textgroup and location to {locales_source}.
-  $schema['locales_source']['indexes']['textgroup_location'] = array(array('textgroup', 30), 'location');
   // Add field for tracking whether translations need updating.
   $schema['locales_target']['fields']['i18n_status'] = array(
     'description' => 'A boolean indicating whether this translation needs to be updated.',
@@ -115,3 +113,4 @@ function i18nstrings_schema_alter(&$schema) {
 // Added fields: context, textgroup
 // Populate fields from old locale table (textgroup, location)
 // Drop all indexes from locales_source
+// Update format field
