@@ -501,10 +501,9 @@ function i18nstrings_string($name, $default, $options = array()) {
  * @param $string
  *   Optional source string (string in default language).
  */
-function i18nstrings_remove($textgroup, $context, $string = NULL, $options = array()) {
-
-  $status = i18nstrings($textgroup)->remove($context, $string, $options);
-
+function i18nstrings_remove($name, $string = NULL, $options = array()) {
+  list($textgroup, $context) = i18nstrings_context($name);
+  $status = i18nstrings_textgroup($textgroup)->remove($context, $string, $options);
   return $status;
 }
 
