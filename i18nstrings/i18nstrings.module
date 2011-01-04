@@ -327,7 +327,7 @@ function i18nstrings_update($name, $string, $options = array()) {
  *   Array or string concatenated with ':' that contains textgroup and string context
  */
 function i18nstrings_context($name) {
-  $parts = is_array($name) ? $name : split(':', $name);
+  $parts = is_array($name) ? $name : explode(':', $name);
   $textgroup = array_shift($parts);
   $context = $parts;
   return array($textgroup, $context);
