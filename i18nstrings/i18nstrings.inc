@@ -171,7 +171,7 @@ class i18nstrings_default {
     $options += array('messages' => FALSE, 'watchdog' => TRUE);
     if (isset($i18nstring->format) && !self::allowed_format($i18nstring->format)) {
       // This format is not allowed, so we remove the string, in this case we produce a warning
-      $params = $this->string_params($i18nstring);
+      $params = self::string_params($i18nstring);
       drupal_set_message(t('The string %location for textgroup %textgroup is not allowed for translation because of its input format.', $params), 'warning');
       return FALSE;
     }
@@ -424,7 +424,8 @@ class i18nstrings_default {
     $i18nstring = $this->build_string($context, $string, $options);
     $i18nstring->format = $options['format'];
     if (!$this->check_string($i18nstring, $options)) {
-      $status = $this->remove($context, $string, $options);
+      $this->remove($context, $string, $options);
+      $status = SAVED_DELETED;
     }
     else {
       $status = $this->update_string($i18nstring, $options);

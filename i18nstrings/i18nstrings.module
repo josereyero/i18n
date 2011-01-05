@@ -425,8 +425,14 @@ function i18nstrings_translate($name, $string, $options = array()) {
 
 /**
  * Format the resulting translation or the default string applying callbacks
+ * 
+ * There's a hidden variable, 'i18nstrings_debug', that when set to TRUE will display additional info
  */
 function i18nstrings_format($i18nstring, $options = array()) {
+  static $debug;
+  if (!isset($debug)) {
+    $debug = variable_get('i18nstrings_debug', FALSE);
+  }
   if (is_string($i18nstring)) {
     $string = $i18nstring;
   }
@@ -445,6 +451,14 @@ function i18nstrings_format($i18nstring, $options = array()) {
   // Apply callback to any of the strings
   if ($string && isset($options['callback'])) {
     $string = call_user_func($options['callback'], $string);
+  }
+  // Add debug information if enabled
+  if ($debug && is_object($i18nstring)) {
+    $info = array($i18nstring->textgroup, $i18nstring->context);
+    if (!empty($i18nstring->format)) {
+      $info[] = $i18nstring->format;
+    }
+    $string .= ' [' . implode(':', $info) . ']';
   }
   return $string;
 }
