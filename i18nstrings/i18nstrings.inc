@@ -169,7 +169,7 @@ class i18nstrings_default {
    */
   protected static function check_string($i18nstring, $options = array()) {
     $options += array('messages' => FALSE, 'watchdog' => TRUE);
-    if (isset($i18nstring->format) && !self::allowed_format($i18nstring->format)) {
+    if (!empty($i18nstring->format) && !self::allowed_format($i18nstring->format)) {
       // This format is not allowed, so we remove the string, in this case we produce a warning
       $params = self::string_params($i18nstring);
       drupal_set_message(t('The string %location for textgroup %textgroup is not allowed for translation because of its input format.', $params), 'warning');
