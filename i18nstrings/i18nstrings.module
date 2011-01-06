@@ -409,7 +409,7 @@ function i18nstrings($name, $string, $options = array()) {
  *   - 'callback' Callback to apply to the result (both to translated or untranslated string
  */
 function i18nstrings_translate($name, $string, $options = array()) {
-  $options += array('langcode' => i18nstrings_language()->language);
+  $options['langcode'] = i18nstrings_langcode(isset($options['langcode']) ? $options['langcode'] : NULL);
   list($textgroup, $context) = i18nstrings_context($name);
   // If language is default, just return
   if (i18nstrings_translate_langcode($options['langcode'])) {
@@ -464,6 +464,13 @@ function i18nstrings_format($i18nstring, $options = array()) {
 }
 
 /**
+ * Get the language code to translate to. Default to current language
+ */
+function i18nstrings_langcode($langcode = NULL) {
+  return $langcode && $langcode !== LANGUAGE_NONE ? $langcode : i18nstrings_language()->language;  
+}
+
+/**
  * Get the current language to translate to. Always get a language object
  */
 function i18nstrings_language() {
@@ -513,7 +520,7 @@ function i18nstrings_string($name, $default, $options = array()) {
  *   - 'index' => field that will be mapped to the array key (defaults to 'property')
  */
 function i18nstrings_array($name, $strings, $options = array()) {
-  $options += array('langcode' => i18nstrings_language()->language);
+  $options['langcode'] = i18nstrings_langcode(isset($options['langcode']) ? $options['langcode'] : NULL);
   list($textgroup, $context) = i18nstrings_context($name);
   // If language is default, just return
   if (i18nstrings_translate_langcode($options['langcode'])) {

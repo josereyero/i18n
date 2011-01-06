@@ -265,8 +265,6 @@ function i18n_field_instance_update_strings($instance) {
  *   (number or text), values of the array are the display labels.
  */
 function i18n_field_translate_allowed_values($field, $langcode = NULL) {
-  global $language;
-  $langcode = $langcode && $langcode !== LANGUAGE_NONE ? $langcode : $language->language;
   if (!empty($field['settings']['allowed_values'])) {
     return i18nstrings_array(array('field', $field['field_name'], '#allowed_values'), $field['settings']['allowed_values'], array('langcode' => $langcode));
   }
@@ -279,8 +277,6 @@ function i18n_field_translate_allowed_values($field, $langcode = NULL) {
  * Translate field default
  */
 function i18n_field_translate_default($instance, $value, $langcode = NULL) {
-  global $language;
-  $langcode = $langcode && $langcode !== LANGUAGE_NONE ? $langcode : $language->language;
   return i18nstrings_translate(array('field', $instance['field_name'], $instance['bundle'], 'default_value'), $value, array('langcode' => $langcode));
 }
 
@@ -288,8 +284,6 @@ function i18n_field_translate_default($instance, $value, $langcode = NULL) {
  * Translate field property
  */
 function i18n_field_translate_property($instance, $property, $langcode = NULL) {
-  global $language;
-  $langcode = $langcode && $langcode !== LANGUAGE_NONE ? $langcode : $language->language;
   return i18nstrings_translate(array('field', $instance['field_name'], $instance['bundle'], $property), $instance[$property], array('langcode' => $langcode));
 }
 
@@ -342,6 +336,5 @@ function i18n_field_i18n_field_info() {
   $info['list_text'] = $info['list_boolean'] = array(
     'translate_options' => 'i18n_field_translate_allowed_values',
   );
-  dpm($info);
   return $info;
 }
