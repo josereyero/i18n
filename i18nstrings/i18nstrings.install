@@ -124,3 +124,18 @@ function i18nstrings_update_7000() {
 // Update format field
 // Update string names: profile, cck => field
 // Update string names: 
+
+/**
+ * Old strings to update. All these will be handled by i18n_field module
+ * 
+ * 'cck:field:'. $content_type .'-'. $field_name .':widget_label'
+ *  --> 'field:$field_name:$bundle:label' (though not used atm)
+ * 'cck:field:'. $content_type .'-'. $field_name .':widget_description'
+ *  --> 'field:$field_name:$bundle:description'
+ * 'cck:fieldgroup:'. $content_type .'-'. $group_name .':display_description'
+ * 'cck:fieldgroup:'. $content_type .'-'. $group_name .':form_description', $group['settings']['form']['description']); 
+ * 
+ * Profile:
+ * profile:field:$field_name:title|explanation|options
+ * "profile:category", $field->category
+ */
