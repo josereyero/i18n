@@ -19,9 +19,12 @@ function i18n_install() {
  * Implements hook_uninstall()
  */
 function i18n_uninstall() {
-  variable_del('i18n_hide_translation_links');
-  variable_del('i18n_selection_mode');
-  foreach (array_keys(node_type_get_types()) as $type) {
-    variable_del('i18n_node_'. $type);
-  }
+  variable_del('i18n_drupal6_update');
+}
+
+/**
+ * Mark this as updated so all (renamed) modules know they need to update from D6 version when installing
+ */
+function i18n_update_7000() {
+  variable_set('i18n_drupal6_update', TRUE);
 }
