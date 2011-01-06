@@ -7,6 +7,10 @@
  * 
  * Notes:
  * - Field titles are already translated with t(), which is a pity, but nothing to do here
+ * 
+ * For string keys we use:
+ * - field:[field_name]:[bundle]:property, when it is an instance property (linked to bundle)
+ * - field:[field_name]:#property..., when it is a field property (that may have multiple values)
  */
 
 
@@ -50,6 +54,55 @@ function i18n_field_field_attach_form($entity_type, $entity, $form, $form_state,
  * Cached, invoked only after field info is rebuilt
  */
 function i18n_field_field_info_alter(&$info) {
+}
+
+/**
+ * Implements hook_field_formatter_info().
+ */
+function i18n_field_field_formatter_info() {
+  $types = array();
+  foreach (i18n_field_info() as $type => $info) {
+    if (!empty($info['translate_options'])) {
+      $types[] = $type;
+    }
+  }
+  return array(
+    'i18n_list_default' => array(
+      'label' => t('Default translated'),
+      'field types' => $types,
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_formatter_view().
+ */
+function i18n_field_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  $element = array();
+
+  switch ($display['type']) {
+    case 'i18n_list_default':
+      if (($translate = i18n_field_info($field['type'], 'translate_options'))) {
+        $allowed_values = $translate($field, $langcode);
+      }
+      else {
+        // Defaults to list_default behavior
+        $allowed_values = list_allowed_values($field);
+      }
+      foreach ($items as $delta => $item) {
+        if (isset($allowed_values[$item['value']])) {
+          $output = field_filter_xss($allowed_values[$item['value']]);
+        }
+        else {
+          // If no match was found in allowed values, fall back to the key.
+          $output = field_filter_xss($item['value']);
+        }
+        $element[$delta] = array('#markup' => $output);
+      }
+      break;
+  }
+
+  return $element;
 }
 
 /**
@@ -110,14 +163,19 @@ function i18n_field_field_widget_form($form, $form_state, $field, $instance, $la
   );
 
   foreach ($translate as $property => $options) {
-    if (!empty($instance[$property])) {
-      $string = is_array($instance[$property]) ? $instance[$property][$delta]['value'] : $instance[$property];
-      $element['#' . $property] = i18nstrings_translate(array('field', $instance['bundle'], $instance['field_name'], $property), $string, $options);
-    }    
+   
   }
+  // Translate field description if set
+  if (!empty($instance['description'])) {
+    $element['#description'] = i18n_field_translate_property($instance, 'description');
+  }  
   // Translate default value if exists and the current value is the default
-  if (i18n_field_translatable_default($field) && !empty($instance['default_value'][$delta]['value']) && !empty($items[$delta]['value']) && $instance['default_value'][$delta]['value'] === $items[$delta]['value']) {
-    $items[$delta]['value'] = i18nstrings_translate(array('field', $instance['bundle'], $instance['field_name'], 'default_value'), $items[$delta]['value'], array('langcode' => $langcode));
+  if (($translate = i18n_field_info($field['type'], 'translate_default')) && !empty($instance['default_value'][$delta]['value']) && !empty($items[$delta]['value']) && $instance['default_value'][$delta]['value'] === $items[$delta]['value']) {
+    $items[$delta]['value'] = $translate($instance, $items[$delta]['value'], $langcode);
+  }
+  // Translate list options
+  if (($translate = i18n_field_info($field['type'], 'translate_options')) && !empty($field['settings']['allowed_values'])) {
+    $field['settings']['allowed_values'] = $translate($field, $langcode);
   }
   // Redirect through original module_field_widget_form()
   if (!empty($instance['widget']['i18n_field_callbacks'])) {
@@ -126,6 +184,13 @@ function i18n_field_field_widget_form($form, $form_state, $field, $instance, $la
     }
   }
   return $element;
+}
+
+/**
+ * Implements hook_field_create_field()
+ */
+function i18n_field_field_create_field($field) {
+  i18n_field_field_update_strings($field);
 }
 
 /**
@@ -152,17 +217,80 @@ function i18n_field_field_update_instance($instance, $prior_instance) {
 }
 
 /**
+ * Implements hook_field_update_field()
+ */
+function i18n_field_field_update_field($field) {
+  i18n_field_field_update_strings($field);
+}
+
+/**
+ * Update field strings
+ */
+function i18n_field_field_update_strings($field) {
+  // For select fields field:field_name
+  if (!empty($field['settings']['allowed_values']) && i18n_field_info($field['type'], 'translate_options')) {
+    foreach ($field['settings']['allowed_values'] as $key => $name) {
+      i18nstrings_update(array('field', $field['field_name'],'#allowed_values', $key), $name);
+    }
+  }  
+}
+
+/**
  * Update field instance strings
  */
 function i18n_field_instance_update_strings($instance) {
+  $field = field_info_field($instance['field_name']);
   if (isset($instance['description'])) {
     i18nstrings_update(array('field', $instance['bundle'], $instance['field_name'], 'description'), $instance['description']);
   }
   // Only for text field types
-  if (isset($instance['default_value']) && i18n_field_translatable_default($instance['field_name'])) {
+  if (isset($instance['default_value']) && i18n_field_info($field['type'], 'translate_default')) {
     $format = isset($instance['default_value'][0]['format']) ? $instance['default_value'][0]['format'] : NULL;
-    i18nstrings_update(array('field', $instance['bundle'], $instance['field_name'], 'default_value'), $instance['default_value'][0]['value'], array('format' => $format));
+    i18nstrings_update(array('field', $instance['field_name'], $instance['bundle'], 'default_value'), $instance['default_value'][0]['value'], array('format' => $format));
   }
+
+}
+
+/**
+ * Returns the array of translated allowed values for a list field.
+ *
+ * The strings are not safe for output. Keys and values of the array should be
+ * sanitized through field_filter_xss() before being displayed.
+ *
+ * @param $field
+ *   The field definition.
+ *
+ * @return
+ *   The array of allowed values. Keys of the array are the raw stored values
+ *   (number or text), values of the array are the display labels.
+ */
+function i18n_field_translate_allowed_values($field, $langcode = NULL) {
+  global $language;
+  $langcode = $langcode && $langcode !== LANGUAGE_NONE ? $langcode : $language->language;
+  if (!empty($field['settings']['allowed_values'])) {
+    return i18nstrings_array(array('field', $field['field_name'], '#allowed_values'), $field['settings']['allowed_values'], array('langcode' => $langcode));
+  }
+  else {
+    return array();
+  }
+}
+
+/**
+ * Translate field default
+ */
+function i18n_field_translate_default($instance, $value, $langcode = NULL) {
+  global $language;
+  $langcode = $langcode && $langcode !== LANGUAGE_NONE ? $langcode : $language->language;
+  return i18nstrings_translate(array('field', $instance['field_name'], $instance['bundle'], 'default_value'), $value, array('langcode' => $langcode));
+}
+
+/**
+ * Translate field property
+ */
+function i18n_field_translate_property($instance, $property, $langcode = NULL) {
+  global $language;
+  $langcode = $langcode && $langcode !== LANGUAGE_NONE ? $langcode : $language->language;
+  return i18nstrings_translate(array('field', $instance['field_name'], $instance['bundle'], $property), $instance[$property], array('langcode' => $langcode));
 }
 
 /**
@@ -173,5 +301,47 @@ function i18n_field_instance_update_strings($instance) {
  */
 function i18n_field_translatable_default($field) {
   $field = is_array($field) ? $field : field_info_field($field);
-  return in_array($field['type'], array('text', 'text_long', 'text_with_summary'));
+  return in_array($field['type'], variable_get('i18n_field_translatable_default', array('text', 'text_long', 'text_with_summary')));
+}
+
+/**
+ * List of fields that have translatable options
+ */
+function i18n_field_translatable_options($field) {
+  $field = is_array($field) ? $field : field_info_field($field);
+  return in_array($field['type'], variable_get('i18n_field_translatable_options', array('list_text', 'list_boolean')));
+}
+
+/**
+ * Get i18n information for fields
+ */
+function i18n_field_info($type = NULL, $property = NULL) {
+  $info = &drupal_static(__FUNCTION__);
+  if (!isset($info)) {
+    $info = module_invoke_all('i18n_field_info');
+    drupal_alter('i18n_field_info', $info);
+  }
+  if ($property) {
+    return isset($info[$type]) && isset($info[$type][$property]) ? $info[$type][$property] : NULL;
+  }
+  elseif ($type) {
+    return isset($info[$type]) ? $info[$type] : array();
+  }
+  else {
+    return $info;
+  }
+}
+
+/**
+ * Implements hook_i18n_field_info()
+ */
+function i18n_field_i18n_field_info() {
+  $info['text'] = $info['text_long'] = $info['text_with_summary'] = array(
+    'translate_default' => 'i18n_field_translate_default',
+  );
+  $info['list_text'] = $info['list_boolean'] = array(
+    'translate_options' => 'i18n_field_translate_allowed_values',
+  );
+  dpm($info);
+  return $info;
 }
