@@ -22,6 +22,7 @@ function i18nstrings_install() {
 function i18nstrings_uninstall() {
   // Drop custom field.
   db_drop_field('locales_target', 'i18n_status');
+  variable_del('i18nstrings_drupal6_update');
 }
 
 /**
@@ -108,9 +109,18 @@ function i18nstrings_schema_alter(&$schema) {
 }
 
 /**
+ * Mark this as updated so all modules know they need to update their strings when installing
+ */
+function i18nstrings_update_7000() {
+  variable_set('i18nstrings_drupal6_update', TRUE);
+}
+
+/**
  * Notes for update script
  */
 // Added fields: context, textgroup
 // Populate fields from old locale table (textgroup, location)
 // Drop all indexes from locales_source
 // Update format field
+// Update string names: profile, cck => field
+// Update string names: 

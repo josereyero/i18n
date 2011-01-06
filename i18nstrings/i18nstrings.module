@@ -504,6 +504,33 @@ function i18nstrings_string($name, $default, $options = array()) {
 }
 
 /**
+ * Translation for array of options
+ * 
+ * Note this mode doesn't support the 'callback' option
+ * 
+ * @param $options
+ *   Array with additional options, some changes
+ *   - 'index' => field that will be mapped to the array key (defaults to 'property')
+ */
+function i18nstrings_array($name, $strings, $options = array()) {
+  $options += array('langcode' => i18nstrings_language()->language);
+  list($textgroup, $context) = i18nstrings_context($name);
+  // If language is default, just return
+  if (i18nstrings_translate_langcode($options['langcode'])) {
+    $translations = i18nstrings_textgroup($textgroup)->multiple_translate($context, $strings, $options);
+    // Add for l10n client if available, we pass translation object that contains the format
+    foreach ($translations as $index => $translation) {
+      i18nstrings_l10n_client_add($translation, $options);
+      $strings[$index] = i18nstrings_format($translation, $options);
+    }
+    return $strings;
+  }
+  else {
+    return $strings;
+  }
+}
+
+/**
  * Remove source and translations for user defined string.
  *
  * Though for most strings the 'name' or 'string id' uniquely identifies that string,

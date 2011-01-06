@@ -243,15 +243,21 @@ class i18nstrings_default {
     $query->fields('t', array('translation', 'i18n_status'));
     $query->condition('t.language', $i18nstring->language);    
     // Speed up the query, we just need one row
-    $translation = $query->range(0, 1)->execute()->fetchObject();
-    if ($translation) {
+    if (empty($i18nstring->multiple)) {
+      $query->range(0, 1);
+    }
+    $translations = $query->execute()->fetchAll();
+
+    foreach ($translations as $translation) {
       $translation->translation = isset($translation->translation) ? $translation->translation : FALSE;
       $translation->language = $i18nstring->language;
-      return $translation;
     }
+    if (empty($i18nstring->multiple)) {
+      return reset($translations);
+    } 
     else {
-      return NULL;
-    }  
+      return $translations;
+    } 
   }
 
   /**
@@ -280,7 +286,17 @@ class i18nstrings_default {
     }
     else {
       $query->condition('s.textgroup', $context->textgroup);
-      $query->condition('s.context', $context->context);
+      if (empty($context->multiple)) {
+        $query->condition('s.context', $context->context);
+      }
+      else {
+        // Query multiple strings
+        foreach (array('type', 'objectid', 'property') as $field) {
+          if (!empty($context->$field)) {
+            $query->condition('s.' . $field, $context->$field);
+          }
+        }
+      }
     }
     return $query;  
   }
@@ -387,8 +403,50 @@ class i18nstrings_default {
    */
   public function translate($context, $string, $options = array()) {
     $i18nstring = $this->build_string($context, $string, $options);
-    return $this->translate_string($i18nstring);
+    return $this->translate_string($i18nstring, $options);
   }
+  /**
+   * Translate array of source strings
+   */
+  public function multiple_translate($context, $strings, $options = array()) {
+    $options += array('index' => 'property');
+    $property = $options['index'];
+    $i18nstring = $this->build_string($context, NULL, $options);
+    $i18nstring->language = isset($options['langcode']) ? $options['langcode'] : i18nstrings_language()->language;
+    $i18nstring->$property = array_keys($strings);
+    $translations = $this->multiple_get_translation($i18nstring);
+    // Remap translations using index field
+    $result = $strings;
+    foreach ($translations as $translation) {
+      $index = $translation->$property;
+      $translation->source = $strings[$index];
+      $result[$index] = $translation;
+      unset($strings[$index]);
+    }
+    // Fill in remaining strings for consistency, l10n_client, etc..
+    foreach ($strings as $index => $string) {
+      $translation = clone $i18nstring;
+      $translation->$property = $index;
+      $translation->source = $strings[$index];
+      $result[$index] = $translation;
+    }
+    return $result;
+  }
+  /**
+   * Get multiple translations with the available key
+   */
+  public function multiple_get_translation($i18nstring) {
+    $i18nstring->multiple = TRUE;
+    $translations = $this->load_translation($i18nstring);
+    foreach ($translations as $index => $translation) {
+      $this->cache_set($translation);
+      if ($translation->translation === FALSE) {
+        unset($translations[$index]);
+      }
+    }
+    return $translations;
+  }
+  
   /**
    * Translate string object
    * 
