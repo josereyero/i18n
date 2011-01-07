@@ -35,7 +35,7 @@ class i18n_API_Tests extends Drupali18nTestCase {
   function testBasicAPI() {
     $language_count = count(language_list());
     $this->assertTrue($language_count > 1, 'Multiple languages created: ' . $language_count);
-    $this->assertEqual(i18n_get_lang(), 'en', 'Default language (en) properly set.');
+    $this->assertEqual(i18n_language()->language, 'en', 'Default language (en) properly set.');
 
     // Set site name for each language and check pages later
     foreach (language_list() as $lang) {
@@ -49,7 +49,7 @@ class i18n_API_Tests extends Drupali18nTestCase {
     // Create some content and check selection modes
     variable_set('language_content_type_story', 1);
     $neutral = $this->drupalCreateNode(array('type' => 'story', 'promote' => 1));
-    $source = $this->drupalCreateNode(array('type' => 'story', 'promote' => 1, 'language' => i18n_default_language()));
+    $source = $this->drupalCreateNode(array('type' => 'story', 'promote' => 1, 'language' => language_default('language')));
     $translations = $this->drupalCreateTranslations($source);
     // This fails because the _get_translations() function has static caching
     //$this->assertEqual(count(translation_node_get_translations($source->tnid)), $language_count, "Created $language_count $source->type translations.");

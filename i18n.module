@@ -253,10 +253,10 @@ function i18n_db_rewrite_sql($query, $primary_table, $primary_key, $args = array
       // and add some more conditions, but only if language is not default.
       if ($mode == 'mixed') {
         $result['where'] = i18n_db_rewrite_where($primary_table, 'node', 'simple');
-        if (i18n_get_lang() != i18n_default_language()) {
-          $result['join'] = "LEFT JOIN {node} i18n ON $primary_table.tnid > 0 AND $primary_table.tnid = i18n.tnid AND i18n.language = '". i18n_get_lang() ."'";
+        if (i18n_language()->language != language_default('language')) {
+          $result['join'] = "LEFT JOIN {node} i18n ON $primary_table.tnid > 0 AND $primary_table.tnid = i18n.tnid AND i18n.language = '". i18n_language()->language ."'";
           // So we show also nodes that have default language.
-          $result['where'] .= " OR $primary_table.language = '". i18n_default_language() ."' AND i18n.nid IS NULL";
+          $result['where'] .= " OR $primary_table.language = '". language_default('language') ."' AND i18n.nid IS NULL";
         }
       }
       else {
@@ -278,8 +278,8 @@ function i18n_db_rewrite_where($alias, $type, $mode = NULL) {
   }
 
   // Get languages to simplify query building.
-  $current = i18n_get_lang();
-  $default = i18n_default_language();
+  $current = i18n_language()->language;
+  $default = language_default('language');
 
   if ($mode == 'strict' && $type != 'node') {
     // Special case. Selection mode is 'strict' but this should be only for node queries.
@@ -391,25 +391,10 @@ function _i18n_get_context_lang() {
 }
 
 /**
- * Check whether we are in bootstrap mode.
- */
-function _i18n_is_bootstrap() {
-  return !function_exists('drupal_get_headers');
-}
-
-/**
  * Drupal 6, backwards compatibility layer.
  *
  * @ TO DO Fully upgrade all the modules and remove
  */
-
-/**
- * This one expects to be called first from common.inc
- */
-function i18n_get_lang() {
-  global $language;
-  return $language->language;
-}
 
 /**
  * @defgroup i18n_api Extended language API
@@ -417,12 +402,6 @@ function i18n_get_lang() {
  * This is an extended language API to be used by modules in i18n package.
  */
 
-/**
- * Returns default language code.
- */
-function i18n_default_language() {
-  return language_default('language');
-}
 
 /**
  * Get list of supported languages, native name.
