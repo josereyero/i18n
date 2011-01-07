@@ -9,6 +9,8 @@
 /**
  * Implements hook_menu().
  */
+/**
+ * @todo Update autocomplete, try some other module
 function i18n_node_menu() {
   // Autocomplete callback for nodes
   $items['i18n/node/autocomplete'] = array(
@@ -20,6 +22,7 @@ function i18n_node_menu() {
   );
   return $items;
 }
+*/
 
 /**
  * Implements hook_menu_alter().
@@ -27,9 +30,11 @@ function i18n_node_menu() {
  * Take over the node translation page.
  */
 function i18n_node_menu_alter(&$items) {
-  $items['node/%node/translate']['page callback'] = 'i18n_node_translation_overview';
-  $items['node/%node/translate']['file'] = 'i18n_node.pages.inc';
-  $items['node/%node/translate']['module'] = 'i18n_node';
+  if (isset($items['node/%node/translate'])) {
+    $items['node/%node/translate']['page callback'] = 'i18n_node_translation_overview';
+    $items['node/%node/translate']['file'] = 'i18n_node.pages.inc';
+    $items['node/%node/translate']['module'] = 'i18n_node';
+  }
 }
 
 /**
@@ -82,16 +87,14 @@ function i18n_node_language_list($node, $translate = FALSE) {
 
 
 /**
- * Implements hook_nodeapi().
+ * Implements hook_node_prepare().
  */
-function i18n_node_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
+function i18n_node_nodeapi($node) {
   global $language;
 
-  if (variable_get('language_content_type_' . $node->type, 0)) {
+  if (variable_get('language_content_type_' . $node->type, 0) && empty($node->nid) && empty($node->language) && variable_get('i18n_newnode_current_' . $node->type, 0)) {
     // Set current language for new nodes if option enabled
-    if ($op == 'prepare' && empty($node->nid) && empty($node->language) && variable_get('i18n_newnode_current_' . $node->type, 0)) {
-      $node->language = $language->language;
-    }
+    $node->language = $language->language;
   }
 }
 
@@ -219,6 +222,64 @@ function i18n_node_textfield_process($element) {
 }
 
 /**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function i18n_node_form_node_type_form_alter(&$form, &$form_state) {
+  if (isset($form['type'])) {
+    $disabled = !variable_get('language_content_type_'. $form['#node_type']->type, 0);
+    $form['i18n'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Multilingual settings'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+      '#group' => 'additional_settings',
+      '#attributes' => array(
+        'class' => array('i18n-node-type-settings-form'),
+      ),
+      '#description' => t('Extended multilingual options provided by Internationalization module.'),
+      '#disabled' => $disabled,
+    );
+    // Add disabled message
+    if ($disabled) {
+      $form['i18n']['#description'] .= ' <em>' . t('These will be available only when you enable Multilingual support in Workflow settings above.') . '</em>';
+    }
+    // Some settings about node languages
+    $form['i18n']['options'] = array(
+      '#title' => t('Options for node language'),
+      '#type' => 'fieldset',
+      '#disabled' => $disabled,
+    );
+    $form['i18n']['options']['i18n_newnode_current'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Set current language as default for new content.'),
+      '#default_value' => variable_get('i18n_newnode_current_' . $form['#node_type']->type, 0),
+      '#disabled' => $disabled,
+    );
+    $form['i18n']['options']['i18n_required_node'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Require language (Do not allow Language Neutral).'),
+      '#default_value' => variable_get('i18n_required_node_' . $form['#node_type']->type, 0),
+      '#disabled' => $disabled,
+    );
+    $form['i18n']['options']['i18n_lock_node'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Lock language (Cannot be changed).'),
+      '#default_value' => variable_get('i18n_lock_node_' . $form['#node_type']->type, 0),
+      '#disabled' => $disabled,
+    );
+    // Add extended language support option to content type form.
+    $form['i18n']['i18n_node'] = array(
+      '#type' => 'radios',
+      '#title' => t('Extended language support'),
+      '#default_value' => variable_get('i18n_node_'. $form['#node_type']->type, LANGUAGE_SUPPORT_NORMAL),
+      '#options' => _i18n_node_language_options(),
+      '#description' => t('If enabled, all defined languages will be allowed for this content type in addition to only enabled ones. This is useful to have more languages for content than for the interface.'),
+      '#disabled' => $disabled,
+    );
+  }
+}
+
+/**
  * Implements hook_form_alter();
  *
  * This is the place to add language fields to all forms.
@@ -227,70 +288,27 @@ function i18n_node_form_alter(&$form, $form_state, $form_id) {
   global $language;
 
   switch ($form_id) {
-    case 'node_type_form':
-      $disabled = !variable_get('language_content_type_'. $form['#node_type']->type, 0);
-      $form['i18n'] = array(
-        '#type' => 'fieldset',
-        '#title' => t('Multilanguage options'),
-        '#collapsible' => TRUE,
-        '#collapsed' => TRUE,
-        '#description' => t('Extended multilingual options provided by Internationalization module.'),
-        '#disabled' => $disabled,
-      );
-      // Add disabled message
-      if ($disabled) {
-        $form['i18n']['#description'] .= ' <em>' . t('These will be available only when you enable Multilingual support in Workflow settings above.') . '</em>';
-      }
-      // Some settings about node languages
-      $form['i18n']['options'] = array(
-        '#title' => t('Options for node language'),
-        '#type' => 'fieldset',
-        '#disabled' => $disabled,
-      );
-      $form['i18n']['options']['i18n_newnode_current'] = array(
-        '#type' => 'checkbox',
-        '#title' => t('Set current language as default for new content.'),
-        '#default_value' => variable_get('i18n_newnode_current_' . $form['#node_type']->type, 0),
-        '#disabled' => $disabled,
-      );
-      $form['i18n']['options']['i18n_required_node'] = array(
-        '#type' => 'checkbox',
-        '#title' => t('Require language (Do not allow Language Neutral).'),
-        '#default_value' => variable_get('i18n_required_node_' . $form['#node_type']->type, 0),
-        '#disabled' => $disabled,
-      );
-      $form['i18n']['options']['i18n_lock_node'] = array(
-        '#type' => 'checkbox',
-        '#title' => t('Lock language (Cannot be changed).'),
-        '#default_value' => variable_get('i18n_lock_node_' . $form['#node_type']->type, 0),
-        '#disabled' => $disabled,
-      );
-      // Add extended language support option to content type form.
-      $form['i18n']['i18n_node'] = array(
-        '#type' => 'radios',
-        '#title' => t('Extended language support'),
-        '#default_value' => variable_get('i18n_node_'. $form['#node_type']->type, LANGUAGE_SUPPORT_NORMAL),
-        '#options' => _i18n_node_language_options(),
-        '#description' => t('If enabled, all defined languages will be allowed for this content type in addition to only enabled ones. This is useful to have more languages for content than for the interface.'),
-        '#disabled' => $disabled,
-      );
-      break;
 
     default:
       // Extensions for node edit forms
       if (isset($form['#id']) && $form['#id'] == 'node-form') {
-        if (isset($form['#node']->type)) {
-          if (variable_get('language_content_type_'. $form['#node']->type, 0)) {
-            if (!empty($form['language']['#options'])) {
-              $form['language']['#options'] = i18n_node_language_list($form['#node'], TRUE);
-            }
-          }
-          elseif (!isset($form['#node']->nid)) {
-            // Set language to empty for not multilingual nodes when creating
-            $form['language'] = array('#type' => 'value', '#value' => '');
-          }
-        }
+
       }
+  }
+}
+/**
+ * Implements hook_form_BASE_FORM_ID_alter().
+ */
+function i18n_node_form_node_form_alter(&$form, $form_state) {
+  $node = $form['#node'];
+  if (variable_get('language_content_type_'. $node->type, 0)) {
+    if (!empty($form['language']['#options'])) {
+      $form['language']['#options'] = i18n_node_language_list($node, TRUE);
+    }
+  }
+  elseif (!isset($node->nid)) {
+    // Set language to empty for not multilingual nodes when creating
+    $form['language'] = array('#type' => 'value', '#value' => '');
   }
 }
 
