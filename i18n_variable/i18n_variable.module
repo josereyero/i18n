@@ -58,14 +58,8 @@ function i18n_variable_language($initialize = TRUE) {
     // If we've got a variables language, it will be that one
     return $GLOBALS['language_variable'];
   }
-  elseif (isset($GLOBALS['language'])) {
-    // Interface language will be the next option if available
-    return $GLOBALS['language'];
-  }
-  elseif ($initialize) {
-    // We don't have language yet, initialize the language system and retry
-    drupal_bootstrap(DRUPAL_BOOTSTRAP_LANGUAGE);
-    return i18n_variable_language(FALSE);
+  else {
+    return i18n_language();
   }
 }
 

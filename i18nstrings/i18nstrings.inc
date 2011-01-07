@@ -412,7 +412,7 @@ class i18nstrings_default {
     $options += array('index' => 'property');
     $property = $options['index'];
     $i18nstring = $this->build_string($context, NULL, $options);
-    $i18nstring->language = isset($options['langcode']) ? $options['langcode'] : i18nstrings_language()->language;
+    $i18nstring->language = isset($options['langcode']) ? $options['langcode'] : i18n_langcode();
     $i18nstring->$property = array_keys($strings);
     $translations = $this->multiple_get_translation($i18nstring);
     // Remap translations using index field
@@ -456,7 +456,7 @@ class i18nstrings_default {
    *   Array with aditional options
    */
   protected function translate_string($i18nstring, $options = array()) {
-    $i18nstring->language = isset($options['langcode']) ? $options['langcode'] : i18nstrings_language()->language;
+    $i18nstring->language = isset($options['langcode']) ? $options['langcode'] : i18n_langcode();
     // Search for existing translation (result will be cached in this function call)
     if ($translation = $this->get_translation($i18nstring)) {
       return $translation;

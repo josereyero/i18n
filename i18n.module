@@ -20,16 +20,50 @@ define('LANGUAGE_SUPPORT_EXTENDED', 2);
 define('LANGUAGE_SUPPORT_EXTENDED_NOT_DISPLAYED', 3);
 
 /**
+ * Implements hook_boot()
+ * 
+ * Initialize variables, that will be used to decide on site_frontpage
+ */
+function i18n_boot() {
+  // Just make sure the module is loaded for boot and the API is available.
+}
+
+/**
+ * Get global language, make sure it is initialized
+ */
+function i18n_language($language = NULL) {
+  if ($language) {
+    return $language;
+  }
+  else {
+    if (empty($GLOBALS['language'])) {
+      // We don't have language yet, initialize the language system and retry
+      drupal_bootstrap(DRUPAL_BOOTSTRAP_LANGUAGE);
+    }
+    return $GLOBALS['language']; 
+  }
+}
+
+/**
+ * Get valid language code for current page
+ */
+function i18n_langcode($langcode = NULL) {
+  return $langcode && $langcode !== LANGUAGE_NONE ? $langcode : i18n_language()->language;  
+}
+
+/**
  * Implements hook_init().
  *
  * Special fix for site_frontpage, that may have been used before the language variables are loaded.
  */
+/*
 function i18n_init() {
   // If not in bootstrap, variable init. Otherwise we are serving a cached page so we don't need anything else.
   if (!_i18n_is_bootstrap()) {
     _i18n_init_mode();
   }
 }
+*/
 
 /**
  * Initialize selection mode
@@ -93,7 +127,7 @@ function i18n_help($path = 'admin/help#i18n', $arg) {
  */
 function i18n_menu() {
   $items['admin/config/regional/i18n'] = array(
-    'title' => 'Multilingual system',
+    'title' => 'Multilingual settings',
     'description' => 'Configure extended options for multilingual content and translations.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('i18n_admin_settings'),
@@ -112,6 +146,7 @@ function i18n_menu() {
   );
   return $items;
 }
+
 
 /**
  * Implements hook_user_login().
