@@ -1,0 +1,16 @@
+<?php
+// $Id: i18n_field.install jareyero Exp $
+
+/**
+ * @file
+ * Install, update and uninstall functions for the i18n_field module.
+ */
+
+/**
+ * Implements hook_i18n_drupal6_update
+ * 
+ * Update old string names
+ */
+function i18n_field_i18n_update_drupal6() {
+  
+}

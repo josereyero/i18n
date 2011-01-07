@@ -394,6 +394,15 @@ function i18nstrings($name, $string, $options = array()) {
 }
 
 /**
+ * Implements hook_modules_enabled()
+ */
+function i18nstrings_modules_enabled($modules) {
+  foreach ($modules as $module) {
+    module_invoke($module, 'i18n_string_refresh');
+  } 
+}
+
+/**
  * Get translation for user defined string.
  *
  * This function is intended to return translations for plain strings that have NO input format

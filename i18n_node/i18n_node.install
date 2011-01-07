@@ -1,0 +1,36 @@
+<?php
+// $Id: i18n.install,v 1.15.2.9 2009/11/05 18:41:20 jareyero Exp $
+
+/**
+ * @file
+ * Installation file for Internationalization (i18n) module.
+ */
+
+/**
+ * Implements hook_enable
+ */
+function i18n_node_enable() {
+  if (module_exists('i18nstrings')) {
+    i18n_node_locale_refresh();
+  }
+}
+
+/**
+ * Implements hook_uninstall()
+ */
+function i18n_node_uninstall() {
+  variable_del('i18n_hide_translation_links');
+  variable_del('i18n_selection_mode');
+  foreach (array_keys(node_type_get_types()) as $type) {
+    variable_del('i18n_node_'. $type);
+  }
+}
+
+/**
+ * Implements hook_i18n_update_drupal6
+ * 
+ * Update old string names
+ */
+function i18n_node_i18n_update_drupal6() {
+  
+}

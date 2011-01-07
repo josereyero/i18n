@@ -14,6 +14,9 @@ function i18nstrings_install() {
   db_query("UPDATE {system} SET weight = 10 WHERE name = 'i18nstrings' AND type = 'module'");
   // Add a field to track whether a translation needs updating.
   db_add_field('locales_target', 'i18n_status', array('type' => 'int', 'not null' => TRUE, 'default' => 0));
+  // Refresh locales for enabled modules
+  $modules = module_implements('i18n_string_refresh');
+  i18nstrings_modules_enabled($modules);
 }
 
 /**
@@ -108,9 +111,11 @@ function i18nstrings_schema_alter(&$schema) {
 }
 
 /**
+ * Implements hook_i18n_drupal6_update
+ * 
  * Populate fields from old locale table (textgroup, location) and drop indexes from locales_source
  */
-function i18nstrings_update_7000() {
+function i18nstrings_i18n_drupal6_update() {
   // @todo Update from d6
 }
 
