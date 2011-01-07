@@ -32,7 +32,7 @@ function i18ntaxonomy_page_vocabulary($vocabulary, $op = NULL, $tid = NULL) {
  * Produces a vocabulary translation form.
  */
 function i18ntaxonomy_translation_term_form($form_state, $vid, $trid = NULL, $edit = array()) {
-  $languages = i18n_supported_languages();
+  $languages = i18n_language_list();
 
   if ($trid == 'new') {
     $translations = array();
@@ -111,7 +111,7 @@ function i18ntaxonomy_translation_save($terms, $trid = 0) {
   }
   // Now pick up all the tids in an array.
   $translations = array();
-  foreach (i18n_supported_languages() as $lang => $name) {
+  foreach (i18n_language_list() as $lang => $name) {
     if (isset($terms[$lang]) && ($term = (array)$terms[$lang]) && $tid = $term['tid']) {
       $translations[$lang] = $tid;
     }
@@ -143,7 +143,7 @@ function i18ntaxonomy_translation_overview($vid) {
   drupal_set_title(check_plain($vocabulary->name));
   $output = '';
 
-  $languages = i18n_supported_languages();
+  $languages = i18n_language_list();
   $header = array_merge($languages, array(t('Operations')));
   $links = array();
   $types = array();

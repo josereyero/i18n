@@ -19,6 +19,11 @@ define('LANGUAGE_SUPPORT_NORMAL', 1);
 define('LANGUAGE_SUPPORT_EXTENDED', 2);
 define('LANGUAGE_SUPPORT_EXTENDED_NOT_DISPLAYED', 3);
 
+// Language list will include all enabled languages
+define('I18N_LANGUAGE_ENABLED', 0);
+// Language list will include also disabled languages
+define('I18N_LANGUAGE_EXTENDED', 1);
+
 /**
  * Implements hook_boot()
  * 
@@ -41,6 +46,36 @@ function i18n_language($language = NULL) {
       drupal_bootstrap(DRUPAL_BOOTSTRAP_LANGUAGE);
     }
     return $GLOBALS['language']; 
+  }
+}
+
+/**
+ * Get full language list
+ * 
+ * @todo See about creating a permission for seeing disabled languages
+ */
+function i18n_language_list($field = 'name') {
+  return locale_language_list($field, I18N_LANGUAGE_EXTENDED & variable_get('i18n_language_list', I18N_LANGUAGE_ENABLED));
+}
+
+/**
+ * Get language name for any defined (enabled or not) language
+ * 
+ * @see locale_language_list()
+ */
+function i18n_language_name($lang) {
+  $list = &drupal_static(__FUNCTION__);
+  if (!isset($list)) {
+    $list = locale_language_list('name', TRUE);
+  }
+  if (!$lang || $lang === LANGUAGE_NONE) {
+    return t('Undefined');
+  }
+  elseif (isset($list[$lang])) {
+    return $list[$lang];
+  }
+  else {
+    return t('Unknown');
   }
 }
 
@@ -389,31 +424,3 @@ function _i18n_get_context_lang() {
     }
   }
 }
-
-/**
- * Drupal 6, backwards compatibility layer.
- *
- * @ TO DO Fully upgrade all the modules and remove
- */
-
-/**
- * @defgroup i18n_api Extended language API
- * @{
- * This is an extended language API to be used by modules in i18n package.
- */
-
-
-/**
- * Get list of supported languages, native name.
- *
- * @param $all
- *   TRUE to get all defined languages.
- */
-function i18n_supported_languages($all = FALSE) {
-  return locale_language_list('native', $all);
-}
-
-/**
- * @} End of "defgroup i18n_api".
- */
-

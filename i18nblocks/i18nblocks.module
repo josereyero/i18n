@@ -186,7 +186,7 @@ function i18nblocks_alter_forms(&$form, &$form_state, $form_id) {
   if ($module == 'block') {
     $options[I18N_BLOCK_LOCALIZE] = t('All languages (Translatable)');
   }
-  $options += locale_language_list('name');
+  $options += i18n_language_list();
 
   $form['i18n']['language'] = array(
       '#type' => 'radios',

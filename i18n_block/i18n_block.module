@@ -174,7 +174,7 @@ function i18n_block_form_block_admin_configure_alter(&$form, &$form_state, $form
     '#type' => 'checkboxes',
     '#title' => t('Show block for specific languages'),
     '#default_value' => $default_options,
-    '#options' => locale_language_list('name', TRUE),
+    '#options' => i18n_language_list(),
     '#description' => t('Show this block only on pages for the given language(s). If you select no language, there will be no language-specific limitation.'),
   );
   // Add translatable option, just title for module blocks, title and content for custom blocks.
