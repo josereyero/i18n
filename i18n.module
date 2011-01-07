@@ -258,50 +258,6 @@ function i18n_selection_mode($mode = NULL, $params = NULL, $reset = FALSE) {
 }
 
 /**
- * Implements hook_db_rewrite_sql().
- *
- * Rewrite node queries so language selection options are enforced.
- */
-function i18n_db_rewrite_sql($query, $primary_table, $primary_key, $args = array()) {
-  // If mode is 'off' = no rewrite, we cannot return any empty 'where' string so check here.
-  $mode = i18n_selection_mode();
-  if ($mode == 'off') return;
-
-  // Disable language conditions for views.
-  if (array_key_exists('view', $args)) return;
-
-  switch ($primary_table) {
-    case 'n':
-    case 'node':
-      // No rewrite for queries with subselect ? (views count queries).
-      // @ TO DO Actually these queries look un-rewrittable, check with other developers.
-      if (preg_match("/FROM \(SELECT/", $query)) return;
-      // No rewrite for translation module queries.
-      if (preg_match("/.*FROM {node} $primary_table WHERE.*$primary_table\.tnid/", $query)) return;
-      // When loading specific nodes, language conditions shouldn't apply.
-      if (preg_match("/WHERE.*\s$primary_table.nid\s*=\s*(\d|%d)/", $query)) return;
-      // If language conditions already there, get out.
-      if (preg_match("/i18n/", $query)) return;
-
-
-      // Mixed mode is a bit more complex, we need to join in one more table
-      // and add some more conditions, but only if language is not default.
-      if ($mode == 'mixed') {
-        $result['where'] = i18n_db_rewrite_where($primary_table, 'node', 'simple');
-        if (i18n_language()->language != language_default('language')) {
-          $result['join'] = "LEFT JOIN {node} i18n ON $primary_table.tnid > 0 AND $primary_table.tnid = i18n.tnid AND i18n.language = '". i18n_language()->language ."'";
-          // So we show also nodes that have default language.
-          $result['where'] .= " OR $primary_table.language = '". language_default('language') ."' AND i18n.nid IS NULL";
-        }
-      }
-      else {
-        $result['where'] = i18n_db_rewrite_where($primary_table, 'node', $mode);
-      }
-      return $result;
-  }
-}
-
-/**
  * Rewrites queries depending on rewriting mode.
  *
  * @return DatabaseCondition
@@ -399,15 +355,6 @@ function i18n_permission() {
       'description' => t('Administer translations.'),
     ),
   );
-}
-
-/**
- * Process menu and menu item add/edit form submissions.
- */
-function i18n_menu_edit_item_form_submit($form, &$form_state) {
-  $mid = menu_edit_item_save($form_state['values']);
-  db_query("UPDATE {menu} SET language = '%s' WHERE mid = %d", array($form_state['values']['language'], $mid));
-  return 'admin/build/menu';
 }
 
 /**

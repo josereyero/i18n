@@ -305,7 +305,7 @@ function i18nmenu_form_menu_edit_item_alter(&$form, $form_state) {
     '#type' => 'select',
     '#title' => t('Language'),
     '#description' => t('Select a language for this menu item. Choose "All languages" to make the menu item translatable into different languages.'),
-    '#options' => array('' => t('All languages')) + locale_language_list('name'),
+    '#options' => array('' => t('All languages')) + i18n_language_list(),
     '#default_value' => $language,
   );
   array_unshift($form['#validate'], 'i18nmenu_menu_item_prepare_normal_path');
@@ -498,3 +498,16 @@ function i18nmenu_node_prepare_translation($node) {
     $node->menu['weight'] = $tnode->menu['weight'];
   }
 }
+
+/**
+ * Process menu and menu item add/edit form submissions.
+ * 
+ * @todo See where this fits
+ */
+/*
+function i18n_menu_edit_item_form_submit($form, &$form_state) {
+  $mid = menu_edit_item_save($form_state['values']);
+  db_query("UPDATE {menu} SET language = '%s' WHERE mid = %d", array($form_state['values']['language'], $mid));
+  return 'admin/build/menu';
+}
+*/

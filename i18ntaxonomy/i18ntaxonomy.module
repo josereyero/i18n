@@ -365,10 +365,9 @@ function i18ntaxonomy_form_alter(&$form, $form_state, $form_id) {
   switch ($form_id) {
     case 'taxonomy_overview_vocabularies':
       $vocabularies = taxonomy_get_vocabularies();
-      $languages = locale_language_list('name');
       foreach ($vocabularies as $vocabulary) {
         if ($vocabulary->language) {
-          $form[$vocabulary->vid]['types']['#value'] .= '&nbsp;('. $languages[$vocabulary->language] .')';
+          $form[$vocabulary->vid]['types']['#value'] .= '&nbsp;('. i18n_language_name($vocabulary->language) .')';
         }
       }
       break;
@@ -376,10 +375,9 @@ function i18ntaxonomy_form_alter(&$form, $form_state, $form_id) {
     case 'taxonomy_overview_terms':
       $mode = i18ntaxonomy_vocabulary($form['#vocabulary']['vid']);
       if ($mode == I18N_TAXONOMY_TRANSLATE) {
-        $languages = locale_language_list('name');
         foreach (element_children($form) as $key) {
           if (isset($form[$key]['#term']) && ($lang = $form[$key]['#term']['language'])) {
-            $form[$key]['view']['#value'] .= '&nbsp;('. $languages[$lang] .')';
+            $form[$key]['view']['#value'] .= '&nbsp;('. i18n_language_name($lang) .')';
           }
         }
       }
@@ -413,7 +411,7 @@ function i18ntaxonomy_form_alter(&$form, $form_state, $form_id) {
         '#type' => 'select',
         '#title' => t('Language'),
         '#default_value' => $vocabulary && !empty($vocabulary->language) ? $vocabulary->language : '',
-        '#options' => array('' => '') + locale_language_list('name'),
+        '#options' => array('' => '') + i18n_language_list(),
         '#description' => t('Language for this vocabulary. If set, it will apply to all terms in this vocabulary.'),
         '#disabled' => ($vocabulary && $mode != I18N_TAXONOMY_LANGUAGE),
       );
@@ -437,7 +435,7 @@ function i18ntaxonomy_form_alter(&$form, $form_state, $form_id) {
             '#type' => 'select',
             '#title' => t('Language'),
             '#default_value' => isset($term) && !empty($term->language) ? $term->language : '',
-            '#options' => array('' => '') + locale_language_list('name'),
+            '#options' => array('' => '') + i18n_language_list(),
             '#description' => t('This term belongs to a multilingual vocabulary. You can set a language for it.'),
           );
           break;

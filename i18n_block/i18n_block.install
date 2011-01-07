@@ -13,7 +13,10 @@ function i18n_block_install() {
   db_add_field('block', 'i18n_mode', array('type' => 'int', 'not null' => TRUE, 'default' => 0, 'description' => 'Block multilingual mode.'));
   // Set module weight for it to run after all block visibility modules have run
   db_query("UPDATE {system} SET weight = 100 WHERE name = 'i18n_block' AND type = 'module'");
-  // @todo Set data from old i18nblocks
+  // Set data from old i18nblocks if upgrading
+  if (variable_get('i18n_drupal6_update')) {
+    i18n_block_update_7000();
+  }
 }
 
 /**
@@ -64,11 +67,28 @@ function i18n_block_schema_alter(&$schema) {
  * Update new block data from old D6 table
  */
 function i18n_block_update_7000() {
-  // Run install script when updating too
-  i18nblocks_install();
 // D6-D7 updates, to be written
 // move block language from i18n_blocks into i18n_block_language
 // Move block type from i18n_blocks into block table (i18n_mode)
+  if (db_table_exists('i18n_blocks')) {
+    foreach (db_query("SELECT * FROM {i18n_blocks}")->fetchAll() as $block) {
+      if ($block->language) {
+          // Set language for block
+          db_merge('i18n_block_language')
+            ->keys(array('module' => $block->module, 'delta' => $block->delta))
+            ->fields(array('language' => $block->language))
+            ->execute();
+      }
+      else {
+          // Mark block as translatable
+          db_update('block')
+            ->fields(array('i18n_mode' => 1))
+            ->condition('module', $block->module)
+            ->condition('delata', $block->delta)
+            ->execute();
+      }
+    }
+  }
 }
 
 /**
