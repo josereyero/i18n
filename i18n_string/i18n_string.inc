@@ -409,11 +409,15 @@ class i18n_string_default {
    * Translate array of source strings
    */
   public function multiple_translate($context, $strings, $options = array()) {
-    $options += array('index' => 'property');
-    $property = $options['index'];
     $i18nstring = $this->build_string($context, NULL, $options);
+    // Set the array of keys on the placeholder field
+    foreach (array('type', 'objectid', 'property') as $field) {
+      if ($i18nstring->$field === '*') {
+        $i18nstring->$field = array_keys($strings);
+        $property = $field;
+      }
+    }
     $i18nstring->language = isset($options['langcode']) ? $options['langcode'] : i18n_langcode();
-    $i18nstring->$property = array_keys($strings);
     $translations = $this->multiple_get_translation($i18nstring);
     // Remap translations using index field
     $result = $strings;

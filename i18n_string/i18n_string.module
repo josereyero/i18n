@@ -366,7 +366,7 @@ function i18n_string_multiple($operation, $name, $strings, $options = array()) {
   foreach ($strings as $key => $string) {
     list($textgroup, $context) = i18n_string_context($name, $key);
     array_unshift($context, $textgroup);
-    $result[$name] = module_invoke('i18n_string', $operation, $context, $string, $options);
+    $result[$name] = call_user_func('i18n_string_' . $operation, $context, $string, $options);
   }
   return $result;
 }
@@ -429,7 +429,7 @@ function i18n_string_modules_enabled($modules) {
 function i18n_string_translate($name, $string, $options = array()) {
   $options['langcode'] = i18n_langcode(isset($options['langcode']) ? $options['langcode'] : NULL);
   if (is_array($string)) {
-    return i18n_string_multiple($name, $string, $options);
+    return i18n_string_translate_list($name, $string, $options);
   }
   elseif (i18n_string_translate_langcode($options['langcode'])) {
     list($textgroup, $context) = i18n_string_context($name);
@@ -517,30 +517,30 @@ function i18n_string_string($name, $default, $options = array()) {
 }
 
 /**
- * Translation for array of options
- * 
- * Note this mode doesn't support the 'callback' option
+ * Translation for list of options
  * 
  * @param $options
  *   Array with additional options, some changes
  *   - 'index' => field that will be mapped to the array key (defaults to 'property')
  */
-function i18n_string_array($name, $strings, $options = array()) {
+function i18n_string_translate_list($name, $strings, $options = array()) {
   $options['langcode'] = i18n_langcode(isset($options['langcode']) ? $options['langcode'] : NULL);
-  list($textgroup, $context) = i18n_string_context($name);
   // If language is default, just return
   if (i18n_string_translate_langcode($options['langcode'])) {
+    // Get textgroup context, preserve placeholder
+    list($textgroup, $context) = i18n_string_context($name, '*');
     $translations = i18n_string_textgroup($textgroup)->multiple_translate($context, $strings, $options);
     // Add for l10n client if available, we pass translation object that contains the format
     foreach ($translations as $index => $translation) {
       i18n_string_l10n_client_add($translation, $options);
-      $strings[$index] = i18n_string_format($translation, $options);
+      $strings[$index] = $translation;
     }
-    return $strings;
   }
-  else {
-    return $strings;
+  // Format and return
+  foreach ($strings as $key => $string) {
+    $strings[$key] = i18n_string_format($string, $options);
   }
+  return $strings;
 }
 
 /**
