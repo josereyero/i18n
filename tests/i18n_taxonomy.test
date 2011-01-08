@@ -19,7 +19,7 @@ class i18n_Taxonomy_Test extends Drupali18nTestCase {
   }
 
   function setUp() {
-    parent::setUp('i18n_string', 'taxonomy', 'i18ntaxonomy');
+    parent::setUp('i18n_string', 'taxonomy', 'i18n_taxonomy');
     $this->addLanguage('es');
     $this->addLanguage('de');
   }
@@ -28,7 +28,7 @@ class i18n_Taxonomy_Test extends Drupali18nTestCase {
     // Create a vocabulary with some terms
     $number = 4;
     $vocab = $this->drupalCreateVocabulary(array('i18nmode' => I18N_TAXONOMY_LOCALIZE));
-    $this->assertEqual(i18ntaxonomy_vocabulary($vocab-vid), I18N_TAXONOMY_LOCALIZE, 'A vocabulary has been created and it is localizable.');
+    $this->assertEqual(i18n_taxonomy_vocabulary($vocab-vid), I18N_TAXONOMY_LOCALIZE, 'A vocabulary has been created and it is localizable.');
     $terms = $this->drupalCreateTerms($number, array('vid' => $vocab->vid));
     $this->assertEqual(count($terms), $number, "Four translatable terms have been created.");
     // Create and Save Spanish translation for all of them

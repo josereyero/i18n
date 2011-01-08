@@ -8,8 +8,8 @@
 - Delete description on menu item delete, #844208 by plach
 - Fixed: Node type help not translated, by NaX, #685788
 - Some improvements to i18nmenu API, by plach, #386372 
-- Renamed theme_taxonomy_term_page() to theme_i18ntaxonomy_term_page() to avoid namespace conflicts
-- Added some taxonomy API functions: i18ntaxonomy_translate_term_name()....
+- Renamed theme_taxonomy_term_page() to theme_i18n_taxonomy_term_page() to avoid namespace conflicts
+- Added some taxonomy API functions: i18n_taxonomy_translate_term_name()....
 - Fixed: Access denied to database query (LOCK TABLES) on i18n_variable_set(), #769260
 - Reworked variable initialization to fix multiple issues (front page, etc), #826774
 - Some changes to variables API, added new function: i18n_variable_get()
@@ -93,7 +93,7 @@
 6.x-1.0 to 6.x-1.1
 --------------------
 - Fixed pgsql issue in i18nblocks query rewriting, by plj, #383772
-- Changed i18ntaxonomy module weight for it to run before views, by Owen Barton, #386136
+- Changed i18n_taxonomy module weight for it to run before views, by Owen Barton, #386136
 - Inprovements to i18nsync_node_available_fields(): cached, alter hook, ...
 - Fixed node author field in i18nsync (author -> name), by mfb, #399216
 - Fixed synchronization for nodereference fields, by dasjo, #242601
@@ -101,7 +101,7 @@
 - Fixed multilingual variables issues, by rfay, #451120
 - Fixed i18n_string, wrong hook_schema_alter() implementation, by rsvelko, #466876
 - Added location to i18nsync fields, by zedzed, #426294
-- Added new dependence (i18ntaxonomy) and some taxonomy handling to i18nviews
+- Added new dependence (i18n_taxonomy) and some taxonomy handling to i18nviews
 - Fixed missing brackets around table name in query, #371429
 - Fixed incompatible table locking, using proper API, #416912
 - Fixed typos, by ao2, #429850, dboulet, #396402
@@ -143,7 +143,7 @@
 - Fixed multiple issues with content type strings translations, #343335
 - Added some more parameter checking for i18nviews module, #294278
 - Fixed issues with i18n_string and menu items, by smk-ka, catch, sun, nedjo, #339057
-- Fixed i18ntaxonomy schema mismatch (missing schema_alter), #288994
+- Fixed i18n_taxonomy schema mismatch (missing schema_alter), #288994
 - Added index for locale table's location field, by sun, #349488
 - Removed deprecated i18n_get_links().
 - Tentative fix for: Story shows multiple times on front page, #334670
@@ -168,7 +168,7 @@
 - Fixed: Added English language to import/export page, #314035
 - Fixed: Code tries to access object as array, by Skiller, #293275
 - Fixed: Sub-menu items not localized, by Anselm Heaton, #298612
-- Some clean up in i18ntaxonomy module, coding standards, cvs tags, etc..
+- Some clean up in i18n_taxonomy module, coding standards, cvs tags, etc..
 - Fixed some race condition when creating term translations
 - Multiple bug fixes and code improvements, by stella, #314846, #314880, #314853
 
@@ -183,7 +183,7 @@
 - Fixed error with i18ncontent update, #295263
 - Fixed warning in sync module, by vjacquin, #299064 and #294511
 - Fixed issue with i18nblocks and system module weights, #299642
-- Fixed warning in i18ntaxonomy, by mvc , #304003
+- Fixed warning in i18n_taxonomy, by mvc , #304003
 
 6.x-beta2 to 6.x-beta3
 ----------------------
@@ -204,7 +204,7 @@
 - Better icon for Arabic, by Afief, #278140
 - Added back i18nviews module for views specific features
 - Fixed languageicons occassional warning, by eMPee584, #276161
-- Commented out views hooks on i18ntaxonomy (not for the first version), #285660
+- Commented out views hooks on i18n_taxonomy (not for the first version), #285660
 - Fixed wrong duplicated translations (context/caching issue), #281471
 - Added preliminary support for l10n client (Patch pending)
 - Fixed missing dependency on i18nblocks, #279769
@@ -233,7 +233,7 @@
 - Updated README.txt and INSTALL.txt files
 - Added string refreshing for all the modules using i18n_string.
 - Fixed installation issues doing operations on enable hook instead of install.
-- Fixed: wrong function name on i18ntaxonomy producing errors/warnings
+- Fixed: wrong function name on i18n_taxonomy producing errors/warnings
 - Fixed: blocks not saving language properly.
 - Improved taxonomy vocabulary form, re-grouping the fields and with some help text.
 - Fixed Call-time-pass-by reference, http://drupal.org/node/231856

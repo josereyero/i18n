@@ -1,5 +1,5 @@
 <?php
-// $Id: i18ntaxonomy.pages.inc,v 1.1.2.10 2010/08/12 02:06:20 mirodietiker Exp $
+// $Id: i18n_taxonomy.pages.inc,v 1.1.2.10 2010/08/12 02:06:20 mirodietiker Exp $
 
 /**
  * @file
@@ -9,7 +9,7 @@
 /**
  * Menu callback; displays all nodes associated with a term.
  */
-function i18ntaxonomy_term_page($str_tids = '', $depth = 0, $op = 'page') {
+function i18n_taxonomy_term_page($str_tids = '', $depth = 0, $op = 'page') {
   $terms = taxonomy_terms_parse_string($str_tids);
   if ($terms['operator'] != 'and' && $terms['operator'] != 'or') {
     drupal_not_found();
@@ -22,7 +22,7 @@ function i18ntaxonomy_term_page($str_tids = '', $depth = 0, $op = 'page') {
     $names = array();
     while ($term = db_fetch_object($result)) {
       $tids[] = $term->tid;
-      $names[] = i18ntaxonomy_translate_term_name($term);
+      $names[] = i18n_taxonomy_translate_term_name($term);
     }
 
     if ($names) {
@@ -42,7 +42,7 @@ function i18ntaxonomy_term_page($str_tids = '', $depth = 0, $op = 'page') {
           $breadcrumb = array_reverse($breadcrumb);
           drupal_set_breadcrumb($breadcrumb);
 
-          $output = theme('i18ntaxonomy_term_page', $tids, taxonomy_select_nodes($tids, $terms['operator'], $depth, TRUE));
+          $output = theme('i18n_taxonomy_term_page', $tids, taxonomy_select_nodes($tids, $terms['operator'], $depth, TRUE));
           drupal_add_feed(url('taxonomy/term/'. $str_tids .'/'. $depth .'/feed'), 'RSS - '. $title);
           return $output;
           break;
@@ -54,7 +54,7 @@ function i18ntaxonomy_term_page($str_tids = '', $depth = 0, $op = 'page') {
           // Only display the description if we have a single term, to avoid clutter and confusion.
           if (count($tids) == 1) {
             $terms = array(taxonomy_get_term($tids[0]));
-            $terms = i18ntaxonomy_localize_terms($terms, array('description'));
+            $terms = i18n_taxonomy_localize_terms($terms, array('description'));
             $terms['operator'] = 'or';
             // HTML will be removed from feed description, so no need to filter here.
             $channel['description'] = $terms[0]->description;
@@ -89,7 +89,7 @@ function i18ntaxonomy_term_page($str_tids = '', $depth = 0, $op = 'page') {
  *
  * @ingroup themeable
  */
-function theme_i18ntaxonomy_term_page($tids, $result) {
+function theme_i18n_taxonomy_term_page($tids, $result) {
   drupal_add_css(drupal_get_path('module', 'taxonomy') .'/taxonomy.css');
 
   $output = '';
@@ -97,7 +97,7 @@ function theme_i18ntaxonomy_term_page($tids, $result) {
   // Only display the description if we have a single term, to avoid clutter and confusion.
   if (count($tids) == 1) {
     $term = taxonomy_get_term($tids[0]);
-    if (i18ntaxonomy_vocabulary($term->vid) == I18N_TAXONOMY_LOCALIZE) {
+    if (i18n_taxonomy_vocabulary($term->vid) == I18N_TAXONOMY_LOCALIZE) {
       $description = i18n_string("taxonomy:term:$term->tid:description", $term->description);
     }
     else {
@@ -122,12 +122,12 @@ function theme_i18ntaxonomy_term_page($tids, $result) {
  *
  * @ TODO Optimized localization. We cannot just i18n_string() huge lists of terms.
  */
-function i18ntaxonomy_autocomplete($vid, $string = '') {
+function i18n_taxonomy_autocomplete($vid, $string = '') {
   // The user enters a comma-separated list of tags. We only autocomplete the last tag.
   $array = drupal_explode_tags($string);
 
   // Is this vocabulary localizable?
-  $localizable = i18ntaxonomy_vocabulary($vid) == I18N_TAXONOMY_LOCALIZE;
+  $localizable = i18n_taxonomy_vocabulary($vid) == I18N_TAXONOMY_LOCALIZE;
 
   // Fetch last tag.
   $last_string = trim(array_pop($array));

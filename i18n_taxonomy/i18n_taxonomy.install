@@ -1,0 +1,53 @@
+<?php
+// $Id: i18n_taxonomy.install,v 1.3.2.10 2009/06/12 13:35:12 jareyero Exp $
+
+/**
+ * @file
+ * Installation file for i18n_taxonomy module.
+ */
+
+/**
+ * Set language field in its own table.
+ * Do not drop node.language now, just in case.
+ * TO-DO: Drop old tables, fields
+ */
+function i18n_taxonomy_install() {
+  db_add_field($ret, 'vocabulary', 'language', array('type' => 'varchar', 'length' => 12, 'not null' => TRUE, 'default' => ''));
+  db_add_field($ret, 'term_data', 'language', array('type' => 'varchar', 'length' => 12, 'not null' => TRUE, 'default' => ''));
+  db_add_field($ret, 'term_data', 'trid', array('type' => 'int', 'not null' => TRUE, 'default' => 0));
+
+  // Set module weight for it to run after core modules, but before views.
+  db_query("UPDATE {system} SET weight = 5 WHERE name = 'i18n_taxonomy' AND type = 'module'");
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function i18n_taxonomy_uninstall() {
+  $ret = array();
+  db_drop_field($ret, 'vocabulary', 'language');
+  db_drop_field($ret, 'term_data', 'language');
+  db_drop_field($ret, 'term_data', 'trid');
+
+  variable_del('i18n_taxonomy_vocabulary');
+}
+
+/**
+ * Implements hook_schema_alter().
+ */
+function i18n_taxonomy_schema_alter(&$schema) {
+  $schema['vocabulary']['fields']['language'] = array('type' => 'varchar', 'length' => 12, 'not null' => TRUE, 'default' => '');
+  $schema['term_data']['fields']['language'] = array('type' => 'varchar', 'length' => 12, 'not null' => TRUE, 'default' => '');
+  $schema['term_data']['fields']['trid'] = array('type' => 'int', 'not null' => TRUE, 'default' => 0);
+}
+
+/**
+ * Implements hook_enable().
+ *
+ * Just add strings to locale tables.
+ */
+function i18n_taxonomy_enable() {
+  drupal_load('module', 'i18n_string');
+  i18n_taxonomy_locale_refresh();
+}
+

@@ -231,7 +231,7 @@ function i18nsync_prepare_translation(&$node, $source, $field_list) {
     if (empty($source->$field)) continue;
     switch ($field) {
       case 'taxonomy':
-        // Do nothing, this is handled by the i18ntaxonomy module
+        // Do nothing, this is handled by the i18n_taxonomy module
         break;
 
       default:
@@ -345,12 +345,12 @@ function i18nsync_node_translation($node, $translation, $fields, $op) {
  * Translate translatable terms, just copy over the rest.
  */
 function i18nsync_node_taxonomy(&$node, &$source) {
-  if (module_exists('i18ntaxonomy') && is_array($source->taxonomy)) {
+  if (module_exists('i18n_taxonomy') && is_array($source->taxonomy)) {
     // Load clean source node taxonomy so we don't need to handle weird form input
-    if (!isset($source->i18ntaxonomy)) {
-      $source->i18ntaxonomy = i18ntaxonomy_node_get_terms($source);
+    if (!isset($source->i18n_taxonomy)) {
+      $source->i18n_taxonomy = i18n_taxonomy_node_get_terms($source);
     }
-    $node->taxonomy = i18ntaxonomy_translate_terms($source->i18ntaxonomy, $node->language, FALSE);
+    $node->taxonomy = i18n_taxonomy_translate_terms($source->i18n_taxonomy, $node->language, FALSE);
   }
   else {
     // If not multilingual taxonomy enabled, just copy over.
