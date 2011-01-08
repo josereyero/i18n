@@ -61,7 +61,7 @@ function i18n_field_field_info_alter(&$info) {
  */
 function i18n_field_field_formatter_info() {
   $types = array();
-  foreach (i18n_field_info() as $type => $info) {
+  foreach (i18n_field_type_info() as $type => $info) {
     if (!empty($info['translate_options'])) {
       $types[] = $type;
     }
@@ -82,7 +82,7 @@ function i18n_field_field_formatter_view($entity_type, $entity, $field, $instanc
 
   switch ($display['type']) {
     case 'i18n_list_default':
-      if (($translate = i18n_field_info($field['type'], 'translate_options'))) {
+      if (($translate = i18n_field_type_info($field['type'], 'translate_options'))) {
         $allowed_values = $translate($field, $langcode);
       }
       else {
@@ -170,11 +170,11 @@ function i18n_field_field_widget_form($form, $form_state, $field, $instance, $la
     $element['#description'] = i18n_field_translate_property($instance, 'description');
   }  
   // Translate default value if exists and the current value is the default
-  if (($translate = i18n_field_info($field['type'], 'translate_default')) && !empty($instance['default_value'][$delta]['value']) && !empty($items[$delta]['value']) && $instance['default_value'][$delta]['value'] === $items[$delta]['value']) {
+  if (($translate = i18n_field_type_info($field['type'], 'translate_default')) && !empty($instance['default_value'][$delta]['value']) && !empty($items[$delta]['value']) && $instance['default_value'][$delta]['value'] === $items[$delta]['value']) {
     $items[$delta]['value'] = $translate($instance, $items[$delta]['value'], $langcode);
   }
   // Translate list options
-  if (($translate = i18n_field_info($field['type'], 'translate_options')) && !empty($field['settings']['allowed_values'])) {
+  if (($translate = i18n_field_type_info($field['type'], 'translate_options')) && !empty($field['settings']['allowed_values'])) {
     $field['settings']['allowed_values'] = $translate($field, $langcode);
   }
   // Redirect through original module_field_widget_form()
@@ -228,7 +228,7 @@ function i18n_field_field_update_field($field) {
  */
 function i18n_field_field_update_strings($field) {
   // For select fields field:field_name
-  if (!empty($field['settings']['allowed_values']) && i18n_field_info($field['type'], 'translate_options')) {
+  if (!empty($field['settings']['allowed_values']) && i18n_field_type_info($field['type'], 'translate_options')) {
     foreach ($field['settings']['allowed_values'] as $key => $name) {
       i18n_string_update(array('field', $field['field_name'],'#allowed_values', $key), $name);
     }
@@ -244,7 +244,7 @@ function i18n_field_instance_update_strings($instance) {
     i18n_string_update(array('field', $instance['bundle'], $instance['field_name'], 'description'), $instance['description']);
   }
   // Only for text field types
-  if (isset($instance['default_value']) && i18n_field_info($field['type'], 'translate_default')) {
+  if (isset($instance['default_value']) && i18n_field_type_info($field['type'], 'translate_default')) {
     $format = isset($instance['default_value'][0]['format']) ? $instance['default_value'][0]['format'] : NULL;
     i18n_string_update(array('field', $instance['field_name'], $instance['bundle'], 'default_value'), $instance['default_value'][0]['value'], array('format' => $format));
   }
@@ -266,7 +266,7 @@ function i18n_field_instance_update_strings($instance) {
  */
 function i18n_field_translate_allowed_values($field, $langcode = NULL) {
   if (!empty($field['settings']['allowed_values'])) {
-    return i18n_string_array(array('field', $field['field_name'], '#allowed_values'), $field['settings']['allowed_values'], array('langcode' => $langcode));
+    return i18n_string_translate(array('field', $field['field_name'], '#allowed_values'), $field['settings']['allowed_values'], array('langcode' => $langcode));
   }
   else {
     return array();
@@ -288,28 +288,9 @@ function i18n_field_translate_property($instance, $property, $langcode = NULL) {
 }
 
 /**
- * Check whether this field type has translatable defaults
- * 
- * @param $field
- *   Full field data array or field name
- */
-function i18n_field_translatable_default($field) {
-  $field = is_array($field) ? $field : field_info_field($field);
-  return in_array($field['type'], variable_get('i18n_field_translatable_default', array('text', 'text_long', 'text_with_summary')));
-}
-
-/**
- * List of fields that have translatable options
- */
-function i18n_field_translatable_options($field) {
-  $field = is_array($field) ? $field : field_info_field($field);
-  return in_array($field['type'], variable_get('i18n_field_translatable_options', array('list_text', 'list_boolean')));
-}
-
-/**
  * Get i18n information for fields
  */
-function i18n_field_info($type = NULL, $property = NULL) {
+function i18n_field_type_info($type = NULL, $property = NULL) {
   $info = &drupal_static(__FUNCTION__);
   if (!isset($info)) {
     $info = module_invoke_all('i18n_field_info');
