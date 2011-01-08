@@ -229,9 +229,7 @@ function i18n_field_field_update_field($field) {
 function i18n_field_field_update_strings($field) {
   // For select fields field:field_name
   if (!empty($field['settings']['allowed_values']) && i18n_field_type_info($field['type'], 'translate_options')) {
-    foreach ($field['settings']['allowed_values'] as $key => $name) {
-      i18n_string_update(array('field', $field['field_name'],'#allowed_values', $key), $name);
-    }
+    i18n_string_update(array('field', $field['field_name'],'#allowed_values'), $field['settings']['allowed_values']);
   }  
 }
 
@@ -241,7 +239,7 @@ function i18n_field_field_update_strings($field) {
 function i18n_field_instance_update_strings($instance) {
   $field = field_info_field($instance['field_name']);
   if (isset($instance['description'])) {
-    i18n_string_update(array('field', $instance['bundle'], $instance['field_name'], 'description'), $instance['description']);
+    i18n_string_update(array('field', $instance['field_name'], $instance['bundle'], 'description'), $instance['description']);
   }
   // Only for text field types
   if (isset($instance['default_value']) && i18n_field_type_info($field['type'], 'translate_default')) {

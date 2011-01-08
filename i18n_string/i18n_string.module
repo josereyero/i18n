@@ -366,7 +366,7 @@ function i18n_string_multiple($operation, $name, $strings, $options = array()) {
   foreach ($strings as $key => $string) {
     list($textgroup, $context) = i18n_string_context($name, $key);
     array_unshift($context, $textgroup);
-    $result[$name] = call_user_func('i18n_string_' . $operation, $context, $string, $options);
+    $result[$key] = call_user_func('i18n_string_' . $operation, $context, $string, $options);
   }
   return $result;
 }
