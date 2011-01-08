@@ -1,5 +1,5 @@
 <?php
-// $Id: i18nsync.module,v 1.1.2.35 2010/03/04 20:11:10 jareyero Exp $
+// $Id: i18n_sync.module,v 1.1.2.35 2010/03/04 20:11:10 jareyero Exp $
 
 /**
  * @file
@@ -19,9 +19,9 @@
 /**
  * Implements hook_help().
  */
-function i18nsync_help($path, $arg) {
+function i18n_sync_help($path, $arg) {
   switch ($path) {
-    case 'admin/help#i18nsync' :
+    case 'admin/help#i18n_sync' :
       $output = '<p>'. t('This module synchronizes content taxonomy and fields accross translations:') .'</p>';
       $output .= '<p>'. t('First you need to select which fields should be synchronized. Then, after a node has been updated, all enabled vocabularies and fields will be synchronized as follows:') .'</p>';
       $output .= '<ul>';
@@ -40,9 +40,9 @@ function i18nsync_help($path, $arg) {
 /**
  * Implements hook_theme().
  */
-function i18nsync_theme() {
+function i18n_sync_theme() {
   return array(
-    'i18nsync_workflow_checkbox' => array(
+    'i18n_sync_workflow_checkbox' => array(
       'arguments' => array('item' => NULL),
     ),
   );
@@ -53,14 +53,14 @@ function i18nsync_theme() {
  * - Vocabulary options
  * - Content type options
  */
-function i18nsync_form_alter(&$form, $form_state, $form_id) {
+function i18n_sync_form_alter(&$form, $form_state, $form_id) {
   // Taxonomy vocabulary form.
   switch ($form_id) {
     case 'node_type_form':
       $type = $form['#node_type']->type;
-      $current = i18nsync_node_fields($type);
+      $current = i18n_sync_node_fields($type);
       $disabled = $form['i18n']['#disabled'];
-      $form['i18n']['i18nsync_nodeapi'] = array(
+      $form['i18n']['i18n_sync_nodeapi'] = array(
         '#type' => 'fieldset',
         '#tree' => TRUE,
         '#title' => t('Synchronize translations'),
@@ -71,16 +71,16 @@ function i18nsync_form_alter(&$form, $form_state, $form_id) {
       );
       // Each set provides title and options. We build a big checkboxes control for it to be
       // saved as an array. Special themeing for group titles.
-      foreach (i18nsync_node_available_fields($type) as $group => $data) {
+      foreach (i18n_sync_node_available_fields($type) as $group => $data) {
         $title = $data['#title'];
         if (!empty($data['#options'])) {
           foreach ($data['#options'] as $field => $name) {
-            $form['i18n']['i18nsync_nodeapi'][$field] = array(
+            $form['i18n']['i18n_sync_nodeapi'][$field] = array(
               '#group_title' => $title,
               '#title' => $name,
               '#type' => 'checkbox',
               '#default_value' => in_array($field, $current),
-              '#theme' => 'i18nsync_workflow_checkbox',
+              '#theme' => 'i18n_sync_workflow_checkbox',
               '#disabled' => $disabled,
             );
             $title = '';
@@ -90,11 +90,11 @@ function i18nsync_form_alter(&$form, $form_state, $form_id) {
       break;
     case 'node_delete_confirm':
       // Intercept form submission so we can handle uploads, replace callback
-      $form['#submit'] = array_merge(array('i18nsync_node_delete_submit'), $form['#submit']);
+      $form['#submit'] = array_merge(array('i18n_sync_node_delete_submit'), $form['#submit']);
       break;
     case 'node_admin_content':
       if (!empty($form['operation']) && $form['operation']['#value'] == 'delete') {
-        $form['#submit'] = array_merge(array('i18nsync_node_delete_submit'), $form['#submit']);
+        $form['#submit'] = array_merge(array('i18n_sync_node_delete_submit'), $form['#submit']);
       }
       break;
   }
@@ -105,16 +105,16 @@ function i18nsync_form_alter(&$form, $form_state, $form_id) {
  * - node delete confirm
  * - node multiple delete confirm
  */
-function i18nsync_node_delete_submit($form, $form_state) {
+function i18n_sync_node_delete_submit($form, $form_state) {
   if ($form_state['values']['confirm']) {
     if (!empty($form_state['values']['nid'])) {
       // Single node
-      i18nsync_node_delete_prepare($form_state['values']['nid']);
+      i18n_sync_node_delete_prepare($form_state['values']['nid']);
     }
     elseif (!empty($form_state['values']['nodes'])) {
       // Multiple nodes
       foreach ($form_state['values']['nodes'] as $nid => $value) {
-        i18nsync_node_delete_prepare($nid);
+        i18n_sync_node_delete_prepare($nid);
       }
     }
   }
@@ -124,7 +124,7 @@ function i18nsync_node_delete_submit($form, $form_state) {
 /**
  * Prepare node for deletion, work out synchronization issues
  */
-function i18nsync_node_delete_prepare($nid) {
+function i18n_sync_node_delete_prepare($nid) {
   $node = node_load($nid);
   // Delete file associations when files are shared with existing translations
   // so they are not removed by upload module
@@ -139,7 +139,7 @@ function i18nsync_node_delete_prepare($nid) {
 /**
  * Theming function for workflow checkboxes.
  */
-function theme_i18nsync_workflow_checkbox($element) {
+function theme_i18n_sync_workflow_checkbox($element) {
   $output = $element['#group_title'] ? '<div class="description">'. $element['#group_title'] .'</div>' : '';
   $output .= theme('checkbox', $element);
   return $output;
@@ -148,16 +148,16 @@ function theme_i18nsync_workflow_checkbox($element) {
 /**
  * Implements hook_nodeapi().
  */
-function i18nsync_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
-  global $i18nsync; // This variable will be true when a sync operation is in progress.
+function i18n_sync_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
+  global $i18n_sync; // This variable will be true when a sync operation is in progress.
 
   // Only for nodes that have language and belong to a translation set.
-  if (translation_supported_type($node->type) && !empty($node->language) && !$i18nsync) {
+  if (translation_supported_type($node->type) && !empty($node->language) && !$i18n_sync) {
     switch ($op) {
       case 'load':
         // Add instance count for cck fields so we can use the information later, see hook_file_references()
-        if (!empty($node->tnid) && ($sync_fields = i18nsync_node_fields($node->type)) && ($content_fields = _i18nsync_cck_fields($node->type))) {
-          if ($translations = _i18nsync_node_translations($node, TRUE)) {
+        if (!empty($node->tnid) && ($sync_fields = i18n_sync_node_fields($node->type)) && ($content_fields = _i18n_sync_cck_fields($node->type))) {
+          if ($translations = _i18n_sync_node_translations($node, TRUE)) {
             $count = count($translations);
             foreach ($sync_fields as $field) {
               if (isset($content_fields[$field]) && !empty($node->$field) && is_array($node->$field)) {
@@ -165,7 +165,7 @@ function i18nsync_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
                 // Reminder: Use brackets for $node->{$field}[$key] as $node->$field[$key] won't work
                 foreach (array_keys($node->$field) as $key) {
                   if (is_array($node->{$field}[$key])) {
-                    $node->{$field}[$key]['i18nsync'] = $count;
+                    $node->{$field}[$key]['i18n_sync'] = $count;
                   }
                 }
               }
@@ -176,8 +176,8 @@ function i18nsync_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
 
       case 'prepare translation':
         // We copy over all the fields to be synchronized.
-        if ($fields = i18nsync_node_fields($node->type)) {
-          i18nsync_prepare_translation($node, $node->translation_source, $fields);
+        if ($fields = i18n_sync_node_fields($node->type)) {
+          i18n_sync_prepare_translation($node, $node->translation_source, $fields);
         }
         break;
 
@@ -187,7 +187,7 @@ function i18nsync_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
           // Set tnid that is not set by translation module
           $node->tnid = $node->translation_source->tnid ? $node->translation_source->tnid : $node->translation_source->nid;
           // If we have files, we need to save the files that have been inherited
-          if (!empty($node->files) && i18nsync_node_fields($node->type, 'files')) {
+          if (!empty($node->files) && i18n_sync_node_fields($node->type, 'files')) {
             foreach ($node->files as $fid => $file) {
               $file = (object)$file;
               if (empty($file->remove) && empty($file->new)) {
@@ -199,8 +199,8 @@ function i18nsync_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
         // Intentional no break.
       case 'update':    
         // Let's go with field synchronization.
-        if (!empty($node->tnid) && ($fields = i18nsync_node_fields($node->type)) && ($translations = _i18nsync_node_translations($node, TRUE))) {
-          $i18nsync = TRUE;
+        if (!empty($node->tnid) && ($fields = i18n_sync_node_fields($node->type)) && ($translations = _i18n_sync_node_translations($node, TRUE))) {
+          $i18n_sync = TRUE;
           $count = 0;
           // If we have fields we need to reload them so we have the full data (fid, etc...)
           if (!empty($node->files) && in_array('files', $fields)) {
@@ -210,12 +210,12 @@ function i18nsync_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
           i18n_selection_mode('off');
           foreach ($translations as $trnode) {
             if ($node->nid != $trnode->nid) {
-              i18nsync_node_translation($node, $trnode, $fields, $op);
+              i18n_sync_node_translation($node, $trnode, $fields, $op);
               $count++;
             }
           }
           i18n_selection_mode('reset');
-          $i18nsync = FALSE;
+          $i18n_sync = FALSE;
           drupal_set_message(format_plural($count, 'One node translation has been synchronized.', 'All @count node translations have been synchronized.'));
         }
         break;
@@ -226,7 +226,7 @@ function i18nsync_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
 /**
  * Prepare node translation. Copy over sincronizable fields.
  */
-function i18nsync_prepare_translation(&$node, $source, $field_list) {
+function i18n_sync_prepare_translation(&$node, $source, $field_list) {
   foreach ($field_list as $field) {
     if (empty($source->$field)) continue;
     switch ($field) {
@@ -260,12 +260,12 @@ function i18nsync_prepare_translation(&$node, $source, $field_list) {
  * @param $op
  *   Node operation (insert|update).
  */
-function i18nsync_node_translation($node, $translation, $fields, $op) {
+function i18n_sync_node_translation($node, $translation, $fields, $op) {
   // Load full node, we need all data here.
   $translation = node_load($translation->nid, NULL, TRUE);
 
   // Collect info on any CCK fields.
-  $content_fields = _i18nsync_cck_fields($node->type);
+  $content_fields = _i18n_sync_cck_fields($node->type);
 
   foreach ($fields as $field) {
     // Check for CCK fields first.
@@ -276,11 +276,11 @@ function i18nsync_node_translation($node, $translation, $fields, $op) {
         // Filefields and imagefields are syncronized equally.
         case 'filefield':
         case 'imagefield':
-          i18nsync_node_translation_filefield_field($node, $translation, $field);
+          i18n_sync_node_translation_filefield_field($node, $translation, $field);
           break;
 
         case 'nodereference':
-          i18nsync_node_translation_nodereference_field($node, $translation, $field);
+          i18n_sync_node_translation_nodereference_field($node, $translation, $field);
           break;
 
         default:
@@ -293,12 +293,12 @@ function i18nsync_node_translation($node, $translation, $fields, $op) {
     else {
       switch ($field) {
         case 'taxonomy': // Do nothing it has already been syncd.
-          i18nsync_node_taxonomy($translation, $node);
+          i18n_sync_node_taxonomy($translation, $node);
           break;
 
         case 'parent': // Book outlines, translating parent page if exists.
         case 'iid': // Attached image nodes.
-          i18nsync_node_translation_attached_node($node, $translation, $field);
+          i18n_sync_node_translation_attached_node($node, $translation, $field);
           break;
 
         case 'images':
@@ -344,7 +344,7 @@ function i18nsync_node_translation($node, $translation, $fields, $op) {
  *
  * Translate translatable terms, just copy over the rest.
  */
-function i18nsync_node_taxonomy(&$node, &$source) {
+function i18n_sync_node_taxonomy(&$node, &$source) {
   if (module_exists('i18n_taxonomy') && is_array($source->taxonomy)) {
     // Load clean source node taxonomy so we don't need to handle weird form input
     if (!isset($source->i18n_taxonomy)) {
@@ -361,21 +361,21 @@ function i18nsync_node_taxonomy(&$node, &$source) {
 /**
  * Node attachments (CCK) that may have translation.
  */
-function i18nsync_node_translation_attached_node(&$node, &$translation, $field) {
+function i18n_sync_node_translation_attached_node(&$node, &$translation, $field) {
   if ($attached = node_load($node->$field)) {
-    $translation->$field = i18nsync_node_translation_reference_field($attached, $node->$field, $translation->language);
+    $translation->$field = i18n_sync_node_translation_reference_field($attached, $node->$field, $translation->language);
   }
 }
 
 /**
  * Translating a nodereference field (cck).
  */
-function i18nsync_node_translation_nodereference_field(&$node, &$translation, $field) {
+function i18n_sync_node_translation_nodereference_field(&$node, &$translation, $field) {
   $translated_references = array();
   foreach ($node->$field as $reference) {
     if ($reference_node = node_load($reference['nid'])) {
       $translated_references[] = array(
-        'nid' => i18nsync_node_translation_reference_field($reference_node, $reference['nid'], $translation->language)
+        'nid' => i18n_sync_node_translation_reference_field($reference_node, $reference['nid'], $translation->language)
       );
     }
   }
@@ -385,7 +385,7 @@ function i18nsync_node_translation_nodereference_field(&$node, &$translation, $f
 /**
  * Translating an filefield (cck).
  */
-function i18nsync_node_translation_filefield_field(&$node, &$translation, $field) {
+function i18n_sync_node_translation_filefield_field(&$node, &$translation, $field) {
   if (is_array($node->$field)) {
     $translated_images = array();
     foreach ($node->$field as $file) {
@@ -415,7 +415,7 @@ function i18nsync_node_translation_filefield_field(&$node, &$translation, $field
  *   English A and B are translated to German A and B, but English C is not.
  *   The syncronization from English A to German A would it German B and English C.
  */
-function i18nsync_node_translation_reference_field(&$reference_node, $default_value, $langcode) {
+function i18n_sync_node_translation_reference_field(&$reference_node, $default_value, $langcode) {
   if (isset($reference_node->tnid) && translation_supported_type($reference_node->type)) {
     // This content type has translations, find the one.
     if (($reference_trans = translation_node_get_translations($reference_node->tnid)) && isset($reference_trans[$langcode])) {
@@ -440,8 +440,8 @@ function i18nsync_node_translation_reference_field(&$reference_node, $default_va
  * @param $field
  *   Optional field name to check whether it is in the list
  */
-function i18nsync_node_fields($type, $field = NULL) {
-  $fields = variable_get('i18nsync_nodeapi_'. $type, array());
+function i18n_sync_node_fields($type, $field = NULL) {
+  $fields = variable_get('i18n_sync_nodeapi_'. $type, array());
   return $field ? in_array($field, $fields) : $fields;
 }
 
@@ -450,21 +450,21 @@ function i18nsync_node_fields($type, $field = NULL) {
  *
  * There are two hidden variables (without UI) that can be used to add fields
  * with the form array('field' => 'Field name')
- *  - i18nsync_fields_node
- *  - i18nsync_fields_node_$type;
+ *  - i18n_sync_fields_node
+ *  - i18n_sync_fields_node_$type;
  *
- * Fields can also be changed using hook_i18nsync_fields_alter($fields, $type)
+ * Fields can also be changed using hook_i18n_sync_fields_alter($fields, $type)
  *
  * @param $type
  *   Node type.
  */
-function i18nsync_node_available_fields($type) {
+function i18n_sync_node_available_fields($type) {
   static $cache;
 
   if (!isset($cache[$type])) {
     // Default node fields.
     $fields['node']['#title'] = t('Standard node fields.');
-    $options = variable_get('i18nsync_fields_node', array());
+    $options = variable_get('i18n_sync_fields_node', array());
     $options += array(
       'name' => t('Author'),
       'status' => t('Status'),
@@ -493,7 +493,7 @@ function i18nsync_node_available_fields($type) {
     }
 
     // Get variable for this node type.
-    $fields += variable_get("i18nsync_fields_node_$type", array());
+    $fields += variable_get("i18n_sync_fields_node_$type", array());
 
     // Image and image attach.
     if (module_exists('image') && $type == 'image') {
@@ -517,7 +517,7 @@ function i18nsync_node_available_fields($type) {
     }
 
     // Get CCK fields.
-    if (($contentfields = _i18nsync_cck_fields($type))) {
+    if (($contentfields = _i18n_sync_cck_fields($type))) {
       // Get context information.
       $info = module_invoke('content', 'fields', NULL, $type);
       $fields['cck']['#title'] = t('CCK fields');
@@ -527,7 +527,7 @@ function i18nsync_node_available_fields($type) {
     }
 
     // Give a chance to modules to change/remove/add their own fields
-    drupal_alter('i18nsync_fields', $fields, $type);
+    drupal_alter('i18n_sync_fields', $fields, $type);
 
     $cache[$type] = $fields;
   }
@@ -537,7 +537,7 @@ function i18nsync_node_available_fields($type) {
 /**
  * Helper function to get list of cck fields
  */
-function _i18nsync_cck_fields($type) {
+function _i18n_sync_cck_fields($type) {
   if (($content = module_invoke('content', 'types', $type)) && !empty($content['fields'])) {
     return $content['fields'];
   }
@@ -548,7 +548,7 @@ function _i18nsync_cck_fields($type) {
  *
  * Translations will be stored in the node itself so we have them cached
  */
-function _i18nsync_node_translations($node, $exclude = FALSE) {
+function _i18n_sync_node_translations($node, $exclude = FALSE) {
   // Maybe translations are already here
   if (!empty($node->tnid) && ($translations = translation_node_get_translations($node->tnid))) {
     if ($exclude && $node->language) {
@@ -563,9 +563,9 @@ function _i18nsync_node_translations($node, $exclude = FALSE) {
  *
  * Inform CCK's filefield that we have other nodes using that file so it won't be deleted
  */
-function i18nsync_file_references($file) {
+function i18n_sync_file_references($file) {
   // We have marked the field previously on nodeapi load
-  return !empty($file->i18nsync);
+  return !empty($file->i18n_sync);
 }
 
 /*

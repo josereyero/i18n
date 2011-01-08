@@ -7,7 +7,7 @@
 - Fixed: PHP notices, by eMPee584, #769318
 - Delete description on menu item delete, #844208 by plach
 - Fixed: Node type help not translated, by NaX, #685788
-- Some improvements to i18nmenu API, by plach, #386372 
+- Some improvements to i18n_menu API, by plach, #386372 
 - Renamed theme_taxonomy_term_page() to theme_i18n_taxonomy_term_page() to avoid namespace conflicts
 - Added some taxonomy API functions: i18n_taxonomy_translate_term_name()....
 - Fixed: Access denied to database query (LOCK TABLES) on i18n_variable_set(), #769260
@@ -227,7 +227,7 @@
 - Fixed multiple issues with selection modes and some old function clean up
 - Fixed issues with menu administration pages, now showing all items for nodes
 - Improved block management, no need for 'Translated' duplicated blocks anymore.
-- Added new dependency for i18nmenu, now it works with i18nblocks
+- Added new dependency for i18n_menu, now it works with i18nblocks
 - Fixed: i18n_string_to() not changing location, http://drupal.org/node/230750
 - Fixed: taxonomy vocabulary setting not saved when set to 'none'
 - Updated README.txt and INSTALL.txt files
