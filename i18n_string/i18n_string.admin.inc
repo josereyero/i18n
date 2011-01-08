@@ -13,7 +13,7 @@ function i18n_string_admin_refresh_form() {
   $groups = module_invoke_all('locale', 'groups');
   unset($groups['default']);
   foreach (array_keys($groups) as $key) {
-    if (!i18n_string_info($key, 'refresh callback')) {
+    if (!i18n_string_group_info($key, 'refresh callback')) {
       unset($groups[$key]);
     }
   }
@@ -130,7 +130,7 @@ function i18n_string_admin_settings() {
   $textgroups = module_invoke_all('locale', 'groups');
   unset($textgroups['default']);
   foreach (array_keys($textgroups) as $group) {
-    $format = i18n_string_info($group, 'format');
+    $format = i18n_string_group_info($group, 'format');
     if (isset($format)) {
       // This one already has format information, so remove from list
       unset($textgroups[$group]);
@@ -166,7 +166,7 @@ function i18n_string_admin_settings() {
  */
 function i18n_string_refresh_group($group, $delete = FALSE) {
   // Check for the refresh callback
-  $refresh_callback = i18n_string_info($group, 'refresh callback');
+  $refresh_callback = i18n_string_group_info($group, 'refresh callback');
   if (!$refresh_callback) {
     return FALSE;
   }

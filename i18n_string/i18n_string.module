@@ -63,7 +63,7 @@ define('I18N_STRING_STATUS_DELETE', 2);
 function i18n_string_textgroup($textgroup) {
   $groups = &drupal_static(__FUNCTION__);
   if (!isset($groups[$textgroup])) {
-    $class = i18n_string_info($textgroup, 'class', 'i18n_string_default');
+    $class = i18n_string_group_info($textgroup, 'class', 'i18n_string_default');
     $groups[$textgroup] = new $class($textgroup);
   }
   return $groups[$textgroup];
@@ -317,8 +317,13 @@ function i18n_string_update_object($context, $object, $properties = array()) {
  *   - 'messages', Whether to print out status messages
  */
 function i18n_string_update($name, $string, $options = array()) {
-  list($textgroup, $context) = i18n_string_context($name);
-  return i18n_string_textgroup($textgroup)->update($context, $string, $options);
+  if (is_array($string)) {
+    return i18n_string_multiple('update', $name, $string, $options);
+  }
+  else {
+    list($textgroup, $context) = i18n_string_context($name);
+    return i18n_string_textgroup($textgroup)->update($context, $string, $options);
+  }
 }
 
 /**
@@ -326,9 +331,21 @@ function i18n_string_update($name, $string, $options = array()) {
  * 
  * @param $name
  *   Array or string concatenated with ':' that contains textgroup and string context
+ * @param $replace
+ *   Parameter to replace the placeholder ('*') if we are dealing with multiple strings
+ *   Or parameter to append to context if there's no placeholder
  */
-function i18n_string_context($name) {
+function i18n_string_context($name, $replace = NULL) {
   $parts = is_array($name) ? $name : explode(':', $name);
+  if ($replace) {
+    $key = array_search('*', $parts);
+    if ($key !== FALSE) {
+      $parts[$key] = $replace;
+    }
+    elseif (count($parts) < 4) {
+      array_push($parts, $replace);
+    }
+  }
   $textgroup = array_shift($parts);
   $context = $parts;
   return array($textgroup, $context);
@@ -340,10 +357,16 @@ function i18n_string_context($name) {
  * @param $strings
  *   Array of name => string pairs
  */
-function i18n_string_multiple($strings, $options = array()) {
+function i18n_string_multiple($operation, $name, $strings, $options = array()) {  
   $result = array();
-  foreach ($strings as $name => $string) {
-    $result[$name] = i18n_string($name, $string, $options);
+  // Strings may be an array of properties, we need to shift it
+  if ($operation == 'remove') {
+    $strings = array_flip($strings);
+  }
+  foreach ($strings as $key => $string) {
+    list($textgroup, $context) = i18n_string_context($name, $key);
+    array_unshift($context, $textgroup);
+    $result[$name] = module_invoke('i18n_string', $operation, $context, $string, $options);
   }
   return $result;
 }
@@ -356,7 +379,7 @@ function i18n_string_multiple($strings, $options = array()) {
  * @param $default
  *   Default value to return for a property if not set.
  */
-function i18n_string_info($group = NULL, $property = NULL, $default = NULL) {
+function i18n_string_group_info($group = NULL, $property = NULL, $default = NULL) {
   $info = &drupal_static(__FUNCTION__ , NULL);
 
   if (!isset($info)) {
@@ -396,7 +419,7 @@ function i18n_string_modules_enabled($modules) {
  * @param $name
  *   Textgroup and context glued with ':'
  * @param $string
- *   String in default language
+ *   String in default language or array of strings to be translated
  * @param $options
  *   An associative array of additional options, with the following keys:
  *   - 'langcode' (defaults to the current language) The language code to translate to a language other than what is used to display the page.
@@ -405,15 +428,18 @@ function i18n_string_modules_enabled($modules) {
  */
 function i18n_string_translate($name, $string, $options = array()) {
   $options['langcode'] = i18n_langcode(isset($options['langcode']) ? $options['langcode'] : NULL);
-  list($textgroup, $context) = i18n_string_context($name);
-  // If language is default, just return
-  if (i18n_string_translate_langcode($options['langcode'])) {
+  if (is_array($string)) {
+    return i18n_string_multiple($name, $string, $options);
+  }
+  elseif (i18n_string_translate_langcode($options['langcode'])) {
+    list($textgroup, $context) = i18n_string_context($name);
     $translation = i18n_string_textgroup($textgroup)->translate($context, $string, $options);
     // Add for l10n client if available, we pass translation object that contains the format
     i18n_string_l10n_client_add($translation, $options);
     return i18n_string_format($translation, $options);
   }
   else {
+    // If we don't want to translate to this language, format and return
     return i18n_string_format($string, $options);
   }
 }
@@ -528,11 +554,16 @@ function i18n_string_array($name, $strings, $options = array()) {
  *   String context
  * @param $string
  *   Optional source string (string in default language).
+ *   Array of string properties to remove
  */
 function i18n_string_remove($name, $string = NULL, $options = array()) {
-  list($textgroup, $context) = i18n_string_context($name);
-  $status = i18n_string_textgroup($textgroup)->remove($context, $string, $options);
-  return $status;
+  if (is_array($string)) {
+    return i18n_string_multiple('remove', $name, $string, $options);
+  }
+  else {
+    list($textgroup, $context) = i18n_string_context($name);
+    return i18n_string_textgroup($textgroup)->remove($context, $string, $options);
+  }
 }
 
 
