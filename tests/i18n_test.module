@@ -28,22 +28,20 @@ function _i18n_test_variable_init() {
 }
 
 /**
- * Implements hook_locale()
+ * Implements hook_i18n_string_info()
  */
-function i18n_test_locale() {
-  switch ($op) {
-    case 'groups':
-      return array('test' => t('Test'));
-    case 'info':
-      $info['test']['refresh callback'] = 'i18n_test_locale_refresh';
-      $info['test']['format'] = FALSE;
-      return $info;
-  }
+function i18n_test_i18n_string_info() {
+  $groups['test'] = array(
+    'title' => t('Test'),
+    'description' => t('Translatable menu items: title and description.'),
+    'format' => FALSE, // This group doesn't have strings with format
+    'refresh callback' = 'i18n_test_i18n_string_refresh',
+  );
+  return $groups;
 }
-
 /**
  * Locale refresh
  */
-function i18n_test_locale_refresh() {
+function i18n_test_i18n_string_refresh() {
   return TRUE;
 }

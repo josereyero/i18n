@@ -10,11 +10,10 @@ include_once './includes/locale.inc';
 function i18n_string_admin_refresh_form() {
   module_load_include('inc', 'i18n_string');
   // Select textgroup/s. Just the ones that have a 'refresh callback'
-  $groups = module_invoke_all('locale', 'groups');
-  unset($groups['default']);
-  foreach (array_keys($groups) as $key) {
-    if (!i18n_string_group_info($key, 'refresh callback')) {
-      unset($groups[$key]);
+  $groups = array();
+  foreach (i18n_string_group_info() as $name => $info) {
+    if (isset($info['list']) || isset($info['refresh callback'])) {
+      $groups[$name] = $info['title'];
     }
   }
   $form['groups'] = array(
@@ -165,9 +164,9 @@ function i18n_string_admin_settings() {
  *   True if the strings have been refreshed successfully. False otherwise.
  */
 function i18n_string_refresh_group($group, $delete = FALSE) {
-  // Check for the refresh callback
-  $refresh_callback = i18n_string_group_info($group, 'refresh callback');
-  if (!$refresh_callback) {
+  $info = i18n_string_group_info($group);
+  // If no listing function nor refresh callback, we cannot go ahead
+  if (empty($group['list']) && empty($group['refresh callback'])) {
     return FALSE;
   }
   // Mark data on locales_source setting version = 0
@@ -176,10 +175,31 @@ function i18n_string_refresh_group($group, $delete = FALSE) {
     ->condition('textgroup', $group)
     ->execute();
 
-  $result = call_user_func($refresh_callback);
+  if (!empty($info['refresh callback'])) {
+    $result = call_user_func($info['refresh callback']);
+  }
+  elseif ($strings = module_invoke_all('i18n_string_list', $group)) {
+    foreach ($strings as $textgroup => $group_strings) {
+      foreach ($group_strings as $type => $type_strings) {
+        foreach ($type_strings as $id => $object_strings) {
+          foreach ($object_strings as $key => $string) {
+            if (is_array($string)) {
+              $format = $string['format'];
+              $string = $string['string'];
+            }
+            else {
+              $format = FALSE;
+            }
+            i18n_string_update(array($textgroup, $type, $id, $key), $string, array('format' => $format)); 
+          }    
+        }
+      }
+    }
+    $result = TRUE;
+  }
 
   // Now delete all source strings that were not refreshed (they don't have a row in i18n_strings)
-  if ($result && $delete) {
+  if (!empty($result) && $delete) {
     $lids = db_select('locales_source', 's')
       ->fields('s', array('lid'))
       ->condition('textgroup', $group)

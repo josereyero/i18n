@@ -123,23 +123,23 @@ function _i18ntaxonomy_translation_tab($vocabulary) {
 }
 
 /**
- * Implements hook_locale().
+ * Implements hook_i18n_string_info()
  */
-function i18ntaxonomy_locale($op = 'groups', $group = NULL) {
-  switch ($op) {
-    case 'groups':
-      return array('taxonomy' => t('Taxonomy'));
-    case 'info':
-      $info['taxonomy']['refresh callback'] = 'i18ntaxonomy_locale_refresh';
-      $info['taxonomy']['format'] = FALSE;
-      return $info;
-  }
+function i18ntaxonomy_i18n_string_info() {
+  $groups['taxonomy'] = array(
+    'title' => t('Taxonomy'),
+    'description' => t('Vocabulary titles and term names for localizable vocabularies.'),
+    'format' => FALSE, // This group doesn't have strings with format
+    'list' => FALSE, // This group cannot list all strings
+    'refresh callback' = 'i18ntaxonomy_string_refresh',
+  );
+  return $groups;
 }
 
 /**
  * Refresh strings.
  */
-function i18ntaxonomy_locale_refresh() {
+function i18ntaxonomy_string_refresh() {
   foreach (taxonomy_get_vocabularies() as $vid => $vocabulary) {
     if (empty($vocabulary->language)) {
       i18n_string_update("taxonomy:vocabulary:$vid:name", $vocabulary->name);

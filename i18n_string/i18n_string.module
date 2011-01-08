@@ -383,7 +383,8 @@ function i18n_string_group_info($group = NULL, $property = NULL, $default = NULL
   $info = &drupal_static(__FUNCTION__ , NULL);
 
   if (!isset($info)) {
-    $info = module_invoke_all('locale', 'info');
+    $info = module_invoke_all('i18n_string_info');
+    drupal_alter('i18n_string_info', $info);
   }
 
   if ($group && $property) {
@@ -394,6 +395,21 @@ function i18n_string_group_info($group = NULL, $property = NULL, $default = NULL
   }
   else {
     return $info;
+  }
+}
+
+/**
+ * Implements hook_locale().
+ *
+ * Provide the information from i18n_string groups to locale module
+ */
+function i18n_string_locale($op = 'groups') {
+  if ($op == 'groups') {
+    $groups = array();
+    foreach (i18n_string_group_info() as $name => $info) {
+      $groups[$name] = $info['title'];
+    }
+    return $groups;
   }
 }
 

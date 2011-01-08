@@ -101,18 +101,32 @@ function i18n_node_help($path, $arg) {
 }
 
 /**
- * Implements hook_locale().
+ * Implements hook_i18n_string_info()
  */
-function i18n_node_locale($op = 'groups', $group = NULL) {
-  switch ($op) {
-    case 'groups':
-      return array('node' => t('Node types'));
-    case 'info':
-      $info['node']['refresh callback'] = 'i18n_node_locale_refresh';
-      $info['node']['format'] = FALSE;
-      // These are not that many strings so we use the prefetch feature
-      //$info['nodetype']['class'] = 'i18n_string_prefetch';
-      return $info;
+function i18n_node_i18n_string_info() {
+  $groups['node'] = array(
+    'title' => t('Node types'),
+    'description' => t('Content type names, descriptions, help texts.'),
+    //'format' => TRUE, // This group has strings with format (block body)
+    'list' => TRUE, // This group can list all strings
+  );
+  return $groups;
+}
+/**
+ * Implements hook_i18n_string_list()
+ */
+function i18n_node_i18n_string_list($group) {
+  if ($group == 'node') {
+    $strings = array();
+    foreach (node_type_get_types() as $type) {
+      $strings['node']['type'][$type->type] = array(
+        'name' => $type->name,
+        'title_label' => $type->title_label,
+        'description' => $type->description,
+        'help' => $type->help,
+      );
+    }
+    return $strings; 
   }
 }
 

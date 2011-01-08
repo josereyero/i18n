@@ -10,23 +10,22 @@
  */
 
 /**
- * Implements hook_locale().
+ * Implements hook_i18n_string_info()
  */
-function i18nmenu_locale($op = 'groups', $group = NULL) {
-  switch ($op) {
-    case 'groups':
-      return array('menu' => t('Menu'));
-    case 'info':
-      $info['menu']['refresh callback'] = 'i18nmenu_locale_refresh';
-      $info['menu']['format'] = FALSE;
-      return $info;
-  }
+function i18nmenu_i18n_string_info() {
+  $groups['menu'] = array(
+    'title' => t('Menu'),
+    'description' => t('Translatable menu items: title and description.'),
+    'format' => FALSE, // This group doesn't have strings with format
+    //'list' => TRUE, // This group can list all strings
+  );
+  return $groups;
 }
 
 /**
  * Refresh locale strings.
  */
-function i18nmenu_locale_refresh() {
+function i18nmenu_i18n_string_refresh() {
   // Rebuild menus to ensure all items are altered in i18nmenu_menu_link_alter().
   menu_rebuild();
   foreach (menu_get_menus() as $name => $title) {

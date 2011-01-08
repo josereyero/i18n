@@ -13,31 +13,25 @@
  * - field:[field_name]:#property..., when it is a field property (that may have multiple values)
  */
 
-
-
 /**
- * Implements hook_locale().
+ * Implements hook_i18n_string_info()
  */
-function i18n_field_locale($op = 'groups', $group = NULL) {
-  switch ($op) {
-    case 'groups':
-      return array('field' => t('Fields'));
-    case 'info':
-      // @todo To be implemented
-      //$info['field']['refresh callback'] = 'i18n_field_locale_refresh';
-      $info['field']['format'] = FALSE;
-      return $info;
-  }
+function i18n_field_i18n_string_info() {
+  $groups['field'] = array(
+    'title' => t('Fields'),
+    'description' => t('Configurable fields descriptions, defaults, options, etc.'),
+    'format' => FALSE, // This group doesn't have formatted strings
+  );
+  return $groups;
 }
 
 /**
- * Locale refresh callback
- * 
- * // @todo To be implemented
+ * Implements hook_i18n_string_list()
  */
-function i18n_field_locale_refresh() {
-  
-  return FALSE;
+function i18n_field_i18n_string_list($group) {
+  if ($group == 'field') {
+    
+  } 
 }
 
 /**
