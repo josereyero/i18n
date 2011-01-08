@@ -52,10 +52,10 @@ function i18n_block_block_list_alter(&$blocks) {
 function i18n_block_block_view_alter(&$data, $block) {
   if (!empty($block->i18n_mode)) {
     if ($block->title && $block->title != '<none>') {
-      $block->title = i18nstrings_translate(array('blocks', $block->module, $block->delta, 'title'), $block->title);
+      $block->title = i18n_string(array('blocks', $block->module, $block->delta, 'title'), $block->title);
     }
     if ($block->module == 'block' && isset($data['content'])) {
-      $data['content'] = i18nstrings_translate(array('blocks', $block->module, $block->delta, 'body'), $data['content']);
+      $data['content'] = i18n_string(array('blocks', $block->module, $block->delta, 'body'), $data['content']);
     } 
   }  
 }
@@ -122,11 +122,11 @@ function i18n_block_locale_refresh() {
   foreach ($result as $block) {
     // If the block has a custom title and no language it must be translated
     if ($block->title && $block->title != '<none>') {
-      i18nstrings_update("blocks:$block->module:$block->delta:title", $block->title);
+      i18n_string_update("blocks:$block->module:$block->delta:title", $block->title);
     }
     // If the block has body and no language, must be a custom block (box)
     if ($block->body) {
-      i18nstrings_update("blocks:$block->module:$block->delta:body", $block->body, array('format' => $block->format));
+      i18n_string_update("blocks:$block->module:$block->delta:body", $block->body, array('format' => $block->format));
     }
   }
   return TRUE; // Meaning it completed with no issues
@@ -138,8 +138,8 @@ function i18n_block_locale_refresh() {
 function i18n_block_block_delete_submit(&$form, $form_state) {
   $delta = $form_state['values']['delta'];
   // Delete stored strings for the title and content fields.
-  i18nstrings_remove_string("blocks:block:$delta:title");
-  i18nstrings_remove_string("blocks:block:$delta:body");
+  i18n_string_remove_string("blocks:block:$delta:title");
+  i18n_string_remove_string("blocks:block:$delta:body");
 }
 
 /**
@@ -228,13 +228,13 @@ function i18n_block_form_block_admin_configure_submit(&$form, &$form_state) {
  */
 function i18n_block_update_strings($block, $i18n_mode = TRUE) {
   $title = $i18n_mode && $block['title'] !== '<none>' ? $block['title'] : '';
-  i18nstrings_update(array('blocks', $block['module'], $block['delta'], 'title'), $title);
+  i18n_string_update(array('blocks', $block['module'], $block['delta'], 'title'), $title);
   if (isset($block['body'])) {
     if ($i18n_mode) {
-      i18nstrings_update(array('blocks', $block['module'], $block['delta'], 'body'), $block['body']['value'], array('format' => $block['body']['format']));
+      i18n_string_update(array('blocks', $block['module'], $block['delta'], 'body'), $block['body']['value'], array('format' => $block['body']['format']));
     } 
     else {
-      i18nstrings_remove(array('blocks', $block['module'], $block['delta'], 'body'));
+      i18n_string_remove(array('blocks', $block['module'], $block['delta'], 'body'));
     }
   }
 }
@@ -270,12 +270,12 @@ function i18n_block_form_block_custom_block_delete_submit($form, &$form_state) {
  */
 function i18n_block_translate_block($block) {
   if (!empty($block->content) && $localizable) {
-    $block->content = i18nstrings_text("blocks:$block->module:$block->delta:body", $block->content);
+    $block->content = i18n_string_text("blocks:$block->module:$block->delta:body", $block->content);
   }
   // If it has a custom title, localize it
   if (!empty($block->title) && $block->title != '<none>') {
     // Check plain here to allow module generated titles to keep any markup.
-    $block->subject = i18nstrings_string("blocks:$block->module:$block->delta:title", $block->subject);
+    $block->subject = i18n_string_string("blocks:$block->module:$block->delta:title", $block->subject);
   }
   return $block;
 }

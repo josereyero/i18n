@@ -1,7 +1,7 @@
 <?php
 // $Id: i18n_strings.test,v 1.1.2.2 2010/04/07 19:45:52 jareyero Exp $
 /**
- * Class for testing i18nstrings and modules using these features
+ * Class for testing i18n_string and modules using these features
  *
  * Tests basic API functions
  */
@@ -19,7 +19,7 @@ class i18n_Strings_Test extends Drupali18nTestCase {
   }
 
   function setUp() {
-    parent::setUp('i18n', 'locale', 'i18nstrings');
+    parent::setUp('i18n', 'locale', 'i18n_string');
     $this->addLanguage('es');
     $this->addLanguage('de');
     // A language with two letter code may help too
@@ -30,7 +30,7 @@ class i18n_Strings_Test extends Drupali18nTestCase {
   }
 
   /**
-   * Test base i18nstrings API
+   * Test base i18n_string API
    */
   function testStringsAPI() {
     // Create a bunch of strings for three languages
@@ -39,7 +39,7 @@ class i18n_Strings_Test extends Drupali18nTestCase {
     // Save source strings and store translations
     foreach ($strings['en'] as $key => $string) {
       $name = "test:string:$key:name";
-      i18nstrings_update($name, $string);
+      i18n_string_update($name, $string);
       $count = $this->stringSaveTranslation($name, 'es', $strings['es'][$key]);
       $count += $this->stringSaveTranslation($name, 'pt-br', $strings['pt-br'][$key]);
       $this->assertEqual($count, 2, "Two translatins have been saved");
@@ -50,7 +50,7 @@ class i18n_Strings_Test extends Drupali18nTestCase {
       $language = $language_list[$lang];
       foreach ($strings[$lang] as $key => $value) {
         $name = "test:string:$key:name";
-        $translation = i18nstrings($name, 'NOT FOUND', $lang);
+        $translation = i18n_string($name, 'NOT FOUND', $lang);
         $this->assertEqual($translation, $value, "The right $language->language translation has been retrieved for $name, $translation");
       }
     }
@@ -87,7 +87,7 @@ class i18n_Strings_Test extends Drupali18nTestCase {
    * Translate one string into the db
    */
   public static function stringSaveTranslation($name, $lang, $translation, $update = FALSE) {
-    $source = i18nstrings_get_source($name);
+    $source = i18n_string_get_source($name);
     if ($source) {
       if ($update) {
         db_query("UPDATE {locales_target} SET translation = '%s' WHERE lid = %d AND language = '%s'", $translation, $source->lid, $lang);    

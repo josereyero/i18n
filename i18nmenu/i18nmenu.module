@@ -51,7 +51,7 @@ function i18nmenu_menu_link_alter(&$item) {
     unset($item['options']['langcode']);
   }
   // If we are handling custom menu items of menu module and no language is set,
-  // invoke translation via i18nstrings module.
+  // invoke translation via i18n_string module.
   if (empty($item['language']) && $item['module'] == 'menu') {
     // Set title_callback to FALSE to avoid calling t().
     $item['title_callback'] = FALSE;
@@ -211,9 +211,9 @@ function i18nmenu_preprocess_page(&$vars) {
 function _i18nmenu_get_item_title($link, $update = FALSE, $langcode = NULL) {
   $key = 'menu:item:' . $link['mlid'] . ':title';
   if ($update) {
-    i18nstrings_update($key, $link['link_title']);
+    i18n_string_update($key, $link['link_title']);
   }
-  return i18nstrings($key, $link['link_title'], array('langcode' => $langcode));
+  return i18n_string($key, $link['link_title'], array('langcode' => $langcode));
 }
 
 /**
@@ -226,17 +226,17 @@ function _i18nmenu_get_item_description($link, $update = FALSE, $langcode = NULL
   $key = 'menu:item:' . $link['mlid'] . ':description';
   $description = $link['options']['attributes']['title'];
   if ($update) {
-    i18nstrings_update($key, $description);
+    i18n_string_update($key, $description);
   }
-  return i18nstrings($key, $description, array('langcode' => $langcode));
+  return i18n_string($key, $description, array('langcode' => $langcode));
 }
 
 /**
  * Delete a menu item translation.
  */
 function _i18nmenu_delete_item($mlid) {
-  i18nstrings_remove_string('menu:item:' . $mlid . ':title');
-  i18nstrings_remove_string('menu:item:' . $mlid . ':description');
+  i18n_string_remove_string('menu:item:' . $mlid . ':title');
+  i18n_string_remove_string('menu:item:' . $mlid . ':description');
 }
 
 /**
@@ -284,7 +284,7 @@ function i18nmenu_menu_edit_menu_submit($form, &$form_state) {
     } else {
       $context = 'menu:menu:' . $form_state['values']['menu_name'] . ':title';
     }
-    i18nstrings_update_string($context, $form_state['values']['title']);
+    i18n_string_update_string($context, $form_state['values']['title']);
   }
 }
 

@@ -205,7 +205,7 @@ function i18n_field_field_create_instance($instance) {
  */
 function i18n_field_field_delete_instance($instance) {
   foreach (array('description', 'default_value') as $property) {
-    i18nstrings_remove(array('field', $instance['bundle'], $instance['field_name'], $property));
+    i18n_string_remove(array('field', $instance['bundle'], $instance['field_name'], $property));
   }
 }
 
@@ -230,7 +230,7 @@ function i18n_field_field_update_strings($field) {
   // For select fields field:field_name
   if (!empty($field['settings']['allowed_values']) && i18n_field_info($field['type'], 'translate_options')) {
     foreach ($field['settings']['allowed_values'] as $key => $name) {
-      i18nstrings_update(array('field', $field['field_name'],'#allowed_values', $key), $name);
+      i18n_string_update(array('field', $field['field_name'],'#allowed_values', $key), $name);
     }
   }  
 }
@@ -241,12 +241,12 @@ function i18n_field_field_update_strings($field) {
 function i18n_field_instance_update_strings($instance) {
   $field = field_info_field($instance['field_name']);
   if (isset($instance['description'])) {
-    i18nstrings_update(array('field', $instance['bundle'], $instance['field_name'], 'description'), $instance['description']);
+    i18n_string_update(array('field', $instance['bundle'], $instance['field_name'], 'description'), $instance['description']);
   }
   // Only for text field types
   if (isset($instance['default_value']) && i18n_field_info($field['type'], 'translate_default')) {
     $format = isset($instance['default_value'][0]['format']) ? $instance['default_value'][0]['format'] : NULL;
-    i18nstrings_update(array('field', $instance['field_name'], $instance['bundle'], 'default_value'), $instance['default_value'][0]['value'], array('format' => $format));
+    i18n_string_update(array('field', $instance['field_name'], $instance['bundle'], 'default_value'), $instance['default_value'][0]['value'], array('format' => $format));
   }
 
 }
@@ -266,7 +266,7 @@ function i18n_field_instance_update_strings($instance) {
  */
 function i18n_field_translate_allowed_values($field, $langcode = NULL) {
   if (!empty($field['settings']['allowed_values'])) {
-    return i18nstrings_array(array('field', $field['field_name'], '#allowed_values'), $field['settings']['allowed_values'], array('langcode' => $langcode));
+    return i18n_string_array(array('field', $field['field_name'], '#allowed_values'), $field['settings']['allowed_values'], array('langcode' => $langcode));
   }
   else {
     return array();
@@ -277,14 +277,14 @@ function i18n_field_translate_allowed_values($field, $langcode = NULL) {
  * Translate field default
  */
 function i18n_field_translate_default($instance, $value, $langcode = NULL) {
-  return i18nstrings_translate(array('field', $instance['field_name'], $instance['bundle'], 'default_value'), $value, array('langcode' => $langcode));
+  return i18n_string_translate(array('field', $instance['field_name'], $instance['bundle'], 'default_value'), $value, array('langcode' => $langcode));
 }
 
 /**
  * Translate field property
  */
 function i18n_field_translate_property($instance, $property, $langcode = NULL) {
-  return i18nstrings_translate(array('field', $instance['field_name'], $instance['bundle'], $property), $instance[$property], array('langcode' => $langcode));
+  return i18n_string_translate(array('field', $instance['field_name'], $instance['bundle'], $property), $instance[$property], array('langcode' => $langcode));
 }
 
 /**

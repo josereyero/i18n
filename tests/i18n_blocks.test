@@ -19,7 +19,7 @@ class i18n_Blocks_Test extends Drupali18nTestCase {
   }
 
   function setUp() {
-    parent::setUp('118n', 'locale', 'i18nstrings', 'i18nblocks');
+    parent::setUp('118n', 'locale', 'i18n_string', 'i18nblocks');
     $this->addLanguage('es');
     $this->addLanguage('de');
      // Create and login user
@@ -60,12 +60,12 @@ class i18n_Blocks_Test extends Drupali18nTestCase {
     // Refresh block strings, the ones for the first box should be gone. Not the others
     $box2 = $this->i18nCreateBox(array('language' => I18N_BLOCK_LOCALIZE));
     $translations = $this->i18nTranslateBlock('block', $box2->bid, array('title', 'body'));
-    i18nstrings_refresh_group('blocks', TRUE);
-    $this->assertFalse(i18nstrings_get_source("blocks:block:$box->bid:title", $box->title), "The string for the box title is gone.");
-    $this->assertFalse(i18nstrings_get_source("blocks:block:$box->bid:body", $box->body), "The string for the box body is gone.");
-    $this->assertTrue(i18nstrings_get_source("blocks:user:1:title"), "We have a string for the Navigation block title");
-    $this->assertTrue(i18nstrings_get_source("blocks:block:$box2->bid:title", $box2->title), "The string for the second box title is still there.");
-    $this->assertTrue(i18nstrings_get_source("blocks:block:$box2->bid:body", $box2->body), "The string for the second box body is still there.");
+    i18n_string_refresh_group('blocks', TRUE);
+    $this->assertFalse(i18n_string_get_source("blocks:block:$box->bid:title", $box->title), "The string for the box title is gone.");
+    $this->assertFalse(i18n_string_get_source("blocks:block:$box->bid:body", $box->body), "The string for the box body is gone.");
+    $this->assertTrue(i18n_string_get_source("blocks:user:1:title"), "We have a string for the Navigation block title");
+    $this->assertTrue(i18n_string_get_source("blocks:block:$box2->bid:title", $box2->title), "The string for the second box title is still there.");
+    $this->assertTrue(i18n_string_get_source("blocks:block:$box2->bid:body", $box2->body), "The string for the second box body is still there.");
     // Test a block with filtering and input formats
     $box3 = $this->i18nCreateBox(array(
       'title' => '<div><script>alert(0)</script>Title</script>',
@@ -74,8 +74,8 @@ class i18n_Blocks_Test extends Drupali18nTestCase {
     ));
     $language = current($this->getOtherLanguages());
     // We add language name to the title just to make sure we get the right translation later
-    $this->i18nstringsSaveTranslation("blocks:block:$box3->bid:title", $language->language, $box3->title . $language->name);
-    $this->i18nstringsSaveTranslation("blocks:block:$box3->bid:body", $language->language, $box3->body);
+    $this->i18n_stringSaveTranslation("blocks:block:$box3->bid:title", $language->language, $box3->title . $language->name);
+    $this->i18n_stringSaveTranslation("blocks:block:$box3->bid:body", $language->language, $box3->body);
     // This should be the actual HTML displayed
     $title = check_plain($box3->title);
     $body = check_markup($box3->body);
@@ -93,7 +93,7 @@ class i18n_Blocks_Test extends Drupali18nTestCase {
   function i18nTranslateBlock($module, $delta, $fields = array('title', 'body')) {
     foreach ($this->getOtherLanguages() as $language) {
       foreach ($fields as $key) {
-        $text[$key] = $this->i18nstringsCreateTranslation("blocks:$module:$delta:$key", $language->language);
+        $text[$key] = $this->i18n_stringCreateTranslation("blocks:$module:$delta:$key", $language->language);
       }
       // Now check translated strings display on page
       $this->i18nGet($language->language, '');

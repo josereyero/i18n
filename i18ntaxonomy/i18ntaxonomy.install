@@ -48,7 +48,7 @@ function i18ntaxonomy_schema_alter(&$schema) {
  * Just add strings to locale tables.
  */
 function i18ntaxonomy_enable() {
-  drupal_load('module', 'i18nstrings');
+  drupal_load('module', 'i18n_string');
   i18ntaxonomy_locale_refresh();
 }
 

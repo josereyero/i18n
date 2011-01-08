@@ -209,17 +209,17 @@ class Drupali18nTestCase extends DrupalWebTestCase {
   /**
    * Create and store one translation into the db
    */
-  public function i18nstringsCreateTranslation($name, $lang, $length = 20) {
+  public function i18n_stringCreateTranslation($name, $lang, $length = 20) {
     $translation = $this->randomName($length, "i18n-$lang-");
-    $count = self::i18nstringsSaveTranslation($name, $lang, $translation);
+    $count = self::i18n_stringSaveTranslation($name, $lang, $translation);
     $this->assertTrue($count, "A translation($lang) has been created for string $name");
     return $translation;
   }
   /**
    * Translate one string into the db
    */
-  public static function i18nstringsSaveTranslation($name, $lang, $translation, $update = FALSE) {
-    $source = i18nstrings_get_source($name);
+  public static function i18n_stringSaveTranslation($name, $lang, $translation, $update = FALSE) {
+    $source = i18n_string_get_source($name);
     if ($source) {
       if ($update) {
         db_query("UPDATE {locales_target} SET translation = '%s' WHERE lid = %d AND language = '%s'", $translation, $source->lid, $lang);

@@ -4,7 +4,7 @@ description = Supports translatable custom menu items.
 dependencies[] = i18n
 dependencies[] = menu
 dependencies[] = i18nblocks
-dependencies[] = i18nstrings
+dependencies[] = i18n_string
 package = Multilanguage
 core = 7.x
 

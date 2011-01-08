@@ -1,5 +1,5 @@
 <?php
-// $Id: i18nstrings.admin.inc,v 1.1.2.9 2010/03/03 17:39:24 jareyero Exp $
+// $Id: i18n_string.admin.inc,v 1.1.2.9 2010/03/03 17:39:24 jareyero Exp $
 
 // Load locale library
 include_once './includes/locale.inc';
@@ -7,13 +7,13 @@ include_once './includes/locale.inc';
 /**
  * Form callback. Refresh textgroups.
  */
-function i18nstrings_admin_refresh_form() {
-  module_load_include('inc', 'i18nstrings');
+function i18n_string_admin_refresh_form() {
+  module_load_include('inc', 'i18n_string');
   // Select textgroup/s. Just the ones that have a 'refresh callback'
   $groups = module_invoke_all('locale', 'groups');
   unset($groups['default']);
   foreach (array_keys($groups) as $key) {
-    if (!i18nstrings_info($key, 'refresh callback')) {
+    if (!i18n_string_info($key, 'refresh callback')) {
       unset($groups[$key]);
     }
   }
@@ -47,14 +47,14 @@ function i18nstrings_admin_refresh_form() {
 /**
  * Form submission.
  */
-function i18nstrings_admin_refresh_form_submit($form, &$form_state) {
+function i18n_string_admin_refresh_form_submit($form, &$form_state) {
   $op = isset($form_state['values']['op']) ? $form_state['values']['op'] : '';
   $groups = array_filter($form_state['values']['groups']);
   $languages = array_filter($form_state['values']['languages']);
   $group_names = module_invoke_all('locale', 'groups');
   if ($op == t('Refresh strings') && $groups) {
     foreach ($groups as $group) {
-      if (i18nstrings_refresh_group($group, TRUE)) {
+      if (i18n_string_refresh_group($group, TRUE)) {
         drupal_set_message(t("Successfully refreshed strings for %group", array('%group' => $group_names[$group])));
       }
       else {
@@ -65,7 +65,7 @@ function i18nstrings_admin_refresh_form_submit($form, &$form_state) {
   elseif ($op == t('Update translations') && $groups && $languages) {
     $count = 0;
     foreach ($languages as $language) {
-      $count += i18nstrings_admin_update($language, $groups);
+      $count += i18n_string_admin_update($language, $groups);
     }
     drupal_set_message(format_plural($count, '1 string has been updated.', '@count strings have been updated.'));
   }
@@ -74,7 +74,7 @@ function i18nstrings_admin_refresh_form_submit($form, &$form_state) {
 /**
  * Update strings for language.
  */
-function i18nstrings_admin_update($language, $groups) {
+function i18n_string_admin_update($language, $groups) {
 
   $query = db_select('locales_source', 'g')
     ->fields('g')
@@ -112,25 +112,25 @@ function i18nstrings_admin_update($language, $groups) {
  *
  * This has serious security implications so this form needs the 'administer filters' permission
  */
-function i18nstrings_admin_settings() {
-  module_load_include('inc', 'i18nstrings');
+function i18n_string_admin_settings() {
+  module_load_include('inc', 'i18n_string');
   include_once './includes/locale.inc';
   // As the user has administer filters permissions we get a full list here
   foreach (filter_formats() as $fid => $format) {
     $format_list[$fid] = $format->name;
   }
-  $form['i18nstrings_allowed_formats'] = array(
+  $form['i18n_string_allowed_formats'] = array(
     '#title' => t('Translatable input formats'),
     '#options' => $format_list,
     '#type' => 'checkboxes',
-    '#default_value' => variable_get('i18nstrings_allowed_formats', array(variable_get('filter_default_format', 1))),
+    '#default_value' => variable_get('i18n_string_allowed_formats', array(variable_get('filter_default_format', 1))),
     '#description' => t('Only the strings that have the input formats selected will be allowed by the translation system. All the others will be deleted next time the strings are refreshed.'),
   );
   // Whitelist text groups without formatted strings for backwards compatibility
   $textgroups = module_invoke_all('locale', 'groups');
   unset($textgroups['default']);
   foreach (array_keys($textgroups) as $group) {
-    $format = i18nstrings_info($group, 'format');
+    $format = i18n_string_info($group, 'format');
     if (isset($format)) {
       // This one already has format information, so remove from list
       unset($textgroups[$group]);
@@ -138,17 +138,17 @@ function i18nstrings_admin_settings() {
   }
   // If there are 'old' textgroups, display the bypass option
   if ($textgroups) {
-    $form['i18nstrings_allowed_textgroups'] = array(
+    $form['i18n_string_allowed_textgroups'] = array(
       '#title' => t('Safe text groups'),
       '#options' => $textgroups,
       '#type' => 'checkboxes',
-      '#default_value' => variable_get('i18nstrings_allowed_textgroups', array()),
+      '#default_value' => variable_get('i18n_string_allowed_textgroups', array()),
       '#description' => t('Select text groups to bypass filter format checking. . <strong>It is unsafe to check this option unless you are sure all the strings from that text groups are safe for translators</strong>. This option is just for backwards compatibility until all the contributed modules implement the new strings API.'),
     );
   }
-  elseif (variable_get('i18nstrings_allowed_textgroups', 0)) {
+  elseif (variable_get('i18n_string_allowed_textgroups', 0)) {
     // Just in case there's a leftover variable before we updated some of the modules
-    variable_del('i18nstrings_allowed_textgroups');
+    variable_del('i18n_string_allowed_textgroups');
   }
   $form['array_filter'] = array('#type' => 'value', '#value' => TRUE);
   return system_settings_form($form);
@@ -164,9 +164,9 @@ function i18nstrings_admin_settings() {
  * @return Boolean
  *   True if the strings have been refreshed successfully. False otherwise.
  */
-function i18nstrings_refresh_group($group, $delete = FALSE) {
+function i18n_string_refresh_group($group, $delete = FALSE) {
   // Check for the refresh callback
-  $refresh_callback = i18nstrings_info($group, 'refresh callback');
+  $refresh_callback = i18n_string_info($group, 'refresh callback');
   if (!$refresh_callback) {
     return FALSE;
   }

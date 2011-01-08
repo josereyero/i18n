@@ -1,4 +1,4 @@
-; $Id: i18nstrings.info,v 1.2.2.4 2008/11/16 11:05:20 jareyero Exp $
+; $Id: i18n_string.info,v 1.2.2.4 2008/11/16 11:05:20 jareyero Exp $
 name = String translation
 description = Provides support for translation of user defined strings.
 dependencies[] = locale
@@ -6,5 +6,5 @@ dependencies[] = i18n
 package = Multilanguage
 core = 7.x
 
-files[] = i18nstrings.admin.inc
-files[] = i18nstrings.inc
+files[] = i18n_string.admin.inc
+files[] = i18n_string.inc

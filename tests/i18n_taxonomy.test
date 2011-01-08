@@ -19,7 +19,7 @@ class i18n_Taxonomy_Test extends Drupali18nTestCase {
   }
 
   function setUp() {
-    parent::setUp('i18nstrings', 'taxonomy', 'i18ntaxonomy');
+    parent::setUp('i18n_string', 'taxonomy', 'i18ntaxonomy');
     $this->addLanguage('es');
     $this->addLanguage('de');
   }
@@ -37,7 +37,7 @@ class i18n_Taxonomy_Test extends Drupali18nTestCase {
     foreach ($terms as $term) {
       $translations[$term->tid] = $this->randomName(10);
       // Save Spanish translation
-      $translations[$term->tid] = $this->i18nstringsCreateTranslation("taxonomy:term:$term->tid:name", $lang);
+      $translations[$term->tid] = $this->i18n_stringCreateTranslation("taxonomy:term:$term->tid:name", $lang);
     }
   }
   // Create vocabulary with given fields

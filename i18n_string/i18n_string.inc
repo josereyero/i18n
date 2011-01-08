@@ -5,9 +5,9 @@
  */
 
 /**
- * Textgroup handler for i18nstrings API
+ * Textgroup handler for i18n_string API
  */
-class i18nstrings_default {
+class i18n_string_default {
   // Text group name
   public $textgroup;
   // Cached or preloaded translations
@@ -58,7 +58,7 @@ class i18nstrings_default {
    *   Input format key or NULL if not format (will be allowed)
    */
   public static function allowed_format($format = NULL) {
-    $allowed_formats = variable_get('i18nstrings_allowed_formats', array(variable_get('filter_default_format', 1)));
+    $allowed_formats = variable_get('i18n_string_allowed_formats', array(variable_get('filter_default_format', 1)));
     return !isset($format) || in_array($format, $allowed_formats);
   }
   /**
@@ -93,7 +93,7 @@ class i18nstrings_default {
         // String has changed, mark translations for update
         $status = $this->save_source($source);
         db_update('locales_target')
-          ->fields(array('i18n_status' => I18NSTRINGS_STATUS_UPDATE))
+          ->fields(array('i18n_status' => I18N_STRING_STATUS_UPDATE))
           ->condition('lid', $source->lid)
           ->execute();
       }
@@ -114,10 +114,10 @@ class i18nstrings_default {
       $params = $this->string_params($i18nstring);
       switch ($status) {
         case SAVED_UPDATED:
-          watchdog('i18nstrings', 'Updated string %location for textgroup %textgroup: %string', $params);
+          watchdog('i18n_string', 'Updated string %location for textgroup %textgroup: %string', $params);
           break;
         case SAVED_NEW:
-          watchdog('i18nstrings', 'Created string %location for text group %textgroup: %string', $params);
+          watchdog('i18n_string', 'Created string %location for text group %textgroup: %string', $params);
           break;
       }     
     }  
@@ -333,7 +333,7 @@ class i18nstrings_default {
       db_delete('i18n_strings')->condition('lid', $source->lid)->execute();
       db_delete('locales_source')->condition('lid', $source->lid)->execute();
       if ($options['watchdog']) {
-        watchdog('i18nstrings', 'Deleted string %location for textgroup %textgroup: %string', $this->string_params($i18nstring));
+        watchdog('i18n_string', 'Deleted string %location for textgroup %textgroup: %string', $this->string_params($i18nstring));
       } 
       return SAVED_DELETED;
     }
@@ -542,7 +542,7 @@ class i18nstrings_default {
 /**
  * Menu callback. Saves a string translation coming as POST data.
  */
-function i18nstrings_l10n_client_save_string() {
+function i18n_string_l10n_client_save_string() {
   global $user, $language;
 
   if (user_access('use on-page translation')) {
@@ -557,7 +557,7 @@ function i18nstrings_l10n_client_save_string() {
       $translation->source = $_POST['source'];
       $translation->translation = $_POST['target'];
       $translation->textgroup = $textgroup;
-      i18nstrings_save_translation($translation);
+      i18n_string_save_translation($translation);
     }
   }
 }
@@ -582,7 +582,7 @@ function i18nstrings_l10n_client_save_string() {
  * @return
  *   The number of strings updated
  */
-function i18nstrings_save_translation($context) {
+function i18n_string_save_translation($context) {
   include_once 'includes/locale.inc';
 
   $query = db_select('locales_source', 's')
@@ -638,13 +638,13 @@ function i18nstrings_save_translation($context) {
  * Example:
  *  'profile:field:oldfield:*' -> 'profile:field:newfield:*'
  */
-function i18nstrings_update_context($oldname, $newname) {
+function i18n_string_update_context($oldname, $newname) {
   // Get context replacing '*' with empty string.
-  $oldcontext = i18nstrings_context(str_replace('*', '', $oldname));
-  $newcontext = i18nstrings_context(str_replace('*', '', $newname));
+  $oldcontext = i18n_string_context(str_replace('*', '', $oldname));
+  $newcontext = i18n_string_context(str_replace('*', '', $newname));
 
   // Get location with placeholders.
-  $location = i18nstrings_location(str_replace('*', '%', $oldname));
+  $location = i18n_string_location(str_replace('*', '%', $oldname));
   foreach (array('textgroup', 'type', 'objectid', 'property') as $field) {
     if ((!empty($oldcontext->$field) || !empty($newcontext->$field)) && $oldcontext->$field != $newcontext->$field) {
       $replace[$field] = $newcontext->$field;
@@ -653,7 +653,6 @@ function i18nstrings_update_context($oldname, $newname) {
 
   // Query and replace if there are any fields. It is possible that under some circumstances fields are the same
   if (!empty($replace)) {
-
     $query = db_select('locales_source', 's')
       ->fields('s')
       ->fields('i', array('type', 'objectid', 'property'))
@@ -664,7 +663,7 @@ function i18nstrings_update_context($oldname, $newname) {
 
     foreach ($result as $source) {
       // Make sure we have string and context.
-      $context = i18nstrings_context($oldcontext->textgroup .':'. $source->location);
+      $context = i18n_string_context($oldcontext->textgroup .':'. $source->location);
       foreach ($replace as $field => $value) {
         $context->$field = $value;
       }
@@ -673,7 +672,7 @@ function i18nstrings_update_context($oldname, $newname) {
       db_update('locales_source')
         ->fields(array(
           'textgroup' => $context->textgroup,
-          'location' => i18nstrings_location($context),
+          'location' => i18n_string_location($context),
         ))
         ->condition('lid', $source->lid)
         ->execute();

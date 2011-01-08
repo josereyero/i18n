@@ -98,7 +98,7 @@ function theme_i18ntaxonomy_term_page($tids, $result) {
   if (count($tids) == 1) {
     $term = taxonomy_get_term($tids[0]);
     if (i18ntaxonomy_vocabulary($term->vid) == I18N_TAXONOMY_LOCALIZE) {
-      $description = i18nstrings("taxonomy:term:$term->tid:description", $term->description);
+      $description = i18n_string("taxonomy:term:$term->tid:description", $term->description);
     }
     else {
       $description = $term->description;
@@ -120,7 +120,7 @@ function theme_i18ntaxonomy_term_page($tids, $result) {
 /**
  * Helper function for autocompletion.
  *
- * @ TODO Optimized localization. We cannot just i18nstrings() huge lists of terms.
+ * @ TODO Optimized localization. We cannot just i18n_string() huge lists of terms.
  */
 function i18ntaxonomy_autocomplete($vid, $string = '') {
   // The user enters a comma-separated list of tags. We only autocomplete the last tag.

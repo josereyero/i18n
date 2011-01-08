@@ -3,6 +3,6 @@ name = Taxonomy translation
 description = Enables multilingual taxonomy.
 dependencies[] = i18n
 dependencies[] = taxonomy
-dependencies[] = i18nstrings
+dependencies[] = i18n_string
 package = Multilanguage
 core = 6.x

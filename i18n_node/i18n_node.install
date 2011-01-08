@@ -10,7 +10,7 @@
  * Implements hook_enable
  */
 function i18n_node_enable() {
-  if (module_exists('i18nstrings')) {
+  if (module_exists('i18n_string')) {
     i18n_node_locale_refresh();
   }
 }

@@ -26,15 +26,15 @@
 - Fixed maxlength, for node translation autocomplete, by cedrid, #802418
 - Fixed i18n_init not run early enough, inconsistent menu items, #614548
 - Fixed wrong data type in query for i18n_blocks (pgsql), by jmpoure, #709272
-- Added i18nstrings_string() for 'plain strings', don't do unneeded filtering.
+- Added i18n_string_string() for 'plain strings', don't do unneeded filtering.
 - Fixed: Make menu title translatable (blocks), by moritzz, #356375
 - Moved i18nviews module to new project,http://drupal.org/project/i18nviews, #788290
 - Fixed: errors when taxonomy not set, #743492
-- Fixed update issues, for i18nstrings, #79644
+- Fixed update issues, for i18n_string, #79644
 - New feature: Optionally translate default language in tt(), by miro_dietiker and markus_petrux, #676002
 - Moved i18n_test module to "Testing" package, #799730
 - Fixed: The "All languages" option can't save back on blocks, #766678
-- Marked obsolete functions tt() and to(). Replaced by i18nstrings() and i18nstrings_update()
+- Marked obsolete functions tt() and to(). Replaced by i18n_string() and i18n_string_update()
 - Restore back function tt() to prevent "Fatal error: Call to undefined function tt()" in other modules, by markus_petrux, #358839
 - Added support for optional default language translation, by Miro Dietiker, #676002
 
@@ -44,7 +44,7 @@
 - Fixed: Block translations deleted on refresh, #732680
 - Fixed: warning in node form causes PHP notice, by swentel, #664944
 - Fixed: i18nblocks conflicts with modules and themes, by JohnAlbin, #457512
-- Some clean up to i18nstrings API: Dropped update option from i18nstrings_translate()
+- Some clean up to i18n_string API: Dropped update option from i18n_string_translate()
 - Disable content selection during synchronization, by Pisco, #648348
 - Add CSS class to body tag based on language, by Garrett Albright, #661448
 - Added compatibility with ctools page manager, by Kars-T, #698942
@@ -55,11 +55,11 @@
 
 6.x-1.2 to 6.x-1.3
 -------------------
-- Security update: Reworked string translation (i18nstrings) API, see #731632
+- Security update: Reworked string translation (i18n_string) API, see #731632
 - Fixed: Multiple issues with file synchronization, new files, other modules, #363065
 - Usability: Added proper validation to vocabulary form, by andrewlevine #577066
 - Fixed: Translated primary and secondary links appear even if they are disabled, by yrocq #631388
-- Reworked i18nstrings API using proper namespaces, kept tt() for compatibility
+- Reworked i18n_string API using proper namespaces, kept tt() for compatibility
 - Added: New plugin for views translation, by nedjo, joostvdl, #360024
 
 6.x-1.1 to 6.x-1.2
@@ -99,7 +99,7 @@
 - Fixed synchronization for nodereference fields, by dasjo, #242601
 - Fixed: Unterminated entities in taxonomy module break page validation, by ao2, #478856
 - Fixed multilingual variables issues, by rfay, #451120
-- Fixed i18nstrings, wrong hook_schema_alter() implementation, by rsvelko, #466876
+- Fixed i18n_string, wrong hook_schema_alter() implementation, by rsvelko, #466876
 - Added location to i18nsync fields, by zedzed, #426294
 - Added new dependence (i18ntaxonomy) and some taxonomy handling to i18nviews
 - Fixed missing brackets around table name in query, #371429
@@ -123,10 +123,10 @@
 - Deleting profile strings when deleting fields, #356538
 - Fixed: attached nodes synchronization not working, by doq, #359987
 - Fixed: locale table growing on each request, issue with i18nstring_textgroup(), by drifter, #359249
-- Fixed: missing i18nstrings module when enabling other modules module, #358839
+- Fixed: missing i18n_string module when enabling other modules module, #358839
 - Fixed: taxonomy strings not properly synchronized (removed), by stella, #356542
 - Removed obsoleted (was commented out) i18nblocks_blocks(), #356519
-- Applied i18nblocks implementation of i18nstrings/locale_refresh(), by catch, #356520
+- Applied i18nblocks implementation of i18n_string/locale_refresh(), by catch, #356520
 - Applied i18ncontent tt/hook_locale() review, by catch, #356535
 - Reworked taxonomy language logic when saving terms, set node/current language for tags.
 - Added some more help text and links to the taxonomy admin pages.
@@ -134,15 +134,15 @@
 - Changed default behavior: content types with multilingual support disabled are now language neutral, #270655
 - Added i18n menu handling to node form, by Roger López, Stella, #348444
 - Added additional language support level, by stella, Roger Lopez, #349193
-- Fixed duplicated 'ts' function (CiviCRM), renamed to 'i18nstrings_ts', by mfb, #298154
+- Fixed duplicated 'ts' function (CiviCRM), renamed to 'i18n_string_ts', by mfb, #298154
 - Move all admin settings to one place under Language, by stella, #343557
 - CCK file fields not removed anymore when one of the translations is deleted, #313613
 - Fixed: uploaded files removed when one of the translations is deleted, #313613
 - Fixed issue with file sync list option, by nkoponen, #298327
-- Added clean up feature to i18nstrings refresh
+- Added clean up feature to i18n_string refresh
 - Fixed multiple issues with content type strings translations, #343335
 - Added some more parameter checking for i18nviews module, #294278
-- Fixed issues with i18nstrings and menu items, by smk-ka, catch, sun, nedjo, #339057
+- Fixed issues with i18n_string and menu items, by smk-ka, catch, sun, nedjo, #339057
 - Fixed i18ntaxonomy schema mismatch (missing schema_alter), #288994
 - Added index for locale table's location field, by sun, #349488
 - Removed deprecated i18n_get_links().
@@ -163,7 +163,7 @@
 - Uncountable code style issues have been fixed for coder module compliance and core rules.
 - Fixed: Translation issues like missing periods, typos, etc.
 - Fixed: Synchronization not happening when creating a translation, #313605
-- Added some help texts for i18nstrings and warnings about the site default language, #314035
+- Added some help texts for i18n_string and warnings about the site default language, #314035
 - Fixed: Column name conflict (oid) on PostgreSQL, #314126
 - Fixed: Added English language to import/export page, #314035
 - Fixed: Code tries to access object as array, by Skiller, #293275
@@ -228,16 +228,16 @@
 - Fixed issues with menu administration pages, now showing all items for nodes
 - Improved block management, no need for 'Translated' duplicated blocks anymore.
 - Added new dependency for i18nmenu, now it works with i18nblocks
-- Fixed: i18nstrings_to() not changing location, http://drupal.org/node/230750
+- Fixed: i18n_string_to() not changing location, http://drupal.org/node/230750
 - Fixed: taxonomy vocabulary setting not saved when set to 'none'
 - Updated README.txt and INSTALL.txt files
-- Added string refreshing for all the modules using i18nstrings.
+- Added string refreshing for all the modules using i18n_string.
 - Fixed installation issues doing operations on enable hook instead of install.
 - Fixed: wrong function name on i18ntaxonomy producing errors/warnings
 - Fixed: blocks not saving language properly.
 - Improved taxonomy vocabulary form, re-grouping the fields and with some help text.
 - Fixed Call-time-pass-by reference, http://drupal.org/node/231856
-- New refresh and update feature for i18nstrings (implemented for taxonomy and content)
+- New refresh and update feature for i18n_string (implemented for taxonomy and content)
 
 5.x to 6.x
 ----------
@@ -252,7 +252,7 @@
 
 21/02/2008
 - Upgraded i18ncontent, fully reworked, much cleaner now
-- Improved i18nstrings, translation of strings without source, debug facility
+- Improved i18n_string, translation of strings without source, debug facility
 - Replaced taxonomy term pages with localized version
 
 19/02/2008 Initial dev release for Drupal 6

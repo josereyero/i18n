@@ -72,7 +72,7 @@ function i18n_node_add_page() {
  */
 function i18n_node_block_view_system_help_alter(&$block) {
   $arg = drupal_help_arg(arg(NULL));
-  if (module_exists('i18nstrings') && $arg[0] == 'node' && $arg[1] == 'add' && $arg[2]) {
+  if (module_exists('i18n_string') && $arg[0] == 'node' && $arg[1] == 'add' && $arg[2]) {
     if (($type = node_type_get_type(str_replace('-', '_', $arg[2]))) && !empty($type->help)) {
       $help = i18n_node_translate_type($type, 'help');
       if ($help !== $type->help) {
@@ -111,7 +111,7 @@ function i18n_node_locale($op = 'groups', $group = NULL) {
       $info['node']['refresh callback'] = 'i18n_node_locale_refresh';
       $info['node']['format'] = FALSE;
       // These are not that many strings so we use the prefetch feature
-      //$info['nodetype']['class'] = 'i18nstrings_prefetch';
+      //$info['nodetype']['class'] = 'i18n_string_prefetch';
       return $info;
   }
 }
@@ -121,10 +121,10 @@ function i18n_node_locale($op = 'groups', $group = NULL) {
  */
 function i18n_node_locale_refresh() {
   foreach (node_type_get_types() as $type) {
-    i18nstrings_textgroup('node')
+    i18n_string_textgroup('node')
       ->update("type:$type->type:name", $type->name)
       ->update("type:$type->type:title", $type->title_label)
-    //i18nstrings_update("nodetype:type:$type->type:body", $type->body_label);
+    //i18n_string_update("nodetype:type:$type->type:body", $type->body_label);
       ->update("type:$type->type:description", $type->description)
       ->update("type:$type->type:help", $type->help);
   }
@@ -143,7 +143,7 @@ function i18n_node_menu_alter(&$items) {
     $items['node/%node/translate']['module'] = 'i18n_node';
   }
   // Take over node/add pages for string translation
-  if (module_exists('i18nstrings')) {
+  if (module_exists('i18n_string')) {
     $items['node/add']['page callback'] =  'i18n_node_add_page';
     // @TODO avoid iterating over every router path.
     foreach ($items as $path => $item) {
@@ -303,14 +303,14 @@ function i18n_node_node_type_insert($info) {
  * Implements hook_node_type_update()
  */
 function i18n_node_node_type_update($info) {
-  if (module_exists('i18nstrings')) {
+  if (module_exists('i18n_string')) {
     if(!empty($info->old_type) && $info->old_type != $info->type) {
-      i18nstrings_update_context("nodetype:type:$old_type:*", "nodetype:type:$type:*");
+      i18n_string_update_context("nodetype:type:$old_type:*", "nodetype:type:$type:*");
     }
-    i18nstrings_textgroup('node')
+    i18n_string_textgroup('node')
       ->update("type:$type->type:name", $type->name)
       ->update("type:$type->type:title", $type->title_label)
-    //i18nstrings_update("nodetype:type:$type->type:body", $type->body_label);
+    //i18n_string_update("nodetype:type:$type->type:body", $type->body_label);
       ->update("type:$type->type:description", $type->description)
       ->update("type:$type->type:help", $type->help);
   }
@@ -320,12 +320,12 @@ function i18n_node_node_type_update($info) {
  * Implements hook_node_type_delete()
  */
 function i18n_node_node_type_delete($info) {
-  if (module_exists('i18nstrings')) {
-    i18nstrings_textgroup('node')
+  if (module_exists('i18n_string')) {
+    i18n_string_textgroup('node')
       ->remove("type:$info->type:title")
       ->remove("type:$info->type:name")
       ->remove("type:$info->type:description")
-    //i18nstrings_remove("nodetype:type:$info->type:body");
+    //i18n_string_remove("nodetype:type:$info->type:body");
       ->remove("type:$info->type:help");
   }
 }
@@ -520,8 +520,8 @@ function i18n_node_translate_type($type, $property, $source = NULL, $options = a
     $source = $type->$property;
     $type = $type->type;
   }
-  if (function_exists('i18nstrings_translate')) {
-    return i18nstrings_translate(array('node', 'type', $type, $property), $source, $options);
+  if (function_exists('i18n_string_translate')) {
+    return i18n_string_translate(array('node', 'type', $type, $property), $source, $options);
   }
   else {
     return $source;

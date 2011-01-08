@@ -373,6 +373,35 @@ function i18n_permission() {
 }
 
 /**
+ * Translate or update user defined string. Entry point for i18n_string API if enabled.
+ *
+ * @param $name
+ *   Textgroup and context glued with ':'.
+ * @param $default
+ *   String in default language. Default language may or may not be English.
+ * @param $options
+ *   An associative array of additional options, with the following keys:
+ *   - 'langcode' (defaults to the current language) The language code to translate to a language other than what is used to display the page.
+ *   - 'filter' Formatting or filtering callback to apply to the translated string only
+ *   - 'callback' Callback to apply to the result (both to translated or untranslated string
+ *   - 'update' (defaults to FALSE) Whether to update source table
+ *   - 'translate' (defaults to TRUE) Whether to return a translation
+ *
+ * @return $string
+ *   Translated string, $string if not found
+ */
+function i18n_string($name, $string, $options = array()) {
+  $options += array('translate' => TRUE, 'update' => FALSE);
+  if ($options['update']) {
+    $result = function_exists('i18n_string_update') ? i18n_string_update($name, $string, $options) : FALSE;
+  }
+  if ($options['translate']) {
+    $result = function_exists('i18n_string_translate') ? i18n_string_translate($name, $string, $options) : $string;
+  }
+  return $result;
+}
+
+/**
  * Get language from context.
  */
 function _i18n_get_context_lang() {

@@ -1,28 +1,28 @@
 <?php
-// $Id: i18nstrings.install,v 1.2.2.19 2010/05/17 13:55:38 jareyero Exp $
+// $Id: i18n_string.install,v 1.2.2.19 2010/05/17 13:55:38 jareyero Exp $
 
 /**
  * @file
- * Installation file for i18nstrings module.
+ * Installation file for i18n_string module.
  */
 
 /**
  * Implements hook_install().
  */
-function i18nstrings_install() {
+function i18n_string_install() {
   // Set module weight for it to run after core modules.
-  db_query("UPDATE {system} SET weight = 10 WHERE name = 'i18nstrings' AND type = 'module'");
+  db_query("UPDATE {system} SET weight = 10 WHERE name = 'i18n_string' AND type = 'module'");
   // Add a field to track whether a translation needs updating.
   db_add_field('locales_target', 'i18n_status', array('type' => 'int', 'not null' => TRUE, 'default' => 0));
   // Refresh locales for enabled modules
   $modules = module_implements('i18n_string_refresh');
-  i18nstrings_modules_enabled($modules);
+  i18n_string_modules_enabled($modules);
 }
 
 /**
  * Implements hook_uninstall().
  */
-function i18nstrings_uninstall() {
+function i18n_string_uninstall() {
   // Drop custom field.
   db_drop_field('locales_target', 'i18n_status');
 }
@@ -30,7 +30,7 @@ function i18nstrings_uninstall() {
 /**
  * Implements hook_schema().
  */
-function i18nstrings_schema() {
+function i18n_string_schema() {
   $schema['i18n_strings'] = array(
     'description' => 'Metadata for source strings.',
     'fields' => array(
@@ -100,7 +100,7 @@ function i18nstrings_schema() {
 /**
  * Implements hook_schema_alter().
  */
-function i18nstrings_schema_alter(&$schema) {
+function i18n_string_schema_alter(&$schema) {
   // Add field for tracking whether translations need updating.
   $schema['locales_target']['fields']['i18n_status'] = array(
     'description' => 'A boolean indicating whether this translation needs to be updated.',
@@ -115,7 +115,7 @@ function i18nstrings_schema_alter(&$schema) {
  * 
  * Populate fields from old locale table (textgroup, location) and drop indexes from locales_source
  */
-function i18nstrings_i18n_drupal6_update() {
+function i18n_string_i18n_drupal6_update() {
   // @todo Update from d6
 }
 
