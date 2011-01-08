@@ -185,6 +185,7 @@ function i18n_block_form_block_admin_configure_alter(&$form, &$form_state, $form
     '#default_value' => $block->i18n_mode,
     '#options' => array(t('Disabled'), t('Enabled')),
     '#description' => $form['module']['#value'] == 'block' ? t('Make this block title and content translatable.') : t('Make this block title translatable.'),
+    '#disabled' => !module_exists('i18n_string'),
   );
   $form['#submit'][] = 'i18n_block_form_block_admin_configure_submit';  
 }
@@ -227,14 +228,16 @@ function i18n_block_form_block_admin_configure_submit(&$form, &$form_state) {
  * Update block strings
  */
 function i18n_block_update_strings($block, $i18n_mode = TRUE) {
-  $title = $i18n_mode && $block['title'] !== '<none>' ? $block['title'] : '';
-  i18n_string_update(array('blocks', $block['module'], $block['delta'], 'title'), $title);
-  if (isset($block['body'])) {
-    if ($i18n_mode) {
-      i18n_string_update(array('blocks', $block['module'], $block['delta'], 'body'), $block['body']['value'], array('format' => $block['body']['format']));
-    } 
-    else {
-      i18n_string_remove(array('blocks', $block['module'], $block['delta'], 'body'));
+  if (module_exists('i18n_string')) {
+    $title = $i18n_mode && $block['title'] !== '<none>' ? $block['title'] : '';
+    i18n_string_update(array('blocks', $block['module'], $block['delta'], 'title'), $title);
+    if (isset($block['body'])) {
+      if ($i18n_mode) {
+        i18n_string_update(array('blocks', $block['module'], $block['delta'], 'body'), $block['body']['value'], array('format' => $block['body']['format']));
+      } 
+      else {
+        i18n_string_remove(array('blocks', $block['module'], $block['delta'], 'body'));
+      }
     }
   }
 }

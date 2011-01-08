@@ -310,6 +310,7 @@ function i18n_string_update_object($context, $object, $properties = array()) {
  *   Textgroup and location glued with ':'.
  * @param $string
  *   Source string in default language. Default language may or may not be English.
+ *   Array of key => string to update multiple strings at once
  * @param $options
  *   Array with additional options:
  *   - 'format', String format if the string has input format
