@@ -422,9 +422,17 @@ function i18n_string_locale($op = 'groups') {
  * Implements hook_modules_enabled()
  */
 function i18n_string_modules_enabled($modules) {
+  module_load_include('admin.inc', 'i18n_string');
+  $textgroups = array();
+  // Check if any of the modules implements i18n_string_info
   foreach ($modules as $module) {
-    module_invoke($module, 'i18n_string_refresh');
-  } 
+    if ($groups = module_invoke($module, 'i18n_string_info')) {
+      $textgroups += $groups;
+    }
+  }
+  foreach (array_keys($texgroups) as $group) {
+    i18n_string_refresh_group($group);
+  }
 }
 
 /**
