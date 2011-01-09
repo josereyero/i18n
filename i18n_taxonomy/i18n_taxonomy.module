@@ -197,7 +197,7 @@ function i18n_taxonomy_theme() {
 function i18n_taxonomy_translate_term_name($tid, $name = '', $langcode = NULL) {
   // If it is a term object we check for vocabulary options
   if (is_object($tid)) {
-    return i18n_taxonomy_vocabulary_mode($tid->vid) == I18N_TAXONOMY_LOCALIZE ? i18n_string_string("taxonomy:term:$tid->tid:name", $tid->name, $langcode, TRUE) : check_plain($tid->name);
+    return i18n_taxonomy_vocabulary_mode($tid->vid) == I18N_TAXONOMY_LOCALIZE ? i18n_string_plain("taxonomy:term:$tid->tid:name", $tid->name, $langcode, TRUE) : check_plain($tid->name);
   }
   else {
     return i18n_string("taxonomy:term:$tid:name", $name, $langcode);
@@ -213,7 +213,7 @@ function i18n_taxonomy_translate_term_name($tid, $name = '', $langcode = NULL) {
  *   Filtered default(untranslated) name
  */
 function i18n_taxonomy_translate_vocabulary_name($vid, $name = '', $langcode = NULL) {
-  return is_object($vid) ? i18n_string_string("taxonomy:vocabulary:$vid->vid:name", $vid->name, $langcode, TRUE) : i18n_string_string("taxonomy:vocabulary:$vid:name", $name, $langcode);
+  return is_object($vid) ? i18n_string_plain("taxonomy:vocabulary:$vid->vid:name", $vid->name, $langcode, TRUE) : i18n_string_string("taxonomy:vocabulary:$vid:name", $name, $langcode);
 }
 
 /**
@@ -450,7 +450,7 @@ function i18n_taxonomy_form_alter(&$form, $form_state, $form_id) {
     case 'taxonomy_overview_terms':
       if (i18n_taxonomy_vocabulary_mode($form['#vocabulary']->vid) == I18N_TAXONOMY_TRANSLATE) {
         foreach (element_children($form) as $key) {
-          if (isset($form[$key]['#term']) && ($lang = $form[$key]['#term']['language'])) {
+          if (isset($form[$key]['#term']) && ($lang = $form[$key]['#term']->language)) {
             $form[$key]['view']['#value'] .= '&nbsp;('. i18n_language_name($lang) .')';
           }
         }

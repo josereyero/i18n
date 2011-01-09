@@ -548,7 +548,7 @@ function i18n_string_text($name, $default, $options = array()) {
  * @param $options
  *   Array with additional options
  */
-function i18n_string_string($name, $default, $options = array()) {
+function i18n_string_plain($name, $default, $options = array()) {
   $options += array('filter' => 'check_plain');
   return i18n_string_translate($name, $default, $options);
 }
