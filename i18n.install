@@ -23,6 +23,18 @@ function i18n_uninstall() {
 }
 
 /**
+ * Add fields to schema if they don't exist
+ */
+function i18n_install_create_fields($table, $fields) {
+  $schema = drupal_get_schema($table, TRUE);
+  foreach ($fields as $field) {
+    if (!empty($schema['fields'][$field]) && !db_field_exists($table, $field)) {
+      db_add_field($table, $field, $schema['fields'][$field]);
+    }
+  }  
+}
+
+/**
  * Mark this as updated so all (renamed) modules know they need to update from D6 version when installing
  */
 function i18n_update_7000() {

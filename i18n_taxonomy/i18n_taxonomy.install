@@ -12,23 +12,23 @@
  * TO-DO: Drop old tables, fields
  */
 function i18n_taxonomy_install() {
-  db_add_field($ret, 'vocabulary', 'language', array('type' => 'varchar', 'length' => 12, 'not null' => TRUE, 'default' => ''));
-  db_add_field($ret, 'term_data', 'language', array('type' => 'varchar', 'length' => 12, 'not null' => TRUE, 'default' => ''));
-  db_add_field($ret, 'term_data', 'trid', array('type' => 'int', 'not null' => TRUE, 'default' => 0));
-
+  module_load_install('i18n');
+  i18n_install_create_fields('taxonomy_vocabulary', array('language', 'i18n_mode'));
+  i18n_install_create_fields('taxonomy_term_data', array('language', 'trid'));
   // Set module weight for it to run after core modules, but before views.
   db_query("UPDATE {system} SET weight = 5 WHERE name = 'i18n_taxonomy' AND type = 'module'");
+  // Set vocabulary mode
+  i18n_taxonomy_update_7000();
 }
 
 /**
  * Implements hook_uninstall().
  */
 function i18n_taxonomy_uninstall() {
-  $ret = array();
-  db_drop_field($ret, 'vocabulary', 'language');
-  db_drop_field($ret, 'term_data', 'language');
-  db_drop_field($ret, 'term_data', 'trid');
-
+  db_drop_field('taxonomy_vocabulary', 'language');
+  db_drop_field('taxonomy_vocabulary', 'i18n_mode');
+  db_drop_field('taxonomy_term_data', 'language');
+  db_drop_field('taxonomy_term_data', 'trid');
   variable_del('i18n_taxonomy_vocabulary');
 }
 
@@ -36,18 +36,22 @@ function i18n_taxonomy_uninstall() {
  * Implements hook_schema_alter().
  */
 function i18n_taxonomy_schema_alter(&$schema) {
-  $schema['vocabulary']['fields']['language'] = array('type' => 'varchar', 'length' => 12, 'not null' => TRUE, 'default' => '');
-  $schema['term_data']['fields']['language'] = array('type' => 'varchar', 'length' => 12, 'not null' => TRUE, 'default' => '');
-  $schema['term_data']['fields']['trid'] = array('type' => 'int', 'not null' => TRUE, 'default' => 0);
+  $schema['taxonomy_vocabulary']['fields']['language'] = array('type' => 'varchar', 'length' => 12, 'not null' => TRUE, 'default' => '');
+  $schema['taxonomy_vocabulary']['fields']['i18n_mode'] = array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0);
+  $schema['taxonomy_term_data']['fields']['language'] = array('type' => 'varchar', 'length' => 12, 'not null' => TRUE, 'default' => '');
+  $schema['taxonomy_term_data']['fields']['trid'] = array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0);
 }
 
 /**
- * Implements hook_enable().
- *
- * Just add strings to locale tables.
+ * Set vocabulary modes from D6 variable
  */
-function i18n_taxonomy_enable() {
-  drupal_load('module', 'i18n_string');
-  i18n_taxonomy_locale_refresh();
+function i18n_taxonomy_update_7000() {
+  if ($options = variable_get('i18ntaxonomy_vocabulary')) {
+    foreach ($options as $vid => $mode) {
+      db_update('taxononomy_vocabulary')
+        ->fields(array('i18n_mode' => $mode))
+        ->condition('vid', $vid)
+        ->execute();
+    }
+  }
 }
-

@@ -8,75 +8,57 @@
 
 /**
  * Menu callback; displays all nodes associated with a term.
+ *
+ * @param $term
+ *   The taxonomy term.
+ * @return
+ *   The page content.
  */
-function i18n_taxonomy_term_page($str_tids = '', $depth = 0, $op = 'page') {
-  $terms = taxonomy_terms_parse_string($str_tids);
-  if ($terms['operator'] != 'and' && $terms['operator'] != 'or') {
-    drupal_not_found();
+function i18n_taxonomy_term_page($term) {
+  i18n_taxonomy_localize_terms($term);
+  // Build breadcrumb based on the hierarchy of the term.
+  $current = (object) array(
+    'tid' => $term->tid,
+  );
+  // @todo This overrides any other possible breadcrumb and is a pure hard-coded
+  //   presumption. Make this behavior configurable per vocabulary or term.
+  $breadcrumb = array();
+  while ($parents = taxonomy_get_parents($current->tid)) {
+    i18n_taxonomy_localize_terms($parents);
+    $current = array_shift($parents);
+    $breadcrumb[] = l($current->name, 'taxonomy/term/' . $current->tid);
+  }
+  $breadcrumb[] = l(t('Home'), NULL);
+  $breadcrumb = array_reverse($breadcrumb);
+  drupal_set_breadcrumb($breadcrumb);
+  drupal_add_feed('taxonomy/term/' . $term->tid . '/feed', 'RSS - ' . $term->name);
+
+  $build = array();
+  // Add term heading if the term has a description
+  if (!empty($term->description)) {
+    $build['term_heading'] = array(
+      '#prefix' => '<div class="term-listing-heading">',
+      '#suffix' => '</div>',
+      'term' => taxonomy_term_view($term, 'full'),
+    );
   }
 
-  if ($terms['tids']) {
-    // We need vid here, too.
-    $result = db_query(db_rewrite_sql('SELECT t.tid, t.vid, t.name FROM {term_data} t WHERE t.tid IN ('. db_placeholders($terms['tids']) .')', 't', 'tid'), $terms['tids']);
-    $tids = array(); // we rebuild the $tids-array so it only contains terms the user has access to.
-    $names = array();
-    while ($term = db_fetch_object($result)) {
-      $tids[] = $term->tid;
-      $names[] = i18n_taxonomy_translate_term_name($term);
-    }
-
-    if ($names) {
-      $title = check_plain(implode(', ', $names));
-      drupal_set_title($title);
-
-      switch ($op) {
-        case 'page':
-          // Build breadcrumb based on first hierarchy of first term:
-          $current->tid = $tids[0];
-          $breadcrumb = array();
-          while ($parents = taxonomy_get_parents($current->tid)) {
-            $current = array_shift($parents);
-            $breadcrumb[] = l($current->name, 'taxonomy/term/'. $current->tid);
-          }
-          $breadcrumb[] = l(t('Home'), NULL);
-          $breadcrumb = array_reverse($breadcrumb);
-          drupal_set_breadcrumb($breadcrumb);
-
-          $output = theme('i18n_taxonomy_term_page', $tids, taxonomy_select_nodes($tids, $terms['operator'], $depth, TRUE));
-          drupal_add_feed(url('taxonomy/term/'. $str_tids .'/'. $depth .'/feed'), 'RSS - '. $title);
-          return $output;
-          break;
-
-        case 'feed':
-          $channel['link'] = url('taxonomy/term/'. $str_tids .'/'. $depth, array('absolute' => TRUE));
-          $channel['title'] = variable_get('site_name', 'Drupal') .' - '. $title;
-
-          // Only display the description if we have a single term, to avoid clutter and confusion.
-          if (count($tids) == 1) {
-            $terms = array(taxonomy_get_term($tids[0]));
-            $terms = i18n_taxonomy_localize_terms($terms, array('description'));
-            $terms['operator'] = 'or';
-            // HTML will be removed from feed description, so no need to filter here.
-            $channel['description'] = $terms[0]->description;
-          }
-
-          $result = taxonomy_select_nodes($tids, $terms['operator'], $depth, FALSE);
-          $items = array();
-          while ($row = db_fetch_object($result)) {
-            $items[] = $row->nid;
-          }
-
-          node_feed($items, $channel);
-          break;
-
-        default:
-          drupal_not_found();
-      }
-    }
-    else {
-      drupal_not_found();
-    }
+  if ($nids = taxonomy_select_nodes($term->tid, TRUE, variable_get('default_nodes_main', 10))) {
+    $nodes = node_load_multiple($nids);
+    $build += node_view_multiple($nodes);
+    $build['pager'] = array(
+      '#theme' => 'pager',
+      '#weight' => 5,
+     );
   }
+  else {
+    $build['no_content'] = array(
+      '#prefix' => '<p>',
+      '#markup' => t('There is currently no content classified with this term.'),
+      '#suffix' => '</p>',
+    );
+  }
+  return $build;
 }
 
 /**
@@ -118,34 +100,59 @@ function theme_i18n_taxonomy_term_page($tids, $result) {
 }
 
 /**
- * Helper function for autocompletion.
- *
- * @ TODO Optimized localization. We cannot just i18n_string() huge lists of terms.
+ * Helper function for autocompletion
  */
-function i18n_taxonomy_autocomplete($vid, $string = '') {
+function i18n_taxonomy_autocomplete($field_name, $tags_typed = '') {
+  $field = field_info_field($field_name);
+
   // The user enters a comma-separated list of tags. We only autocomplete the last tag.
-  $array = drupal_explode_tags($string);
+  $tags_typed = drupal_explode_tags($tags_typed);
+  $tag_last = drupal_strtolower(array_pop($tags_typed));
 
-  // Is this vocabulary localizable?
-  $localizable = i18n_taxonomy_vocabulary($vid) == I18N_TAXONOMY_LOCALIZE;
-
-  // Fetch last tag.
-  $last_string = trim(array_pop($array));
   $matches = array();
-  if ($last_string != '') {
-    $result = db_query_range(db_rewrite_sql("SELECT t.tid, t.name FROM {term_data} t WHERE t.vid = %d AND LOWER(t.name) LIKE LOWER('%%%s%%')", 't', 'tid'), $vid, $last_string, 0, 10);
+  if ($tag_last != '') {
 
-    $prefix = count($array) ? implode(', ', $array) .', ' : '';
+    // Part of the criteria for the query come from the field's own settings.
+    $vids = array();
+    $vocabularies = taxonomy_vocabulary_get_names();
+    foreach ($field['settings']['allowed_values'] as $tree) {
+      $vids[] = $vocabularies[$tree['vocabulary']]->vid;
+    }
 
-    while ($tag = db_fetch_object($result)) {
-      $n = $tag->name;
-      // Commas and quotes in terms are special cases, so encode 'em.
-      if (strpos($tag->name, ',') !== FALSE || strpos($tag->name, '"') !== FALSE) {
-        $n = '"'. str_replace('"', '""', $tag->name) .'"';
+    $query = db_select('taxonomy_term_data', 't');
+    $query->addTag('translatable');
+    $query->addTag('term_access');
+    
+    // Add language condition
+    $query->condition('t.language', array(i18n_langcode(), ''));
+    
+    // Do not select already entered terms.
+    if (!empty($tags_typed)) {
+      $query->condition('t.name', $tags_typed, 'NOT IN');
+    }
+    // Select rows that match by term name.
+    $tags_return = $query
+      ->fields('t', array('tid', 'name'))
+      ->condition('t.vid', $vids)
+      ->condition('t.name', '%' . db_like($tag_last) . '%', 'LIKE')
+      ->range(0, 10)
+      ->execute()
+      ->fetchAllKeyed();
+
+    $prefix = count($tags_typed) ? implode(', ', $tags_typed) . ', ' : '';
+
+    $term_matches = array();
+    foreach ($tags_return as $tid => $name) {
+      $n = $name;
+      // Term names containing commas or quotes must be wrapped in quotes.
+      if (strpos($name, ',') !== FALSE || strpos($name, '"') !== FALSE) {
+        $n = '"' . str_replace('"', '""', $name) . '"';
       }
-      $matches[$prefix . $n] = check_plain($tag->name);
+      else {
+        $term_matches[$prefix . $n] = check_plain($name);
+      }
     }
   }
 
-  drupal_json($matches);
+  drupal_json_output($term_matches);
 }
