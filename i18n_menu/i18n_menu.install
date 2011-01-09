@@ -5,13 +5,3 @@
  * @file
  * Installation file for i18nmenu module.
  */
-
-/**
- * Implements hook_enable().
- *
- * Create all strings from menus for translation.
- */
-function i18nmenu_enable() {
-  drupal_load('module', 'i18n_string');
-  i18nmenu_locale_refresh();
-}
