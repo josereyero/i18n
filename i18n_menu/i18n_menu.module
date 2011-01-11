@@ -18,7 +18,8 @@ function i18n_menu_block_view_alter(&$data, $block) {
       $menus = menu_get_menus(FALSE);
       $data['subject'] = i18n_string_plain(array('menu', 'menu', $block->delta, 'title'), $menus[$block->delta]);
     }
-    i18n_menu_localize_elements($data['content']);
+    //i18n_menu_localize_elements($data['content']);
+    $data['content'] = i18n_menu_translated_tree($block->delta, TRUE);
   }  
 }
 
@@ -30,10 +31,37 @@ function i18n_menu_i18n_string_info() {
     'title' => t('Menu'),
     'description' => t('Translatable menu items: title and description.'),
     'format' => FALSE, // This group doesn't have strings with format
-    //'list' => TRUE, // This group can list all strings
-    'refresh callback' => 'i18n_menu_string_refresh',
+    'list' => TRUE, // This group can list all strings
   );
   return $groups;
+}
+
+/**
+ * Implements hook_i18n_string_list()
+ */
+function i18n_menu_i18n_string_list($group) {
+  if ($group == 'menu' || $group == 'all') {
+    $strings = array();
+    // Add all menus
+    foreach (menu_load_all() as $name => $menu) {
+      $strings['menu']['menu'][$name] = array(
+        'title' => $menu['title'],
+        'description' => $menu['description']
+      );
+    }
+    $query = db_select('menu_links', 'm')
+      ->fields('m')
+      ->condition('language', '')
+      ->condition('customized', 1);
+    foreach ($query->execute()->fetchAll() as $link) {
+      $options = unserialize($link->options);
+      $strings['menu']['item'][$link->mlid] = array(
+        'title' => $link->link_title,
+        'description' => $options['attributes']['title']
+      );
+    }
+    return $strings;
+  }
 }
 
 /**
@@ -121,7 +149,6 @@ function i18n_menu_menu_link_update($link) {
       'description' => $link['options']['attributes']['title'],
     ));
   }
-  dpm($link);
 }
 
 /**
@@ -139,10 +166,10 @@ function i18n_menu_menu_link_delete($link) {
  * @see i18n_menu_menu_link_alter()
  */
 function i18n_menu_translated_menu_link_alter(&$item, $map) {
-  if ($item['module'] == 'menu' && empty($item['i18n_menu'])) {
-    $item['link_title'] = i18n_string(array('menu', 'item', $item['mlid'], 'title'), $item['link_title']); 
-    if (!empty($link['options']['attributes']['title'])) {
-      $item['localized_options']['attributes']['title'] = i18n_string(array('menu', 'item', $item['mlid'], 'description'), $link['options']['attributes']['title']);
+  if (!empty($item['customized']) && empty($item['language']) && !empty($item['access']) && empty($item['hidden']) && empty($item['i18n_menu'])) {
+    $item['title'] = _i18n_menu_link_title($item);
+    if ($description = _i18n_menu_link_description($item)) {
+      $item['localized_options']['attributes']['title'] = $description;
     }
     // Mark to skip localizing twice
     $item['i18n_menu'] = TRUE;
@@ -173,9 +200,8 @@ function i18n_menu_help($path, $arg) {
  * 	 Whether to reset the internal cache for the translated tree.
  */
 function i18n_menu_translated_tree($menu_name, $reset = FALSE) {
-  $menu_output = &drupal_static(__FUNCTION__ , array(), $reset);
-
-  if (!isset($menu_output[$menu_name])) {
+  $menu_output = &drupal_static(__FUNCTION__);
+  if (!isset($menu_output[$menu_name]) || $reset) {
     $tree = menu_tree_page_data($menu_name);
     i18n_menu_localize_tree($tree);
     $menu_output[$menu_name] = menu_tree_output($tree);
@@ -186,11 +212,12 @@ function i18n_menu_translated_tree($menu_name, $reset = FALSE) {
 /**
  * Localize menu tree.
  */
-function i18n_menu_localize_tree(&$tree, $update = FALSE) {
+function i18n_menu_localize_tree(&$tree) {
   global $language;
+
   foreach ($tree as $index => $item) {
     $link = $item['link'];
-    if ($link['customized']) {
+    if ($link['customized'] && !empty($link['access']) && empty($link['hidden']) && empty($link['i18n_menu'])) {
       // Remove links for other languages than current.
       // Links with language wont be localized.
       if (!empty($link['options']['langcode'])) {
@@ -202,9 +229,11 @@ function i18n_menu_localize_tree(&$tree, $update = FALSE) {
         $router = i18n_menu_get_router($link['router_path']);
         // If the title is the same it will be localized by the menu system.
         if ($link['link_title'] != $router['title']) {
-          $tree[$index]['link']['title'] = _i18n_menu_get_item_title($link, $update);
+          $tree[$index]['link']['title'] = _i18n_menu_link_title($link);
         }
-        $tree[$index]['link']['localized_options']['attributes']['title'] = _i18n_menu_get_item_description($link, $update);
+        if ($description = _i18n_menu_link_description($link)) {
+          $tree[$index]['link']['localized_options']['attributes']['title'] = $description;
+        }
         // Localize subtree.
         if ($item['below'] !== FALSE) {
           i18n_menu_localize_tree($tree[$index]['below'], $update);
@@ -217,13 +246,13 @@ function i18n_menu_localize_tree(&$tree, $update = FALSE) {
 /**
  * Localize menu renderable array
  */
-function i18n_menu_localize_elements(&$tree) {
-  foreach (element_children($tree) as $mlid) {
-    $tree[$mlid]['#title'] = i18n_string(array('menu', 'item', $mlid, 'title'), $tree[$mlid]['#title']);
+function i18n_menu_localize_elements(&$elements) {
+  foreach (element_children($elements) as $mlid) {
+    $elements[$mlid]['#title'] = i18n_string(array('menu', 'item', $mlid, 'title'), $elements[$mlid]['#title']);
     if (!empty($tree[$mlid]['#localized_options']['attributes']['title'])) {
-      $tree[$mlid]['#localized_options']['attributes']['title'] = i18n_string(array('menu', 'item', $mlid, 'description'), $tree[$mlid]['#localized_options']['attributes']['title']);
+      $elements[$mlid]['#localized_options']['attributes']['title'] = i18n_string(array('menu', 'item', $mlid, 'description'), $tree[$mlid]['#localized_options']['attributes']['title']);
     }
-    i18n_menu_localize_elements($tree[$mlid]);
+    i18n_menu_localize_elements($elements[$mlid]);
   }
 }
 
@@ -293,37 +322,35 @@ function i18n_menu_preprocess_page(&$vars) {
 }
 
 /**
- * Optionally insert/update and return a localized menu item title.
+ * Get localized menu title
  */
-function _i18n_menu_get_item_title($link, $update = FALSE, $langcode = NULL) {
-  $key = 'menu:item:' . $link['mlid'] . ':title';
-  if ($update) {
-    i18n_string_update($key, $link['link_title']);
-  }
-  return i18n_string($key, $link['link_title'], array('langcode' => $langcode));
+function _i18n_menu_link_title($link, $langcode = NULL) {
+  return i18n_string_translate(array('menu', 'item', $link['mlid'], 'title'), $link['link_title'], array('langcode' => $langcode));
 }
 
 /**
- * Optionally insert/update and return a localized menu item description.
+ * Localize menu item title and description
  */
-function _i18n_menu_get_item_description($link, $update = FALSE, $langcode = NULL) {
-  if (empty($link['options']['attributes']['title'])) {
-    return;
+function _i18n_menu_link_localize(&$link, $langcode = NULL) {
+  $link['link_title'] = _i18n_menu_link_title($link, $langcode);
+  if ($description = _i18n_menu_link_description($link, $langcode)) {
+    $link['options']['attributes']['title'] = $description;
   }
-  $key = 'menu:item:' . $link['mlid'] . ':description';
-  $description = $link['options']['attributes']['title'];
-  if ($update) {
-    i18n_string_update($key, $description);
-  }
-  return i18n_string($key, $description, array('langcode' => $langcode));
+  if (!empty($link['options']['attributes']['title'])) {
+    
+  }  
 }
 
 /**
- * Delete a menu item translation.
+ * Get localized menu description
  */
-function _i18n_menu_delete_item($mlid) {
-  i18n_string_remove_string('menu:item:' . $mlid . ':title');
-  i18n_string_remove_string('menu:item:' . $mlid . ':description');
+function _i18n_menu_link_description($link, $langcode = NULL) {
+  if (!empty($link['options']['attributes']['title'])) {
+    return i18n_string_translate(array('menu', 'item', $link['mlid'], 'description'), $link['options']['attributes']['title'], array('langcode' => $langcode));
+  }
+  else {
+    return NULL;
+  }
 }
 
 /**
