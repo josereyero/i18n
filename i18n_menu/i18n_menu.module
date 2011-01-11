@@ -130,7 +130,7 @@ function i18n_menu_menu_link_update($link) {
       ->condition('mlid', $link['mlid'])
       ->execute();
   }
-  if (empty($link['language'])) {
+  if (!empty($link['customized']) && empty($link['language'])) {
     i18n_string_update(array('menu', 'item', $link['mlid']), array(
       'title' => $link['link_title'],
       'description' => $link['options']['attributes']['title'],

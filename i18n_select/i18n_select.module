@@ -1,17 +1,18 @@
 <?php
-// $Id: i18nselect.module,v 1.1.2.1 2010/11/09 10:31:32 brucepearson Exp $
+// $Id: i18n_select.module,v 1.1.2.1 2010/11/09 10:31:32 brucepearson Exp $
 
 /**
  * Implementation of hook_menu().
  */
-function i18nselect_menu() {
-  $items['admin/config/regional/i18n'] = array(
-    'title' => 'Multilingual system',
+function i18n_select_menu() {
+  $items['admin/config/regional/i18n/select'] = array(
+    'title' => 'Selection',
     'description' => 'Configure extended options for multilingual content and translations.',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('i18n_admin_settings'),
+    'page arguments' => array('i18n_select_admin_settings'),
     'access arguments' => array('administer site configuration'),
-    'file' => 'i18nselect.admin.inc',
+    'file' => 'i18n_select.admin.inc',
+    'type' => MENU_LOCAL_TASK,
   );
   
   return $items;
@@ -23,10 +24,10 @@ function i18nselect_menu() {
  * Rewrite node queries so language selection options are enforced.
  */
 
-function i18nselect_query_node_access_alter(QueryAlterableInterface $query) {
+function i18n_select_query_node_access_alter(QueryAlterableInterface $query) {
   
   
-  if (variable_get('i18nselect_nodes', TRUE)) {
+  if (variable_get('i18n_select_nodes', TRUE)) {
 
     // make sure we are dealing with the node table    
     $tables = $query->getTables();
@@ -50,7 +51,7 @@ function i18nselect_query_node_access_alter(QueryAlterableInterface $query) {
       $language = $GLOBALS['language_content']->language;
       $default_lang = language_default('language');
     
-      if (variable_get('i18nselect_missing_translation', FALSE) && $language != $default_lang) {
+      if (variable_get('i18n_select_missing_translation', FALSE) && $language != $default_lang) {
             
         // we want to include nodes from the default language that haven't been
         // translated to the current language
