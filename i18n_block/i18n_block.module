@@ -119,7 +119,7 @@ function i18n_block_i18n_string_info() {
  * Implements hook_i18n_string_list()
  */
 function i18n_block_i18n_string_list($group) {
-  if ($group == 'blocks') {
+  if ($group == 'blocks' || $group == 'all') {
     $strings = array();
     $query = db_select('block', 'b')
       ->distinct()

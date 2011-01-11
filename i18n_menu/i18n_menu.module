@@ -65,19 +65,6 @@ function i18n_menu_i18n_string_list($group) {
 }
 
 /**
- * Refresh locale strings.
- */
-function i18n_menu_i18n_string_refresh() {
-  // Rebuild menus to ensure all items are altered in i18n_menu_menu_link_alter().
-  menu_rebuild();
-  foreach (menu_get_menus() as $name => $title) {
-    $tree = menu_tree_all_data($name);
-    i18n_menu_localize_tree($tree, TRUE);
-  }
-  return TRUE; // Meaning it completed with no issues
-}
-
-/**
  * Implements hook_menu_link_alter().
  *
  * Catch changed links, update language and set alter option.

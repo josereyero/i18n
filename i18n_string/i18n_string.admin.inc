@@ -12,9 +12,7 @@ function i18n_string_admin_refresh_form() {
   // Select textgroup/s. Just the ones that have a 'refresh callback'
   $groups = array();
   foreach (i18n_string_group_info() as $name => $info) {
-    if (isset($info['list']) || isset($info['refresh callback'])) {
-      $groups[$name] = $info['title'];
-    }
+    $groups[$name] = $info['title'];
   }
   $form['groups'] = array(
     '#type' => 'checkboxes',
@@ -53,7 +51,7 @@ function i18n_string_admin_refresh_form_submit($form, &$form_state) {
   $group_names = module_invoke_all('locale', 'groups');
   if ($op == t('Refresh strings') && $groups) {
     foreach ($groups as $group) {
-      if (i18n_string_refresh_group($group, TRUE)) {
+      if (i18n_string_refresh_group($group)) {
         drupal_set_message(t("Successfully refreshed strings for %group", array('%group' => $group_names[$group])));
       }
       else {
@@ -164,42 +162,22 @@ function i18n_string_admin_settings() {
  *   True if the strings have been refreshed successfully. False otherwise.
  */
 function i18n_string_refresh_group($group, $delete = FALSE) {
-  $info = i18n_string_group_info($group);
-  // If no listing function nor refresh callback, we cannot go ahead
-  if (empty($group['list']) && empty($group['refresh callback'])) {
-    return FALSE;
-  }
+  $result = FALSE;
   // Mark data on locales_source setting version = 0
   db_update('locales_source')
     ->fields(array('version' => 0))
     ->condition('textgroup', $group)
     ->execute();
 
-  if (!empty($info['refresh callback'])) {
-    $result = call_user_func($info['refresh callback']);
-  }
-  elseif ($strings = module_invoke_all('i18n_string_list', $group)) {
-    foreach ($strings as $textgroup => $group_strings) {
-      foreach ($group_strings as $type => $type_strings) {
-        foreach ($type_strings as $id => $object_strings) {
-          foreach ($object_strings as $key => $string) {
-            if (is_array($string)) {
-              $format = $string['format'];
-              $string = $string['string'];
-            }
-            else {
-              $format = FALSE;
-            }
-            i18n_string_update(array($textgroup, $type, $id, $key), $string, array('format' => $format)); 
-          }    
-        }
-      }
-    }
+  if ($strings = module_invoke_all('i18n_string_list', $group)) {
+    i18n_string_refresh_string_list($strings);
     $result = TRUE;
   }
+  // Invoke refresh hook
+  $result = $result && module_invoke_all('i18n_string_refresh', $group);
 
   // Now delete all source strings that were not refreshed (they don't have a row in i18n_strings)
-  if (!empty($result) && $delete) {
+  if ($result && $delete) {
     $lids = db_select('locales_source', 's')
       ->fields('s', array('lid'))
       ->condition('textgroup', $group)
@@ -215,4 +193,26 @@ function i18n_string_refresh_group($group, $delete = FALSE) {
     }
   }
   return $result;
+}
+
+/**
+ * Refresh string list
+ */
+function i18n_string_refresh_string_list($strings) {
+  foreach ($strings as $textgroup => $group_strings) {
+    foreach ($group_strings as $type => $type_strings) {
+      foreach ($type_strings as $id => $object_strings) {
+        foreach ($object_strings as $key => $string) {
+          if (is_array($string)) {
+            $format = $string['format'];
+            $string = $string['string'];
+          }
+          else {
+            $format = NULL;
+          }
+          i18n_string_update(array($textgroup, $type, $id, $key), $string, array('format' => $format)); 
+        }    
+      }
+    }
+  }  
 }
