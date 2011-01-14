@@ -109,8 +109,8 @@ function i18n_node_i18n_context_language() {
     if (($node = menu_get_object('node')) && !empty($node->language)) {
       return i18n_language($node->language);
     }
-    elseif (arg(1) == 'add' && !empty($_GET['translation']) && !empty($_GET['language'])) {
-      return i18n_language($_GET['language']);
+    elseif (arg(1) == 'add' && !empty($_GET['translation']) && !empty($_GET['target'])) {
+      return i18n_language($_GET['target']);
     }
   }
 }
@@ -219,7 +219,7 @@ function i18n_node_language_list($node, $translate = FALSE) {
  */
 function i18n_node_language_mode($type) {
   $type = is_object($type) ? $type->type : $type;
-  return variable_get('i18n_node_'. $node->type, I18N_LANGUAGE_ENABLED);
+  return variable_get('i18n_node_'. $type, I18N_LANGUAGE_ENABLED);
 }
 
 /**

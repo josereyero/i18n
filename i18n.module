@@ -178,6 +178,17 @@ function i18n_modules_installed($modules) {
  */
 
 /**
+ * Switch select Mode on off if enabled
+ */
+function i18n_select($value = NULL) {
+  static $mode;
+  if (isset($value)) {
+    $mode = $value;
+  }
+  return $mode;
+}
+
+/**
  * Get language properties.
  *
  * @param $code
