@@ -172,10 +172,6 @@ function i18n_block_form_block_add_block_form_alter(&$form, &$form_state, $form_
  * Remove block title for multilingual blocks.
  */
 function i18n_block_form_block_admin_configure_alter(&$form, &$form_state, $form_id) {
-  $default_options = db_query("SELECT language FROM {i18n_block_language} WHERE module = :module AND delta = :delta", array(
-    ':module' => $form['module']['#value'],
-    ':delta' => $form['delta']['#value'],
-  ))->fetchCol();
   $form['i18n_block']['languages'] = array(
     '#type' => 'fieldset',
     '#title' => t('Languages'),
@@ -183,23 +179,31 @@ function i18n_block_form_block_admin_configure_alter(&$form, &$form_state, $form
     '#collapsed' => TRUE,
     '#group' => 'visibility',
     '#weight' => 5,
+    '#attached' => array(
+      'js' => array(drupal_get_path('module', 'i18n_block') . '/i18n_block.js'),
+    ),
   );
-  $form['i18n_block']['languages']['languages'] = array(
-    '#type' => 'checkboxes',
-    '#title' => t('Show block for specific languages'),
-    '#default_value' => $default_options,
-    '#options' => i18n_language_list(),
-    '#description' => t('Show this block only on pages for the given language(s). If you select no language, there will be no language-specific limitation.'),
-  );
+
   // Add translatable option, just title for module blocks, title and content for custom blocks.
   $block = block_load($form['module']['#value'], $form['delta']['#value']);
   $form['i18n_block']['languages']['i18n_mode'] = array(
-    '#type' => 'radios',
-    '#title' => t('Block translation'),
-    '#default_value' => $block->i18n_mode,
-    '#options' => array(t('Disabled'), t('Enabled')),
-    '#description' => $form['module']['#value'] == 'block' ? t('Make this block title and content translatable.') : t('Make this block title translatable.'),
-    '#disabled' => !module_exists('i18n_string'),
+    '#type' => 'checkbox',
+    '#title' => $form['module']['#value'] == 'block' ? t("Make this block's title and content translatable.") : t("Make this block's title translatable."),
+    '#default_value' => (int) @$block->i18n_mode,
+    '#access' => module_exists('i18n_string'),
+  );
+
+  // Add option to select which language pages to show on.
+  $default_options = db_query("SELECT language FROM {i18n_block_language} WHERE module = :module AND delta = :delta", array(
+    ':module' => $form['module']['#value'],
+    ':delta' => $form['delta']['#value'],
+  ))->fetchCol();
+  $form['i18n_block']['languages']['languages'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Only show this block for these languages'),
+    '#default_value' => $default_options,
+    '#options' => i18n_language_list(),
+    '#description' => t('If no language is selected, block will show regardless of language.'),
   );
   $form['#submit'][] = 'i18n_block_form_block_admin_configure_submit';  
 }
