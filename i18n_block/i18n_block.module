@@ -10,13 +10,6 @@
  * @ TODO Add strings on block update.
  */
 
-// Tag for localizable block, cannot be any language.
-define('I18N_BLOCK_LOCALIZE', '__LOCALIZE__');
-// Block type: localizable
-define('I18N_BLOCK_LOCALIZABLE', 1);
-// Block type: block with language
-define('I18N_BLOCK_LANGUAGE', 0);
-
 /**
  * Implements hook_block_list_alter().
  *

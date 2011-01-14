@@ -188,9 +188,9 @@ function i18n_menu_help($path, $arg) {
  */
 function i18n_menu_translated_tree($menu_name, $reset = FALSE) {
   $menu_output = &drupal_static(__FUNCTION__);
-  if (!isset($menu_output[$menu_name]) || $reset) {
+  if (!isset($menu_output[$menu_name]) || $reset) {    
     $tree = menu_tree_page_data($menu_name);
-    i18n_menu_localize_tree($tree);
+    $tree = i18n_menu_localize_tree($tree);
     $menu_output[$menu_name] = menu_tree_output($tree);
   }
   return $menu_output[$menu_name];
@@ -199,16 +199,15 @@ function i18n_menu_translated_tree($menu_name, $reset = FALSE) {
 /**
  * Localize menu tree.
  */
-function i18n_menu_localize_tree(&$tree) {
-  global $language;
-
-  foreach ($tree as $index => $item) {
+function i18n_menu_localize_tree($tree, $langcode = NULL) {
+  $langcode = i18n_langcode($langcode);
+  foreach ($tree as $index => &$item) {
     $link = $item['link'];
     if ($link['customized'] && !empty($link['access']) && empty($link['hidden']) && empty($link['i18n_menu'])) {
       // Remove links for other languages than current.
       // Links with language wont be localized.
-      if (!empty($link['options']['langcode'])) {
-        if ($link['options']['langcode'] != $language->language) {
+      if (!empty($link['language'])) {
+        if ($link['language'] != $langcode) {
           unset($tree[$index]);
         }
       }
@@ -216,18 +215,19 @@ function i18n_menu_localize_tree(&$tree) {
         $router = i18n_menu_get_router($link['router_path']);
         // If the title is the same it will be localized by the menu system.
         if ($link['link_title'] != $router['title']) {
-          $tree[$index]['link']['title'] = _i18n_menu_link_title($link);
+          $item['link']['title'] = _i18n_menu_link_title($link, $langcode);
         }
-        if ($description = _i18n_menu_link_description($link)) {
-          $tree[$index]['link']['localized_options']['attributes']['title'] = $description;
+        if ($description = _i18n_menu_link_description($link, $langcode)) {
+          $item['link']['localized_options']['attributes']['title'] = $description;
         }
         // Localize subtree.
         if ($item['below'] !== FALSE) {
-          i18n_menu_localize_tree($tree[$index]['below'], $update);
+          $item['below'] = i18n_menu_localize_tree($item['below'], $langcode);
         }
       }
     }
   }
+  return $tree;
 }
 
 /**
@@ -254,7 +254,7 @@ function i18n_menu_menu_navigation_links($menu_name, $level = 0) {
 
   // Get the menu hierarchy for the current page.
   $tree = menu_tree_page_data($menu_name);
-  i18n_menu_localize_tree($tree);
+  $tree = i18n_menu_localize_tree($tree);
 
   // Go down the active trail until the right level is reached.
   while ($level-- > 0 && $tree) {
