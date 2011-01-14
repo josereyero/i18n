@@ -32,11 +32,20 @@ function i18n_boot() {
 }
 
 /**
- * Get global language, make sure it is initialized
+ * Get global language object, make sure it is initialized
+ * 
+ * @param $language
+ *   Language code or language object to convert to valid language object
  */
 function i18n_language($language = NULL) {
   if ($language) {
-    return $language;
+    if (is_object($language)) {
+      return $language;
+    }
+    else {
+      $list = language_list();
+      return isset($list[$language]) ? $list[$language] : i18n_language();
+    }
   }
   else {
     if (empty($GLOBALS['language'])) {
@@ -359,15 +368,15 @@ function i18n_string($name, $string, $options = array()) {
 
 /**
  * Get language from context.
+ * 
+ * Depending on the page content we may need to use a different language for some operations.
  */
-function _i18n_get_context_lang() {
-  // Node language when loading specific nodes or creating translations.
-  if (arg(0) == 'node' ) {
-    if (($node = menu_get_object('node')) && $node->language) {
-      return $node->language;
-    }
-    elseif (arg(1) == 'add' && !empty($_GET['translation']) && !empty($_GET['language'])) {
-      return $_GET['language'];
+function i18n_context_language() {
+  // Get language from the first module that provides it
+  foreach (module_implements('i18n_context_language') as $module) {
+    if ($language = module_invoke($module, 'i18n_context_language')) {
+      return $language;
     }
   }
+  return i18n_language();
 }

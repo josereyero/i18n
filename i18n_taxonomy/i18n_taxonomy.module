@@ -273,7 +273,10 @@ function i18n_taxonomy_taxonomy_term_insert($term) {
 function i18n_taxonomy_taxonomy_term_update($term) {
   if (i18n_taxonomy_vocabulary_mode($term->vid) ==  I18N_TAXONOMY_LOCALIZE) {
     i18n_string_update(array('taxonomy', 'term', $term->tid, 'name'), $term->name);
-    i18n_string_update(array('taxonomy', 'term', $term->tid, 'description'), $term->description, array('format' => $term->format));
+    // Sometimes, like when tagging content we have no description.
+    if (isset($term->description)) {
+      i18n_string_update(array('taxonomy', 'term', $term->tid, 'description'), $term->description, array('format' => $term->format));
+    }
   }  
 }
 

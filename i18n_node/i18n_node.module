@@ -101,6 +101,21 @@ function i18n_node_help($path, $arg) {
 }
 
 /**
+ * Implements hook_i18n_context_language()
+ */
+function i18n_node_i18n_context_language() {
+  // Node language when loading specific nodes or creating translations.
+  if (arg(0) == 'node' ) {
+    if (($node = menu_get_object('node')) && !empty($node->language)) {
+      return i18n_language($node->language);
+    }
+    elseif (arg(1) == 'add' && !empty($_GET['translation']) && !empty($_GET['language'])) {
+      return i18n_language($_GET['language']);
+    }
+  }
+}
+
+/**
  * Implements hook_i18n_string_info()
  */
 function i18n_node_i18n_string_info() {
