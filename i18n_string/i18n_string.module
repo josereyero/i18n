@@ -174,8 +174,9 @@ function i18n_string_form_alter(&$form, &$form_state, $form_id) {
         // Replace validate callback
         $form['#validate'] = array('i18n_string_translate_edit_form_validate');
         if ($context->format) {
-          $format = filter_formats($context->format);
-          $disabled = !filter_access($context->format);
+          $formats = filter_formats();
+          $format = $formats[$context->format];
+          $disabled = !filter_access($format);
           if ($disabled) {
             drupal_set_message(t('This string uses the %name text format. You are not allowed to translate or edit texts with this format.', array('%name' => $format->name)), 'warning');
           }
@@ -212,8 +213,11 @@ function i18n_string_translate_edit_form_validate($form, &$form_state) {
     $copy_state['values']['textgroup'] = 'default';
     locale_translate_edit_form_validate($form, $copy_state);
   }
-  elseif (!filter_access($context->format)) {
-    form_set_error('translations', t('You are not allowed to translate or edit texts with this text format.'));
+  else {
+    $formats = filter_formats();
+    if (!filter_access($formats[$context->format])) {
+      form_set_error('translations', t('You are not allowed to translate or edit texts with this input format.'));
+    }
   }
 }
 
