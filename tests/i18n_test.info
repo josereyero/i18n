@@ -6,3 +6,4 @@ dependencies[] = translation
 dependencies[] = i18n
 package = Testing
 core = 6.x
+hidden = TRUE

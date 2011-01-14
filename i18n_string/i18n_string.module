@@ -216,7 +216,7 @@ function i18n_string_translate_edit_form_validate($form, &$form_state) {
   else {
     $formats = filter_formats();
     if (!filter_access($formats[$context->format])) {
-      form_set_error('translations', t('You are not allowed to translate or edit texts with this input format.'));
+      form_set_error('translations', t('You are not allowed to translate or edit texts with this text format.'));
     }
   }
 }
