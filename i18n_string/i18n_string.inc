@@ -52,10 +52,10 @@ class i18n_string_default {
     return $string; 
   }
   /**
-   * Check if input format is allowed for translation 
+   * Check if text format is allowed for translation 
    *
    * @param $format
-   *   Input format key or NULL if not format (will be allowed)
+   *   Text format key or NULL if not format (will be allowed)
    */
   public static function allowed_format($format = NULL) {
     $allowed_formats = variable_get('i18n_string_allowed_formats', array(variable_get('filter_default_format', 1)));
@@ -73,7 +73,7 @@ class i18n_string_default {
    * @param $i18nstring
    *   String object
    * @param $format
-   *   Input format, for strings that will go through some filter
+   *   Text format, for strings that will go through some filter
    * @return
    *   Update status.
    */
@@ -172,7 +172,7 @@ class i18n_string_default {
     if (!empty($i18nstring->format) && !self::allowed_format($i18nstring->format)) {
       // This format is not allowed, so we remove the string, in this case we produce a warning
       $params = self::string_params($i18nstring);
-      drupal_set_message(t('The string %location for textgroup %textgroup is not allowed for translation because of its input format.', $params), 'warning');
+      drupal_set_message(t('The string %location for textgroup %textgroup is not allowed for translation because of its text format.', $params), 'warning');
       return FALSE;
     }
     else {
@@ -206,10 +206,10 @@ class i18n_string_default {
   }
 
   /**
-   * Get translation from the database. Full object with input format.
+   * Get translation from the database. Full object with text format.
    *
    * This one doesn't return anything if we don't have the full i18n strings data there
-   * to prevent missing data resulting in missing input formats
+   * to prevent missing data resulting in missing text formats
    */
   protected function get_translation($i18nstring) {
     // First, populate available data from the cache
@@ -478,7 +478,7 @@ class i18n_string_default {
    *   Source string in default language. Default language may or may not be English.
    * @param $options
    *   Array with additional options:
-   *   - 'format', String format if the string has input format
+   *   - 'format', String format if the string has text format
    *   - 'messages', Whether to print out status messages
    */
   public function update($context, $string, $options = array()) {
@@ -514,7 +514,7 @@ class i18n_string_default {
    * @pram $string
    *   New value of string for update/create. May be empty for removing.
    * @param $format
-   *   Input format, that must have been checked against allowed formats for translation
+   *   Text format, that must have been checked against allowed formats for translation
    * @return status
    *   SAVED_UPDATED | SAVED_NEW | SAVED_DELETED
    */

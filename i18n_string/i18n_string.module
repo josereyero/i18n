@@ -91,19 +91,19 @@ function i18n_string_help($path, $arg) {
       $output .= '<li>' . t('Use the update option when some of the strings had been previously translated with the localization system, but the translations are not showing up for the configurable strings.') . '</li>';
       $output .= '</ul>';
       $output .= '<p>' . t('To search and translate strings, use the <a href="@translate-interface">translation interface</a> pages.', array('@translate-interface' => url('admin/config/regional/translate'))) . '</p>';
-      $output .= '<p>' . t('<strong>Important:</strong> To configure which Input formats are safe for translation, visit the <a href="@configure-strings">configure strings</a> page before refreshing your strings.', array('@configure-strings' => url('admin/config/regional/i18n/strings'))) . '</p>';
+      $output .= '<p>' . t('<strong>Important:</strong> To configure which text formats are safe for translation, visit the <a href="@configure-strings">configure strings</a> page before refreshing your strings.', array('@configure-strings' => url('admin/config/regional/i18n/strings'))) . '</p>';
       return $output;
 
     case 'admin/config/language':
       $output = '<p>' . t('<strong>Warning</strong>: Changing the default language may have unwanted effects on string translations. Read more about <a href="@i18n_string-help">String translation</a>', array('@i18n_string-help' => url('admin/help/i18n_string'))) . '</p>';
       return $output;
     case 'admin/config/regional/i18n/strings':
-      $output = '<p>' . t('When translating user defined strings that have an Input format associated, translators will be able to edit the text before it is filtered which may be a security risk for some filters. An obvious example is when using the PHP filter but other filters may also be dangerous.') . '</p>';
-      $output .= '<p>' . t('As a general rule <strong>do not allow any filtered text to be translated unless the translators already have access to that Input format</strong>. However if you are doing all your translations through this site\'s translation UI or the Localization client, and never importing translations for other textgroups than <i>default</i>, filter access will be checked for translators on every translation page.') . '</p>';
-      $output .= '<p>' . t('<strong>Important:</strong> After disallowing some Input format, use the <a href="@refresh-strings">refresh strings</a> page so forbidden strings are deleted and not allowed anymore for translators.', array('@refresh-strings' => url('admin/build/translate/refresh'))) . '</p>';
+      $output = '<p>' . t('When translating user defined strings that have a text format associated, translators will be able to edit the text before it is filtered which may be a security risk for some filters. An obvious example is when using the PHP filter but other filters may also be dangerous.') . '</p>';
+      $output .= '<p>' . t('As a general rule <strong>do not allow any filtered text to be translated unless the translators already have access to that text format</strong>. However if you are doing all your translations through this site\'s translation UI or the Localization client, and never importing translations for other textgroups than <i>default</i>, filter access will be checked for translators on every translation page.') . '</p>';
+      $output .= '<p>' . t('<strong>Important:</strong> After disallowing some text format, use the <a href="@refresh-strings">refresh strings</a> page so forbidden strings are deleted and not allowed anymore for translators.', array('@refresh-strings' => url('admin/build/translate/refresh'))) . '</p>';
       return $output;
     case 'admin/config/filters':
-      return '<p>' . t('After updating your Input formats do not forget to review the list of formats allowed for string translations on the <a href="@configure-strings">configure translatable strings</a> page.', array('@configure-strings' => url('admin/config/regional/i18n/strings'))) . '</p>';
+      return '<p>' . t('After updating your text formats do not forget to review the list of formats allowed for string translations on the <a href="@configure-strings">configure translatable strings</a> page.', array('@configure-strings' => url('admin/config/regional/i18n/strings'))) . '</p>';
   }
 }
 
@@ -177,14 +177,14 @@ function i18n_string_form_alter(&$form, &$form_state, $form_id) {
           $format = filter_formats($context->format);
           $disabled = !filter_access($context->format);
           if ($disabled) {
-            drupal_set_message(t('This string uses the %name input format. You are not allowed to translate or edit texts with this format.', array('%name' => $format->name)), 'warning');
+            drupal_set_message(t('This string uses the %name text format. You are not allowed to translate or edit texts with this format.', array('%name' => $format->name)), 'warning');
           }
           foreach (element_children($form['translations']) as $langcode) {
             $form['translations'][$langcode]['#disabled'] = $disabled;
           }
           $form['translations']['format_help'] = array(
             '#type' => 'item',
-            '#title' => t('Input format: @name', array('@name' => $format->name)),
+            '#title' => t('Text format: @name', array('@name' => $format->name)),
             '#value' => theme('filter_tips', _filter_tips($context->format, FALSE))
           );
           $form['submit']['#disabled'] = $disabled;
@@ -207,13 +207,13 @@ function i18n_string_form_alter(&$form, &$form_state, $form_id) {
 function i18n_string_translate_edit_form_validate($form, &$form_state) {
   $context = $form_state['values']['i18n_string_context'];
   if (empty($context->format)) {
-    // If not input format use regular validation for all strings
+    // If not text format use regular validation for all strings
     $copy_state = $form_state;
     $copy_state['values']['textgroup'] = 'default';
     locale_translate_edit_form_validate($form, $copy_state);
   }
   elseif (!filter_access($context->format)) {
-    form_set_error('translations', t('You are not allowed to translate or edit texts with this input format.'));
+    form_set_error('translations', t('You are not allowed to translate or edit texts with this text format.'));
   }
 }
 
@@ -313,7 +313,7 @@ function i18n_string_update_object($context, $object, $properties = array()) {
  *   Array of key => string to update multiple strings at once
  * @param $options
  *   Array with additional options:
- *   - 'format', String format if the string has input format
+ *   - 'format', String format if the string has text format
  *   - 'messages', Whether to print out status messages
  */
 function i18n_string_update($name, $string, $options = array()) {
@@ -449,7 +449,7 @@ function i18n_string_modules_enabled($modules) {
 /**
  * Get translation for user defined string.
  *
- * This function is intended to return translations for plain strings that have NO input format
+ * This function is intended to return translations for plain strings that have NO text format
  *
  * @param $name
  *   Textgroup and context glued with ':'
@@ -522,7 +522,7 @@ function i18n_string_format($i18nstring, $options = array()) {
 /**
  * Get filtered translation.
  *
- * This function is intended to return translations for strings that have an input format
+ * This function is intended to return translations for strings that have an text format
  *
  * @param $name
  *   Full string id
@@ -627,7 +627,7 @@ function i18n_string_l10n_client_add($context, $options) {
       l10_client_add_string_to_page(FALSE, $context->translation, $context->textgroup);
     }
     else {
-      // Additional checking for input format, if its a dangerous one we ignore the string
+      // Additional checking for text format, if its a dangerous one we ignore the string
       $source = i18n_string_get_source($context);
       if (!empty($source) && (i18n_string_allowed_format($source->format) || filter_access($source->format))) {
         l10_client_add_string_to_page($string, $translation, $context->textgroup);

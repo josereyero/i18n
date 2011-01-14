@@ -66,7 +66,7 @@ class i18n_Blocks_Test extends Drupali18nTestCase {
     $this->assertTrue(i18n_string_get_source("blocks:user:1:title"), "We have a string for the Navigation block title");
     $this->assertTrue(i18n_string_get_source("blocks:block:$box2->bid:title", $box2->title), "The string for the second box title is still there.");
     $this->assertTrue(i18n_string_get_source("blocks:block:$box2->bid:body", $box2->body), "The string for the second box body is still there.");
-    // Test a block with filtering and input formats
+    // Test a block with filtering and text formats
     $box3 = $this->i18nCreateBox(array(
       'title' => '<div><script>alert(0)</script>Title</script>',
       'body' => "One line\nTwo lines<script>alert(1)</script>",
