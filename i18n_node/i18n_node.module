@@ -194,12 +194,7 @@ function i18n_node_language_list($node, $translate = FALSE) {
   $languages = node_invoke($node, 'language_list', $translate);
 
   if (!$languages) {
-    if (variable_get('i18n_node_'. $node->type, 0) >= LANGUAGE_SUPPORT_EXTENDED) {
-      $languages = locale_language_list('name', TRUE); // All defined languages
-    }
-    else {
-      $languages = locale_language_list(); // All enabled languages
-    }
+    $languages = i18n_language_list('name', i18n_node_language_mode($node));
     if ($translate && isset($node->tnid) && $node->tnid && ($translations = translation_node_get_translations($node->tnid))) {
       unset($translations[$node->language]);
       foreach (array_keys($translations) as $langcode) {
@@ -219,6 +214,13 @@ function i18n_node_language_list($node, $translate = FALSE) {
   return $languages;
 }
 
+/**
+ * Get language mode for node or node type
+ */
+function i18n_node_language_mode($type) {
+  $type = is_object($type) ? $type->type : $type;
+  return variable_get('i18n_node_'. $node->type, I18N_LANGUAGE_ENABLED);
+}
 
 /**
  * Implements hook_node_prepare().
@@ -263,9 +265,9 @@ function i18n_node_translation_link_alter(&$links, $path) {
 
   // Check for a node related path, and for its translations.
   if ((preg_match("!^node/([0-9]+)(/.+|)$!", $path, $matches)) && ($node = node_load((int)$matches[1])) && !empty($node->tnid)) {
-    // make sure language support is set to LANGUAGE_SUPPORT_EXTENDED, so links
-    // dont get added for LANGUAGE_SUPPORT_EXTENDED_NOT_DISPLAYED
-    if (variable_get('i18n_node_'. $node->type, LANGUAGE_SUPPORT_NORMAL) == LANGUAGE_SUPPORT_EXTENDED) {
+    // make sure language support is set to I18N_LANGUAGE_EXTENDED, so links
+    // dont get added for I18N_LANGUAGE_EXTENDED_NOT_DISPLAYED
+    if (!(i18n_node_languabe_mode($node->type) & I18N_LANGUAGE_HIDDEN)) {
       $languages = language_list();
       $extended = array();
       foreach (translation_node_get_translations($node->tnid) as $langcode => $translation_node) {
@@ -299,7 +301,7 @@ function i18n_node_translation_link_alter(&$links, $path) {
 function i18n_node_link_alter(&$links, $node) {
   global $language;
 
-  $language_support = variable_get('i18n_node_'. $node->type, LANGUAGE_SUPPORT_NORMAL);
+  $language_support = i18n_node_language_mode($node);
 
   // Hide node translation links.
   if (variable_get('i18n_hide_translation_links', 0) == 1) {
@@ -314,7 +316,7 @@ function i18n_node_link_alter(&$links, $node) {
     foreach (i18n_node_language_list($node) as $langcode) {
       $index = 'node_translation_'. $langcode;
       if (!empty($links[$index])) {
-        if ($language_support != LANGUAGE_SUPPORT_EXTENDED && $links[$index]['language']->enabled == 0) {
+        if (!($language_support & I18N_LANGUAGE_EXTENDED) && $links[$index]['language']->enabled == 0) {
           unset($links[$index]);
         }
         else {
@@ -483,7 +485,7 @@ function i18n_node_form_node_type_form_alter(&$form, &$form_state) {
     $form['i18n']['i18n_node'] = array(
       '#type' => 'radios',
       '#title' => t('Extended language support'),
-      '#default_value' => variable_get('i18n_node_'. $form['#node_type']->type, LANGUAGE_SUPPORT_NORMAL),
+      '#default_value' => i18n_node_language_mode($form['#node_type']->type),
       '#options' => _i18n_node_language_options(),
       '#description' => t('If enabled, all defined languages will be allowed for this content type in addition to only enabled ones. This is useful to have more languages for content than for the interface.'),
       '#disabled' => $disabled,
@@ -532,9 +534,9 @@ function i18n_node_theme() {
  */
 function _i18n_node_language_options() {
   return array(
-    LANGUAGE_SUPPORT_NORMAL => t('Normal - All enabled languages will be allowed.'),
-    LANGUAGE_SUPPORT_EXTENDED => t('Extended - All defined languages will be allowed.'),
-    LANGUAGE_SUPPORT_EXTENDED_NOT_DISPLAYED => t('Extended, but not displayed - All defined languages will be allowed for input, but not displayed in links.'),
+    I18N_LANGUAGE_ENABLED => t('Normal - All enabled languages will be allowed.'),
+    I18N_LANGUAGE_EXTENDED => t('Extended - All defined languages will be allowed.'),
+    I18N_LANGUAGE_EXTENDED | I18N_LANGUAGE_HIDDEN => t('Extended, but not displayed - All defined languages will be allowed for input, but not displayed in links.'),
   );
 }
 

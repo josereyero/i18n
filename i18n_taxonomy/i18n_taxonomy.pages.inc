@@ -79,7 +79,7 @@ function theme_i18n_taxonomy_term_page($tids, $result) {
   // Only display the description if we have a single term, to avoid clutter and confusion.
   if (count($tids) == 1) {
     $term = taxonomy_get_term($tids[0]);
-    if (i18n_taxonomy_vocabulary($term->vid) == I18N_TAXONOMY_LOCALIZE) {
+    if (i18n_taxonomy_vocabulary($term->vid) & I18N_MODE_LOCALIZE) {
       $description = i18n_string("taxonomy:term:$term->tid:description", $term->description);
     }
     else {

@@ -13,16 +13,25 @@
  * @author Jose A. Reyero, 2004
  */
 
-// Some constants. Language support modes for content
-define('LANGUAGE_SUPPORT_NONE', 0);
-define('LANGUAGE_SUPPORT_NORMAL', 1);
-define('LANGUAGE_SUPPORT_EXTENDED', 2);
-define('LANGUAGE_SUPPORT_EXTENDED_NOT_DISPLAYED', 3);
-
+// All multilingual options disabled 
+define('I18N_LANGUAGE_DISABLED', 0);
 // Language list will include all enabled languages
-define('I18N_LANGUAGE_ENABLED', 0);
+define('I18N_LANGUAGE_ENABLED', 1);
 // Language list will include also disabled languages
-define('I18N_LANGUAGE_EXTENDED', 1);
+define('I18N_LANGUAGE_EXTENDED', 4);
+// Disabled languages will be hidden when possible
+define('I18N_LANGUAGE_HIDDEN', 8);
+// All defined languages will be allowed but hidden when possible
+define('I18N_LANGUAGE_EXTENDED_NOT_DISPLAYED', I18N_LANGUAGE_EXTENDED | I18N_LANGUAGE_HIDDEN);
+
+// No multilingual options
+define('I18N_MODE_NONE', 0);
+// Localizable object. Run through the localization system
+define('I18N_MODE_LOCALIZE', 1);
+// Predefined language for this object and all related ones.
+define('I18N_MODE_LANGUAGE', 2);
+// Multilingual objects, translatable but not localizable.
+define('I18N_MODE_TRANSLATE', 4);
 
 /**
  * Implements hook_boot()
@@ -61,8 +70,9 @@ function i18n_language($language = NULL) {
  * 
  * @todo See about creating a permission for seeing disabled languages
  */
-function i18n_language_list($field = 'name') {
-  return locale_language_list($field, I18N_LANGUAGE_EXTENDED & variable_get('i18n_language_list', I18N_LANGUAGE_ENABLED));
+function i18n_language_list($field = 'name', $mode = NULL) {
+  $mode = isset($mode) ? $mode : variable_get('i18n_language_list', I18N_LANGUAGE_ENABLED);
+  return locale_language_list($field, I18N_LANGUAGE_EXTENDED & $mode);
 }
 
 /**
