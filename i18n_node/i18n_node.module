@@ -342,11 +342,11 @@ function i18n_node_node_type_update($info) {
     if(!empty($info->old_type) && $info->old_type != $info->type) {
       i18n_string_update_context("nodetype:type:$old_type:*", "nodetype:type:$type:*");
     }
-    i18n_string_update(array('node', 'type', $type->type), array(
-      'name' => $type->name,
-      'title_label' => $type->title_label, 
-      'description' => $type->description,
-      'help' => $type->help,
+    i18n_string_update(array('node', 'type', $info->type), array(
+      'name' => $info->name,
+      'title_label' => $info->title_label, 
+      'description' => $info->description,
+      'help' => $info->help,
     ));
   }
 }
