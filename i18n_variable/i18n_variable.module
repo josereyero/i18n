@@ -1,6 +1,5 @@
 <?php
 // $Id: i18nvariable.module,v 1.1.2.2 2010/09/14 11:30:29 jareyero Exp $
-
 /**
  * @file
  * Internationalization (i18n) package. Multilingual variables API.
@@ -16,6 +15,22 @@ define('I18N_VARIABLE_CACHE', 'cache_bootstrap');
  */
 function i18n_variable_boot() {
 
+}
+
+/**
+ * Implements hook_menu()
+ */
+function i18n_variable_menu() {
+  $items['admin/config/regional/i18n/variable'] = array(
+    'title' => 'Variables',
+    'description' => 'Configure multilingual variables.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('i18n_variable_admin_settings'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'i18n_variable.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+  );
+  return $items;
 }
 
 /**
@@ -99,7 +114,11 @@ function i18n_variable_form_alter(&$form, $form_state, $form_id) {
  * Get list of multilingual variables or check whether a variable is multilingual
  */
 function i18n_variable_list($name = NULL) {
-  $variables = variable_get('i18n_variables', array());
+  static $variables;
+  if (!isset($variables)) {
+    // Note that variables being a global static, any other module can initialize or alter it.
+    $variables = &drupal_static(__FUNCTION__, variable_get('i18n_variable_list', array()));
+  }
   return $name ? in_array($name, $variables) : $variables;
 }
 
@@ -227,7 +246,9 @@ function i18n_variable_load($langcode) {
         ->execute();
       $i18n_conf[$langcode] = array();
       foreach ($result as $variable) {
-        $i18n_conf[$langcode][$variable->name] = unserialize($variable->value);
+        if (i18n_variable_list($variable->name)) {
+          $i18n_conf[$langcode][$variable->name] = unserialize($variable->value);
+        }
       }
       cache_set($cacheid, $i18n_conf[$langcode], I18N_VARIABLE_CACHE);
     }

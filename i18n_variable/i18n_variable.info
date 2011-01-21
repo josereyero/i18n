@@ -1,7 +1,7 @@
 ; $Id: i18nvariable.info,v 1.1.2.1 2010/09/05 10:39:15 jareyero Exp $
 name = Multilingual variables
-description = API module for multilingual variables
-dependencies[] = locale
+description = Multilingual variables that switch language depending on page language.
 dependencies[] = i18n
+dependencies[] = variable
 package = Multilanguage
 core = 7.x
