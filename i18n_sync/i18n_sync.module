@@ -181,24 +181,26 @@ function i18n_sync_node_check($node) {
 /**
  * Implements hook_node_load().
  */
-function i18n_sync_node_load($node) {
-  // Add instance count for cck fields so we can use the information later, see hook_file_references()
-  if (i18n_sync_node_check($node) && !empty($node->tnid) && ($sync_fields = i18n_sync_node_fields($node->type)) && ($content_fields = _i18n_sync_cck_fields($node->type))) {
-    if ($translations = _i18n_sync_node_translations($node, TRUE)) {
-      $count = count($translations);
-      foreach ($sync_fields as $field) {
-        if (isset($content_fields[$field]) && !empty($node->$field) && is_array($node->$field)) {
-          // The node field should be an array with one or more fields
-          // Reminder: Use brackets for $node->{$field}[$key] as $node->$field[$key] won't work
-          foreach (array_keys($node->$field) as $key) {
-            if (is_array($node->{$field}[$key])) {
-              $node->{$field}[$key]['i18n_sync'] = $count;
+function i18n_sync_node_load($nodes) {
+  foreach ($nodes as $node) {
+    // Add instance count for cck fields so we can use the information later, see hook_file_references()
+    if (i18n_sync_node_check($node) && !empty($node->tnid) && ($sync_fields = i18n_sync_node_fields($node->type)) && ($content_fields = _i18n_sync_cck_fields($node->type))) {
+      if ($translations = _i18n_sync_node_translations($node, TRUE)) {
+        $count = count($translations);
+        foreach ($sync_fields as $field) {
+          if (isset($content_fields[$field]) && !empty($node->$field) && is_array($node->$field)) {
+            // The node field should be an array with one or more fields
+            // Reminder: Use brackets for $node->{$field}[$key] as $node->$field[$key] won't work
+            foreach (array_keys($node->$field) as $key) {
+              if (is_array($node->{$field}[$key])) {
+                $node->{$field}[$key]['i18n_sync'] = $count;
+              }
             }
           }
         }
       }
     }
-  }  
+  }
 }
 
 /**
@@ -254,7 +256,7 @@ function i18n_sync_node_update($node) {
 function i18n_sync_node_prepare($node) {
   // If creating a translation, copy over all the fields to be synchronized.
   if (empty($node->nid) && !empty($node->translation_source) && ($sync_fields = i18n_sync_node_fields($node->type))) {
-    foreach ($field_list as $field) {
+    foreach ($sync_fields as $field) {
       if (empty($node->translation_source->$field)) continue;
       switch ($field) {
         case 'taxonomy':
@@ -363,6 +365,8 @@ function i18n_sync_node_translation($node, $translation, $fields, $op) {
       }
     }
   }
+  // Give a chance to other modules for additional sync
+  module_invoke_all('i18n_sync_node_translation', $node, $translation, $fields);
   node_save($translation);
 }
 
