@@ -89,24 +89,38 @@ function i18n_sync_form_node_type_form_alter(&$form, &$form_state) {
       '#description' => t('Select which fields to synchronize for all translations of this content type.'),
       '#disabled' => $disabled,
     );
+
     $form['i18n_sync']['i18n_sync_node_type'] = array(
-      '#title' => t('Synchronize fields'),
-      '#type' => 'fieldset',
       '#tree' => TRUE,
     );
 
     // Each set provides title and options. We build a big checkboxes control for it to be
-    // saved as an array. Special themeing for group titles.
+    // saved as an array.
     $current = i18n_sync_node_fields($type);
-
+    // Group options, group fields by type.
+    $groups = array(
+      'node' => t('Standard node fields'),
+      'fields' => t('Configurable fields'),
+    );
+    $fields = array();
     foreach (i18n_sync_node_options($type) as $field => $info) {
-      $form['i18n_sync']['i18n_sync_node_type'][$field] = array(
-        '#title' => $info['title'],
-        '#type' => 'checkbox',
-        '#default_value' => in_array($field, $current),
-        '#disabled' => $disabled,
-        '#description' => isset($info['description']) ? $info['description'] : '',
+      $group = isset($info['group']) && isset($groups[$info['group']]) ? $info['group'] : 'node';
+      $fields[$group][$field] = $info;
+    }
+    foreach ($fields as $group => $group_fields) {
+      $form['i18n_sync']['i18n_sync_node_type']['i18n_sync_group_' . $group] = array(
+        '#prefix' => '<strong>', '#suffix' => '</strong>',
+        '#markup' => $groups[$group],
       );
+      foreach ($group_fields as $field => $info) {
+        $form['i18n_sync']['i18n_sync_node_type'][$field] = array(
+          '#title' => $info['title'],
+          '#type' => 'checkbox',
+          '#default_value' => in_array($field, $current),
+          '#disabled' => $disabled,
+          '#description' => isset($info['description']) ? $info['description'] : '',
+        );
+      }
     }
   }
 }

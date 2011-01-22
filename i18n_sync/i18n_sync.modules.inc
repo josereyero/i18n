@@ -30,6 +30,27 @@ function event_i18n_sync_node_fields($type) {
 }
 
 /**
+ * Field module
+ */
+function field_i18n_sync_node_fields($type) {
+  if ($type) {
+    $sync_fields = array();
+    $instances = field_info_instances('node', $type);
+    $field_types = field_info_field_types();
+    foreach ($instances as $name => $instance) {
+      $field = field_info_field($instance['field_name']);
+      $sync_fields[$name] = array(
+        'title' => $instance['label'],
+        'description' => $instance['description'],
+        'field_type' => $field['type'],
+        'group' => 'fields',
+      );
+    }
+    return $sync_fields;
+  }
+}
+
+/**
  * Image module
  */
 function image_i18n_sync_node_fields($type) {
