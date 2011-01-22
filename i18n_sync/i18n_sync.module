@@ -295,8 +295,7 @@ function i18n_sync_i18n_sync_node_fields($type) {
     'moderate' =>  array('title' => t('Moderate')),
     'sticky' => array('title' => t('Sticky')),
     'revision' =>  array('title' => t('Revision'), 'description' => t('Create also new revision for translations')),
-    'parent' => array('title' =>t('Book outline (with the translated parent)')),
-    'taxonomy' =>  array('title' => t('Taxonomy terms')),
+    'parent' => array('title' =>t('Book outline'), 'description' => t('Set the translated parent for each translation if possible.')),
   );
   return $fields;
 }

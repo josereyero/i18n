@@ -45,8 +45,8 @@ function i18n_sync_node_translation($node, $translations, $fields, $op) {
       if (!empty($field_info[$field]['callback'])) {
         call_user_func($field_info[$field]['callback'], $node, $translation, $field);
       }
-      else {
-        i18n_sync_node_translation_default_field($node, $translation, $field);
+      elseif (!empty($field_info[$field]['field'])) {
+        i18n_sync_node_translation_field_field($node, $translation, $field, $field_info[$field]['field']);
       }
     }
     // Give a chance to other modules for additional sync
@@ -64,20 +64,11 @@ function i18n_sync_node_translation($node, $translations, $fields, $op) {
  */
 function i18n_sync_node_translation_default_field($node, $translation, $field) {
   switch ($field) {
-    case 'taxonomy': // Do nothing it has already been syncd.
-      i18n_sync_node_translation_taxonomy($translation, $node);
-      break;
-
     case 'parent': // Book outlines, translating parent page if exists.
     case 'iid': // Attached image nodes.
       i18n_sync_node_translation_attached_node($node, $translation, $field);
       break;
 
-    case 'images':
-      $translation->images = $node->images;
-      // Intentional no break so 'images' synchronizes files too.
-      // About images, see related patch status: http://drupal.org/node/360643
-      // @todo Weird things may happen if 'images' and 'files' are both selected
     case 'files':
       // Sync existing attached files. This should work for images too
       foreach ((array)$node->files as $fid => $file) {
@@ -200,4 +191,30 @@ function i18n_sync_node_translation_reference_field(&$reference_node, $default_v
     // Content type without language, just copy the field.
     return $default_value;
   }
+}
+
+/**
+ * Synchronize configurable field
+ * 
+ * @param $field_info
+ *   Field API field information.
+ */
+function i18n_sync_node_translation_field_field($node, $translation, $field, $field_info) {
+  switch ($field_info['type']) {
+    case 'taxonomy_term_reference':
+      // Do nothing it has already been syncd.
+      // i18n_sync_node_translation_taxonomy($translation, $node);
+      break;
+    case 'image':
+      // @todo Synchronize image fields
+      break;
+    case 'file':
+      // @todo Synchronize file fields
+      break;
+    default:
+      // For fields that don't need special handling, just copy it over if defined.
+      if (isset($node->$field)) {
+        $translation->$field = $node->$field;
+      }      
+  } 
 }
