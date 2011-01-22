@@ -15,3 +15,6 @@
 function i18n_sync_install() {
   db_query("UPDATE {system} SET weight = 100 WHERE name = 'i18n_sync' AND type = 'module'");
 }
+
+// D6 update. Variable names
+// i18nsync_nodeapi_* -> i18n_sync_node_type_*

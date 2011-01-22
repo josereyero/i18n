@@ -52,17 +52,6 @@ function i18n_sync_help($path, $arg) {
 }
 
 /**
- * Implements hook_theme().
- */
-function i18n_sync_theme() {
-  return array(
-    'i18n_sync_workflow_checkbox' => array(
-      'arguments' => array('item' => NULL),
-    ),
-  );
-}
-
-/**
  * Implements hook_form_FORM_ID_alter().
  */
 function i18n_sync_form_node_admin_content_alter(&$form, &$form_state) {
@@ -105,23 +94,19 @@ function i18n_sync_form_node_type_form_alter(&$form, &$form_state) {
       '#type' => 'fieldset',
       '#tree' => TRUE,
     );
+
     // Each set provides title and options. We build a big checkboxes control for it to be
     // saved as an array. Special themeing for group titles.
-    foreach (i18n_sync_node_available_fields($type) as $group => $data) {
-      $title = $data['#title'];
-      if (!empty($data['#options'])) {
-        foreach ($data['#options'] as $field => $name) {
-          $form['i18n_sync']['i18n_sync_nodeapi'][$field] = array(
-            '#group_title' => $title,
-            '#title' => $name,
-            '#type' => 'checkbox',
-            '#default_value' => in_array($field, $current),
-            '#theme' => 'i18n_sync_workflow_checkbox',
-            '#disabled' => $disabled,
-          );
-          $title = '';
-        }
-      }
+    $current = i18n_sync_node_fields($type);
+
+    foreach (i18n_sync_node_options($type) as $field => $info) {
+      $form['i18n_sync']['i18n_sync_node_type'][$field] = array(
+        '#title' => $info['title'],
+        '#type' => 'checkbox',
+        '#default_value' => in_array($field, $current),
+        '#disabled' => $disabled,
+        '#description' => isset($info['description']) ? $info['description'] : '',
+      );
     }
   }
 }
@@ -160,15 +145,6 @@ function i18n_sync_node_delete_prepare($nid) {
       db_query("DELETE FROM {upload} WHERE fid = %d AND vid = %d", $up->fid, $up->vid);
     }
   }
-}
-
-/**
- * Theming function for workflow checkboxes.
- */
-function theme_i18n_sync_workflow_checkbox($element) {
-  $output = $element['#group_title'] ? '<div class="description">'. $element['#group_title'] .'</div>' : '';
-  $output .= theme('checkbox', $element);
-  return $output;
 }
 
 /**
@@ -292,82 +268,68 @@ function i18n_sync_node_prepare($node) {
 function i18n_sync_node_translation($node, $translation, $fields, $op) {
   // Load full node, we need all data here.
   $translation = node_load($translation->nid, NULL, TRUE);
-
-  // Collect info on any CCK fields.
-  $content_fields = _i18n_sync_cck_fields($node->type);
-
+  $field_info = i18n_sync_node_available_fields($node->type);
+  // Invoke callback for each field, the default is just copy over
   foreach ($fields as $field) {
-    // Check for CCK fields first.
-    if (isset($content_fields[$field]) && isset($node->$field)) {
-      switch ($content_fields[$field]['type']) {
-        // TODO take type specific actions.
-
-        // Filefields and imagefields are syncronized equally.
-        case 'filefield':
-        case 'imagefield':
-          i18n_sync_node_translation_filefield_field($node, $translation, $field);
-          break;
-
-        case 'nodereference':
-          i18n_sync_node_translation_nodereference_field($node, $translation, $field);
-          break;
-
-        default:
-          // For fields that don't need special handling.
-          $translation->$field = $node->$field;
-      }
-      // Skip over the regular handling.
-      continue;
+    if (!empty($field_info[$field]['callback'])) {
+      call_user_func($field_info[$field]['callback'], $node, $translation, $field);
     }
     else {
-      switch ($field) {
-        case 'taxonomy': // Do nothing it has already been syncd.
-          i18n_sync_node_taxonomy($translation, $node);
-          break;
-
-        case 'parent': // Book outlines, translating parent page if exists.
-        case 'iid': // Attached image nodes.
-          i18n_sync_node_translation_attached_node($node, $translation, $field);
-          break;
-
-        case 'images':
-          $translation->images = $node->images;
-          // Intentional no break so 'images' synchronizes files too.
-          // About images, see related patch status: http://drupal.org/node/360643
-          // @todo Weird things may happen if 'images' and 'files' are both selected
-        case 'files':
-          // Sync existing attached files. This should work for images too
-          foreach ((array)$node->files as $fid => $file) {
-            if (isset($translation->files[$fid])) {
-              // Just update list and weight properties, description can be different
-              $translation->files[$fid]->list = $file->list;
-              $translation->files[$fid]->weight = $file->weight;
-            }
-            else {
-              // New file. Clone so we can set the new property just for this translation
-              $translation->files[$fid] = clone $file;
-              $translation->files[$fid]->new = TRUE;
-            }
-          }
-          // Drop removed files.
-          foreach ((array)$translation->files as $fid => $file) {
-            if (!isset($node->files[$fid])) {
-              $translation->files[$fid]->remove = TRUE;
-            }
-          }
-          break;
-
-        default:
-          // For fields that don't need special handling.
-          if (isset($node->$field)) {
-            $translation->$field = $node->$field;
-          }
-      }
+      i18n_sync_node_translation_default_field($node, $translation, $field);
     }
   }
   // Give a chance to other modules for additional sync
   module_invoke_all('i18n_sync_node_translation', $node, $translation, $fields);
   node_save($translation);
+}
+
+/**
+ * Synchronize default field
+ */
+function i18n_sync_node_translation_default_field($node, $translation, $field) {
+  switch ($field) {
+    case 'taxonomy': // Do nothing it has already been syncd.
+      i18n_sync_node_taxonomy($translation, $node);
+      break;
+
+    case 'parent': // Book outlines, translating parent page if exists.
+    case 'iid': // Attached image nodes.
+      i18n_sync_node_translation_attached_node($node, $translation, $field);
+      break;
+
+    case 'images':
+      $translation->images = $node->images;
+      // Intentional no break so 'images' synchronizes files too.
+      // About images, see related patch status: http://drupal.org/node/360643
+      // @todo Weird things may happen if 'images' and 'files' are both selected
+    case 'files':
+      // Sync existing attached files. This should work for images too
+      foreach ((array)$node->files as $fid => $file) {
+        if (isset($translation->files[$fid])) {
+          // Just update list and weight properties, description can be different
+          $translation->files[$fid]->list = $file->list;
+          $translation->files[$fid]->weight = $file->weight;
+        }
+        else {
+          // New file. Clone so we can set the new property just for this translation
+          $translation->files[$fid] = clone $file;
+          $translation->files[$fid]->new = TRUE;
+        }
+      }
+      // Drop removed files.
+      foreach ((array)$translation->files as $fid => $file) {
+        if (!isset($node->files[$fid])) {
+          $translation->files[$fid]->remove = TRUE;
+        }
+      }
+      break;
+
+    default:
+      // For fields that don't need special handling.
+      if (isset($node->$field)) {
+        $translation->$field = $node->$field;
+      }
+  }  
 }
 
 /**
@@ -472,106 +434,47 @@ function i18n_sync_node_translation_reference_field(&$reference_node, $default_v
  *   Optional field name to check whether it is in the list
  */
 function i18n_sync_node_fields($type, $field = NULL) {
-  $fields = variable_get('i18n_sync_nodeapi_'. $type, array());
+  $fields = variable_get('i18n_sync_node_type_'. $type, array());
   return $field ? in_array($field, $fields) : $fields;
 }
 
 /**
  * Returns list of available fields for given content type.
  *
- * There are two hidden variables (without UI) that can be used to add fields
- * with the form array('field' => 'Field name')
- *  - i18n_sync_fields_node
- *  - i18n_sync_fields_node_$type;
- *
  * Fields can also be changed using hook_i18n_sync_fields_alter($fields, $type)
  *
  * @param $type
  *   Node type.
  */
-function i18n_sync_node_available_fields($type) {
-  static $cache;
+function i18n_sync_node_options($type) {
+  $cache = &drupal_static(__FUNCTION__);
 
   if (!isset($cache[$type])) {
-    // Default node fields.
-    $fields['node']['#title'] = t('Standard node fields.');
-    $options = variable_get('i18n_sync_fields_node', array());
-    $options += array(
-      'name' => t('Author'),
-      'status' => t('Status'),
-      'promote' => t('Promote'),
-      'moderate' => t('Moderate'),
-      'sticky' => t('Sticky'),
-      'revision' => t('Revision (Create also new revision for translations)'),
-      'parent' => t('Book outline (with the translated parent)'),
-      'taxonomy' => t('Taxonomy terms'),
-    );
-    if (module_exists('comment')) {
-      $options['comment'] = t('Comment settings');
-    }
-    if (module_exists('upload')) {
-      $options['files'] = t('File attachments');
-    }
-    // Location module
-    if (module_exists('location')) {
-      $options['locations'] = t('Location settings');
-    }
-    // If no type defined yet, that's it.
-    $fields['node']['#options'] = $options;
-
-    if (!$type) {
-      return $fields;
-    }
-
-    // Get variable for this node type.
-    $fields += variable_get("i18n_sync_fields_node_$type", array());
-
-    // Image and image attach.
-    if (module_exists('image') && $type == 'image') {
-      $image['images'] = t('Image files');
-    }
-    if (module_exists('image_attach') && variable_get('image_attach_'. $type, 0)) {
-      $image['iid'] = t('Attached image nodes');
-    }
-    if (!empty($image)) {
-      $fields['image']['#title'] = t('Image module');
-      $fields['image']['#options'] = $image;
-    }
-    // Event fields.
-    if (variable_get('event_nodeapi_'. $type, 'never') != 'never') {
-      $fields['event']['#title'] = t('Event fields');
-      $fields['event']['#options'] = array(
-        'event_start' => t('Event start'),
-        'event_end' => t('Event end'),
-        'timezone' => t('Timezone')
-      );
-    }
-/*
-    // Get CCK fields.
-    if (($contentfields = _i18n_sync_cck_fields($type))) {
-      // Get context information.
-      $info = module_invoke('content', 'fields', NULL, $type);
-      $fields['cck']['#title'] = t('CCK fields');
-      foreach ($contentfields as $name => $data) {
-        $fields['cck']['#options'][$data['field_name']] = $data['widget']['label'];
-      }
-    }
-*/
+    module_load_include('modules.inc', 'i18n_sync');
+    $fields = module_invoke_all('i18n_sync_node_fields', $type);
     // Give a chance to modules to change/remove/add their own fields
-    drupal_alter('i18n_sync_fields', $fields, $type);
-
+    drupal_alter('i18n_sync_node_fields', $fields, $type);
     $cache[$type] = $fields;
   }
+
   return $cache[$type];
 }
 
 /**
- * Helper function to get list of cck fields
+ * Implements hook_i18n_sync_node_options()
  */
-function _i18n_sync_cck_fields($type) {
-  if (($content = module_invoke('content', 'types', $type)) && !empty($content['fields'])) {
-    return $content['fields'];
-  }
+function i18n_sync_i18n_sync_node_fields($type) {
+  return array(
+    'name' => array('title' => t('Author')),
+    'status' => array('title' => t('Status')),
+    'promote' => array('title' => t('Promote')),
+    'moderate' =>  array('title' => t('Moderate')),
+    'sticky' => array('title' => t('Sticky')),
+    'revision' =>  array('title' => t('Revision'), 'description' => t('Create also new revision for translations')),
+    'parent' => array('title' =>t('Book outline (with the translated parent)')),
+    'taxonomy' =>  array('title' => t('Taxonomy terms')),
+  );
+  return $fields;
 }
 
 /**
@@ -598,22 +501,3 @@ function i18n_sync_file_references($file) {
   // We have marked the field previously on nodeapi load
   return !empty($file->i18n_sync);
 }
-
-/*
- * Sample CCK field definition for Drupal 5.
-'field_text' =>
-    array
-      'field_name' => string 'field_text' (length=10)
-      'type' => string 'text' (length=4)
-      'required' => string '0' (length=1)
-      'multiple' => string '1' (length=1)
-      'db_storage' => string '0' (length=1)
-      'text_processing' => string '0' (length=1)
-      'max_length' => string '' (length=0)
-      'allowed_values' => string '' (length=0)
-      'allowed_values_php' => string '' (length=0)
-      'widget' =>
-        array
-          ...
-      'type_name' => string 'test' (length=4)
- */
