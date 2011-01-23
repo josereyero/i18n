@@ -103,7 +103,19 @@ function i18n_variable_global($name = NULL, $default = NULL) {
 function i18n_variable_form_alter(&$form, $form_state, $form_id) {
   // Multilingual variables in settings form.
   if (isset($form['#theme']) && $form['#theme'] == 'system_settings_form' && $variables = i18n_variable_list()) {
-    if ($i18n_variables = i18n_variable_form_alter_settings($form, $variables)) {
+    if ($form_id == 'system_theme_settings') {
+      // Special treatment for theme settings
+      if (!empty($form['var']) && !empty($form['var']['#value']) && in_array($form['var']['#value'], $variables)) {
+        $variables = element_children($form['theme_settings']);
+        $variables = array_merge($variables, array('default_logo', 'logo_path', 'default_favicon', 'favicon_path'));
+        i18n_variable_form_alter_settings($form, $variables);
+        // Replace variable (theme) name so we use a temporary storage variable
+        $form['#i18n_variable'] = $form['var']['#value'];
+        $form['var']['#value'] = 'i18n_variable_theme_settings';
+        $form['#submit'][] = 'i18n_variable_theme_form_submit';
+      }
+    }
+    elseif ($i18n_variables = i18n_variable_form_alter_settings($form, $variables)) {
       array_unshift($form['#submit'], 'i18n_variable_form_submit');
       $form['#i18n_variables'] = $i18n_variables;
     }
@@ -162,13 +174,30 @@ function i18n_variable_form_submit($form, &$form_state) {
         }
         i18n_variable_set($name, $value, $language->language);
       }
-      // If current is default language, we allow global (without language) variables to be set too
-      if ($language->language === language_default('language')) {
+      // If current is not default language, we don't set any global variable (without language)
+      if ($language->language != language_default('language')) {
         unset($form_state['values'][$name]);
       }
     }
   }
   // The form will go now through system_settings_form_submit()
+}
+
+/**
+ * Save multilingual variables and remove them from form.
+ * 
+ * Note the theme variable has already been set into 'i18n_variable_theme_settings'
+ */
+function i18n_variable_theme_form_submit($form, &$form_state) {
+  $language = i18n_variable_language();
+  $settings = variable_get('i18n_variable_theme_settings');
+  $name = $form['#i18n_variable'];
+  i18n_variable_set($name, $settings, $language->language);
+  // If current is default language, we allow global (without language) variables to be set too
+  if ($language->language == language_default('language')) {
+    variable_set($name, $settings);
+  }
+  variable_del('i18n_variable_theme_settings');
 }
 
 /**
