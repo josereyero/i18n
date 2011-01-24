@@ -14,7 +14,21 @@
  */
 function i18n_sync_install() {
   db_query("UPDATE {system} SET weight = 100 WHERE name = 'i18n_sync' AND type = 'module'");
+  // If updating from D6, module changed name
+  if (variable_get('i18n_drupal6_update')) {
+    i18n_sync_update_7000();
+  }
 }
 
-// D6 update. Variable names
+/*
+ * D6 update. Variable names 
+ */ 
 // i18nsync_nodeapi_* -> i18n_sync_node_type_*
+function i18n_sync_update_7000() {
+  foreach (node_type_get_types() as $type => $info) {
+    if ($fields = variable_get('i18nsync_nodeapi_' . $type)) {
+      variable_set('i18n_sync_node_type_' . $type, $fields);
+      variable_del('i18nsync_nodeapi_' . $type)
+    }
+  }
+}

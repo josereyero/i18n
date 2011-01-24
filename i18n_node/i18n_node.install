@@ -7,12 +7,13 @@
  */
 
 /**
- * Implements hook_enable
+ * Implements hook_install().
  */
-function i18n_node_enable() {
-  if (module_exists('i18n_string')) {
-    i18n_node_locale_refresh();
-  }
+function i18n_node_install() {
+  // If updating from D6, module changed name
+  if (variable_get('i18n_drupal6_update')) {
+    i18n_node_update_7000();
+  }  
 }
 
 /**
@@ -31,6 +32,6 @@ function i18n_node_uninstall() {
  * 
  * Update old string names
  */
-function i18n_node_i18n_update_drupal6() {
-  
+function i18n_node_update_7000() {
+  // @todo Update from D6 i18n
 }

@@ -7,10 +7,20 @@
  */
 
 /**
+ * Implements hook_install()
+ */
+function i18n_menu_install() {
+  // If updating from D6, module changed name
+  if (variable_get('i18n_drupal6_update')) {
+    i18n_field_update_7000();
+  }  
+}
+
+/**
  * Implements hook_i18n_drupal6_update
  * 
  * Update old string names
  */
-function i18n_field_i18n_update_drupal6() {
-  
+function i18n_field_update_7000() {
+  // @todo
 }

@@ -7,16 +7,27 @@
  */
 
 /**
+ * Implements hook_enable().
+ */
+function i18n_string_enable() {
+  // Refresh locales for enabled modules
+  $modules = module_implements('i18n_string_refresh');
+  i18n_string_modules_enabled($modules);  
+}
+
+/**
  * Implements hook_install().
  */
 function i18n_string_install() {
+  // Add a field to track whether a translation needs updating.
+  module_load_install('i18n');
+  i18n_install_create_fields('locales_target', array('i18n_status'));
   // Set module weight for it to run after core modules.
   db_query("UPDATE {system} SET weight = 10 WHERE name = 'i18n_string' AND type = 'module'");
-  // Add a field to track whether a translation needs updating.
-  db_add_field('locales_target', 'i18n_status', array('type' => 'int', 'not null' => TRUE, 'default' => 0));
-  // Refresh locales for enabled modules
-  $modules = module_implements('i18n_string_refresh');
-  i18n_string_modules_enabled($modules);
+  // If updating from D6, module changed name
+  if (variable_get('i18n_drupal6_update')) {
+    i18n_string_update_7000();
+  }
 }
 
 /**
@@ -111,11 +122,9 @@ function i18n_string_schema_alter(&$schema) {
 }
 
 /**
- * Implements hook_i18n_drupal6_update
- * 
  * Populate fields from old locale table (textgroup, location) and drop indexes from locales_source
  */
-function i18n_string_i18n_drupal6_update() {
+function i18n_string_update_7000() {
   // @todo Update from d6
 }
 
