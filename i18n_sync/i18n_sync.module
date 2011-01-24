@@ -27,7 +27,7 @@ function i18n_sync($status = NULL) {
   if (isset($status)) {
     $current = $status;
   }
-  return $status;
+  return $current;
 }
 
 /**
@@ -174,7 +174,7 @@ function i18n_sync_node_check($node) {
 function i18n_sync_node_load($nodes) {
   foreach ($nodes as $node) {
     // Add instance count for cck fields so we can use the information later, see hook_file_references()
-    if (i18n_sync_node_check($node) && !empty($node->tnid) && ($sync_fields = i18n_sync_node_fields($node->type)) && ($content_fields = _i18n_sync_cck_fields($node->type))) {
+    if (i18n_sync_node_check($node) && !empty($node->tnid) && ($sync_fields = i18n_sync_node_fields($node->type))) {
       if ($translations = _i18n_sync_node_translations($node, TRUE)) {
         $count = count($translations);
         foreach ($sync_fields as $field) {
@@ -201,15 +201,6 @@ function i18n_sync_node_insert($node) {
   if (i18n_sync_node_check($node) && !empty($node->translation_source)) {
     // Set tnid that is not set by translation module
     $node->tnid = $node->translation_source->tnid ? $node->translation_source->tnid : $node->translation_source->nid;
-    // If we have files, we need to save the files that have been inherited
-    if (!empty($node->files) && i18n_sync_node_fields($node->type, 'files')) {
-      foreach ($node->files as $fid => $file) {
-        $file = (object)$file;
-        if (empty($file->remove) && empty($file->new)) {
-          db_query("INSERT INTO {upload} (fid, nid, vid, list, description, weight) VALUES (%d, %d, %d, %d, '%s', %d)", $file->fid, $node->nid, $node->vid, $file->list, $file->description, $file->weight);
-        }
-      }
-    }
     i18n_sync_node_update($node);
   }  
 }
@@ -225,8 +216,8 @@ function i18n_sync_node_update($node) {
       $node->files = upload_load($node);
     }
     module_load_include('node.inc', 'i18n_sync');
-    i18n_sync_node_translation($node, $translations, $fields, $op);
-  }  
+    i18n_sync_node_translation($node, $translations, $fields, 'update');
+  }
 }
 
 /**

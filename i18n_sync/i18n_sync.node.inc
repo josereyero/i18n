@@ -205,12 +205,6 @@ function i18n_sync_node_translation_field_field($node, $translation, $field, $fi
       // Do nothing it has already been syncd.
       // i18n_sync_node_translation_taxonomy($translation, $node);
       break;
-    case 'image':
-      // @todo Synchronize image fields
-      break;
-    case 'file':
-      // @todo Synchronize file fields
-      break;
     default:
       // For fields that don't need special handling, just copy it over if defined.
       if (isset($node->$field)) {
