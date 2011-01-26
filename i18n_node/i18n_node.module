@@ -497,6 +497,26 @@ function i18n_node_form_node_type_form_alter(&$form, &$form_state) {
  * Implements hook_form_BASE_FORM_ID_alter().
  */
 function i18n_node_form_node_form_alter(&$form, $form_state) {
+  /**
+   * i18n has to override locale.module
+   * drupal_alter() fails to order modules correctly in some cases
+   * for example specific hooks like hook_form_BASE_FORM_ID_alter
+   *
+   * its not possbile to reorder hook_form_BASE_FORM_ID_alter with
+   * hook_module_implements_alter
+   *
+   * @see http://drupal.org/node/765860
+  */
+  
+  // call a 'private' implemenation of i18n_node_form_node_form_alter()
+  $form['#after_build'][] = '_i18n_node_form_node_form_alter';
+}
+
+/**
+ * Implements hook_form_BASE_FORM_ID_alter().
+ * Called by i18n_node_form_node_form_alter
+ */
+function _i18n_node_form_node_form_alter($form, $form_state) {
   $node = $form['#node'];
   if (variable_get('language_content_type_'. $node->type, 0)) {
     if (!empty($form['language']['#options'])) {
@@ -515,6 +535,8 @@ function i18n_node_form_node_form_alter(&$form, $form_state) {
   if (!empty($form['body_field']['body']['#title'])) {
     $form['body_field']['body']['#title'] = i18n_node_translate_type($type, 'body', $form['body_field']['body']['#title']);
   }
+
+  return $form;
 }
 
 /**
