@@ -9,7 +9,7 @@
 /**
  * Implements hook_install()
  */
-function i18n_menu_install() {
+function i18n_field_install() {
   // If updating from D6, module changed name
   if (variable_get('i18n_drupal6_update')) {
     i18n_field_update_7000();
