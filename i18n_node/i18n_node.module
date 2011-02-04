@@ -297,45 +297,25 @@ function i18n_node_translation_link_alter(&$links, $path) {
  */
 function i18n_node_node_view_alter(&$build) {
   global $language;
-
-  $language_support = i18n_node_language_mode($build['#node']);
+  $node = $build['#node'];
+  
+  $language_support = i18n_node_language_mode($node);
   
   // Hide node translation links.
   if (variable_get('i18n_hide_translation_links', 0) == 1) {
     unset($build['links']['translation']);
   }
-}
-
-/**
- * Implements hook_link_alter().
- *
- * Handles links for extended languages. Sets current interface language.
- * 
- * @todo Update D7
- */
-function i18n_node_link_alter(&$links, $node) {
-  global $language;
-
-  $language_support = i18n_node_language_mode($node);
-
-  // Hide node translation links.
-  if (variable_get('i18n_hide_translation_links', 0) == 1) {
-    foreach ($links as $module => $link) {
-      if (strpos($module, 'node_translation') === 0) {
-        unset($links[$module]);
-      }
-    }
-  }
-
+  dpm($build);
   if (!empty($node->tnid)) {
-    foreach (i18n_node_language_list($node) as $langcode) {
-      $index = 'node_translation_'. $langcode;
+    $links = $build['links']['translation']['#links'];
+    foreach (i18n_node_language_list($node) as $langcode => $langname) {
+      $index = 'translation_'. $langcode;
       if (!empty($links[$index])) {
         if (!($language_support & I18N_LANGUAGE_EXTENDED) && $links[$index]['language']->enabled == 0) {
-          unset($links[$index]);
+          unset($build['links']['translation']['#links'][$index]);
         }
         else {
-          $links[$index]['language'] = $language;
+          $build['links']['translation']['#links'][$index]['language'] = $language;
         }
       }
     }
