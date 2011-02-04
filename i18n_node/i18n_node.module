@@ -290,6 +290,21 @@ function i18n_node_translation_link_alter(&$links, $path) {
   }
 }
 
+/**
+ * Implements hook_node_view_alter().
+ *
+ * Handles links for extended languages. Sets current interface language.
+ */
+function i18n_node_node_view_alter(&$build) {
+  global $language;
+
+  $language_support = i18n_node_language_mode($build['#node']);
+  
+  // Hide node translation links.
+  if (variable_get('i18n_hide_translation_links', 0) == 1) {
+    unset($build['links']['translation']);
+  }
+}
 
 /**
  * Implements hook_link_alter().
