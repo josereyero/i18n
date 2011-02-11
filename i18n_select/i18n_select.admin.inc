@@ -20,7 +20,7 @@ function i18n_select_admin_settings() {
 
   $form['selection']['types'] = array(
     '#type' => 'markup',
-    '#markup' => '<strong>' . t('Content types to filter by language') . '</strong>',
+    '#markup' => '<strong>' . t('Content to filter by language') . '</strong>',
   );
   $form['selection']['i18n_select_nodes'] = array(
     '#type' => 'checkbox',

@@ -66,6 +66,23 @@ function i18n_node_add_page() {
 }
 
 /**
+ * Implements hook_menu().
+ */
+function i18n_node_menu() {
+  $items['admin/config/regional/i18n/node'] = array(
+    'title' => 'Node options',
+    'description' => 'Configure extended options for multilingual content and translations.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('i18n_node_admin_settings'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'i18n_node.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 10,
+  );
+  return $items;
+}
+
+/**
  * Implements hook_block_view_MODULE_DELTA_alter().
  * 
  * Set translated help text for node/add pages, replace node_help() text.
