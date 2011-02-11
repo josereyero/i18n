@@ -126,7 +126,7 @@ function i18n_string_schema_alter(&$schema) {
  */
 function i18n_string_update_7000() {
   // @todo Update from d6
-  variable_del('i18n_string_allowed_textgroups');
+  variable_del('i18nstrings_allowed_textgroups');
   
 }
 
