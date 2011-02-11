@@ -133,20 +133,6 @@ function i18n_string_admin_settings() {
       unset($textgroups[$group]);
     }
   }
-  // If there are 'old' textgroups, display the bypass option
-  if ($textgroups) {
-    $form['i18n_string_allowed_textgroups'] = array(
-      '#title' => t('Safe text groups'),
-      '#options' => $textgroups,
-      '#type' => 'checkboxes',
-      '#default_value' => variable_get('i18n_string_allowed_textgroups', array()),
-      '#description' => t('Select text groups to bypass filter format checking. . <strong>It is unsafe to check this option unless you are sure all the strings from that text groups are safe for translators</strong>. This option is just for backwards compatibility until all the contributed modules implement the new strings API.'),
-    );
-  }
-  elseif (variable_get('i18n_string_allowed_textgroups', 0)) {
-    // Just in case there's a leftover variable before we updated some of the modules
-    variable_del('i18n_string_allowed_textgroups');
-  }
   $form['array_filter'] = array('#type' => 'value', '#value' => TRUE);
   return system_settings_form($form);
 }
