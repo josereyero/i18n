@@ -34,7 +34,7 @@ function i18n_select_admin_settings() {
   );
   $form['selection']['i18n_select_taxonomy'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Taxonomy (not implemented)'),
+    '#title' => t('Taxonomy'),
     '#default_value' => variable_get('i18n_select_taxonomy', TRUE),
   );
 
