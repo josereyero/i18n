@@ -434,8 +434,8 @@ function i18n_taxonomy_form_alter(&$form, $form_state, $form_id) {
     case 'taxonomy_overview_vocabularies':
       $vocabularies = taxonomy_get_vocabularies();
       foreach ($vocabularies as $vocabulary) {
-        if ($vocabulary->language) {
-          $form[$vocabulary->vid]['types']['#value'] .= '&nbsp;('. i18n_language_name($vocabulary->language) .')';
+        if (i18n_object_langcode($vocabulary)) {
+          $form[$vocabulary->vid]['name']['#markup'] .= '&nbsp;('. i18n_language_name($vocabulary->language) .')';
         }
       }
       break;
@@ -443,8 +443,8 @@ function i18n_taxonomy_form_alter(&$form, $form_state, $form_id) {
     case 'taxonomy_overview_terms':
       if (i18n_taxonomy_vocabulary_mode($form['#vocabulary']->vid) & I18N_MODE_TRANSLATE) {
         foreach (element_children($form) as $key) {
-          if (isset($form[$key]['#term']) && ($lang = $form[$key]['#term']->language)) {
-            $form[$key]['view']['#value'] .= '&nbsp;('. i18n_language_name($lang) .')';
+          if (isset($form[$key]['#term']) && ($lang = i18n_object_langcode($form[$key]['#term']))) {
+            $form[$key]['view']['#suffix'] = ' ('. i18n_language_name($lang) .')';
           }
         }
       }
@@ -465,8 +465,11 @@ function i18n_taxonomy_form_alter(&$form, $form_state, $form_id) {
   }
 }
 
+/**
+ * Validate multilingual options for vocabulary form
+ */
 function i18n_taxonomy_form_vocabulary_validate($form, &$form_state) {
-  $language = !empty($form_state['values']['language']) ? $form_state['values']['language'] : '';
+  $language = i18n_object_langcode($form_state['values']['language']);
   $mode = $form_state['values']['i18n_mode'];
   if ($mode != I18N_MODE_LANGUAGE && $language) {
     form_set_error('language', t('Setting a vocabulary language only makes sense in the "Set language to vocabulary" translation mode. Either change to this mode or do not select a language.'));
