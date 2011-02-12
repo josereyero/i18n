@@ -51,7 +51,7 @@ function i18n_menu_i18n_string_list($group) {
     }
     $query = db_select('menu_links', 'm')
       ->fields('m')
-      ->condition('language', '')
+      ->condition('language', LANGUAGE_NONE)
       ->condition('customized', 1);
     foreach ($query->execute()->fetchAll() as $link) {
       $options = unserialize($link->options);
@@ -72,7 +72,7 @@ function i18n_menu_i18n_string_list($group) {
 function i18n_menu_menu_link_alter(&$item) {
   // If we set option to language it causes an error with the link system
   // This should handle language only as the links are being manually updated
-  if (!empty($item['language'])) {
+  if (i18n_object_langcode($item)) {
     $item['options']['langcode'] = $item['language'];
   }
   elseif (isset($item['language'])) {

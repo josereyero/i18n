@@ -236,3 +236,18 @@ function i18n_context_language() {
   }
   return i18n_language();
 }
+
+/**
+ * Get object language code
+ * 
+ * @param $object
+ *   Object or array
+ */
+function i18n_object_langcode($object, $field = 'language') {
+  if (is_object($object)) {
+    return !empty($object->$field) && $object->$field != LANGUAGE_NONE ? $object->$field : FALSE;
+  }
+  else {
+    return !empty($object[$field]) && $object[$field] != LANGUAGE_NONE ? $object[$field] : FALSE;
+  }
+}

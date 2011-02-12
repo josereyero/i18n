@@ -23,60 +23,79 @@ function i18n_select_menu() {
  *
  * Rewrite node queries so language selection options are enforced.
  */
-
 function i18n_select_query_node_access_alter(QueryAlterableInterface $query) {
-  
-  
-  if (variable_get('i18n_select_nodes', TRUE)) {
-
-    // make sure we are dealing with the node table    
-    $tables = $query->getTables();
-    $table_alias = '';
-    $node_table = FALSE;
-    foreach ($tables as $table) {
-      if ($table['table'] == 'node') {
-        $table_alias = !empty($table['alias']) ? $table['alias'] : FALSE;
-        $node_table = TRUE;
-        break;
-      }
+  if (variable_get('i18n_select_nodes', TRUE) && ($table_alias = i18n_select_check_table($query, 'node'))) {
+    // if the language field is present we don't want to do any filtering.
+    $fields = $query->getFields();
+    dpm($fields);
+    dpm($query->conditions());
+    if (isset($fields['language'])) {
+      return;
     }
-    
-    if ($node_table) {
-      // if the language field is present we don't want to do any filtering.
-      $fields = $query->getFields();
-      if (isset($fields['language'])) {
-        return;
-      }
 
-      $language = $GLOBALS['language_content']->language;
-      $default_lang = language_default('language');
+    $language = i18n_select_language();
+    $default_lang = language_default('language');
 
-      if (variable_get('i18n_select_missing_translation', FALSE) && $language != $default_lang) {
-            
-        // we want to include nodes from the default language that haven't been
-        // translated to the current language
-    
-        // SELECT * FROM node n
-        //   LEFT JOIN node i18n ON n.tnid > 0 AND n.tnid = i18n.tnid AND i18n.language = 'es'
-        //   WHERE n.language='es' OR (n.language='en' AND i18n.nid IS NULL)
+    if (variable_get('i18n_select_missing_translation', FALSE) && $language != $default_lang) {
+          
+      // we want to include nodes from the default language that haven't been
+      // translated to the current language
   
-        
-        $conditions =& $query->conditions();
-        // Make sure the conditions refer to the node table. eg using 'n.promote' instead of 'promote'
-        foreach ($conditions as $index => $condition) {
-          if (is_array($condition) && isset($condition['field'])) {
-            if (strpos($condition['field'], '.') === FALSE) {
-              $conditions[$index]['field'] = 'n.' . $condition['field'];
-            }
-          }
-        }
-        
-        $query->leftjoin('node', 'i18n', 'n.tnid > 0 AND n.tnid = i18n.tnid AND i18n.language = :lang', array(':lang' => $language));
-        $query->where($table_alias . '.language=:lang OR (' . $table_alias . '.language=:default_lang AND i18n.nid IS NULL)', array(':lang' => $language, ':default_lang' => $default_lang));
+      // SELECT * FROM node n
+      //   LEFT JOIN node i18n ON n.tnid > 0 AND n.tnid = i18n.tnid AND i18n.language = 'es'
+      //   WHERE n.language='es' OR (n.language='en' AND i18n.nid IS NULL)
+      
+      // Make sure the conditions refer to the node table. eg using 'n.promote' instead of 'promote'
+      i18n_select_check_conditions($query, $table_alias);
 
-      } else {
-        $query->where($table_alias . '.language=:lang', array(':lang' => $language));
+      $query->leftjoin('node', 'i18n', 'n.tnid > 0 AND n.tnid = i18n.tnid AND i18n.language = :lang', array(':lang' => $language));
+      $query->where($table_alias . '.language=:lang OR (' . $table_alias . '.language=:default_lang AND i18n.nid IS NULL)', array(':lang' => $language, ':default_lang' => $default_lang));
+
+    } else {
+      $query->where($table_alias . '.language=:lang', array(':lang' => $language));
+    }
+  }
+}
+
+/**
+ * Implementation of hook_query_term_access_alter().
+ * 
+ * Rewrite taxonomy term queries so language selection options are enforced.
+ */
+function i18n_select_query_term_access_alter(QueryAlterableInterface $query) {
+  if (variable_get('i18n_select_taxonomy', TRUE) && ($table_alias = i18n_select_check_table($query, 'taxonomy_term_data'))) {
+    $query->condition($table_alias . '.language', i18n_select_language()); 
+  }
+}
+
+/**
+ * Check table exists in query and get alias for it
+ */
+function i18n_select_check_table($query, $table_name) {
+  foreach ($query->getTables() as $table) {
+    if ($table['table'] == $table_name) {
+      return !empty($table['alias']) ? $table['alias'] : $table_name;
+    }
+  }
+}
+
+/**
+ * Check all query conditions have a table alias
+ */
+function i18n_select_check_conditions($query, $table_alias) {
+  $conditions =& $query->conditions();
+  foreach ($conditions as $index => $condition) {
+    if (is_array($condition) && isset($condition['field'])) {
+      if (strpos($condition['field'], '.') === FALSE) {
+        $conditions[$index]['field'] = $table_alias . '.' . $condition['field'];
       }
     }
   }
+}
+
+/**
+ * Get language code for content selection
+ */
+function i18n_select_language() {
+  return $GLOBALS['language_content']->language;
 }
