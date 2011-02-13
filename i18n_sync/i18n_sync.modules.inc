@@ -9,33 +9,33 @@
  */
 
 /**
- * Comment module
+ * Book module. Implements hook_i18n_sync_options().
  */
-function comment_i18n_sync_node_fields($type) {
-  $fields['comment'] = array('title' =>  t('Comment settings'));
-  return $fields;
+function book_i18n_sync_options($entity_type, $bundle_name) {
+  if ($entity_type == 'node') {
+    return array(
+      'parent' => array('title' =>t('Book outline'), 'description' => t('Set the translated parent for each translation if possible.')),
+    );
+  }
 }
 
 /**
- * Event module
+ * Comment module. Implements hook_i18n_sync_options().
  */
-function event_i18n_sync_node_fields($type) {
-  // Event fields.
-  if ($type && variable_get('event_nodeapi_'. $type, 'never') != 'never') {
-    $fields['event_start'] = array('title' => t('Event start'), 'group' => 'event');
-    $fields['event_end'] = array('title' => t('Event end'), 'group' => 'event');
-    $fields['timezone'] = array('title' => t('Timezone'), 'group' => 'event');       
+function comment_i18n_sync_options($entity_type, $bundle_name) {
+  if ($entity_type == 'node') {
+    $fields['comment'] = array('title' =>  t('Comment settings'));
     return $fields;
-  }  
+  }
 }
 
 /**
- * Field module
+ * Field module. Implements hook_i18n_sync_options().
  */
-function field_i18n_sync_node_fields($type) {
-  if ($type) {
-    $sync_fields = array();
-    $instances = field_info_instances('node', $type);
+function field_i18n_sync_options($entity_type, $bundle_name) {
+  $sync_fields = array();
+  if ($bundle_name) {
+    $instances = field_info_instances($entity_type, $bundle_name);
     foreach ($instances as $name => $instance) {
       $field = field_info_field($instance['field_name']);
       $sync_fields[$name] = array(
@@ -45,14 +45,22 @@ function field_i18n_sync_node_fields($type) {
         'group' => 'fields',
       );
     }
-    return $sync_fields;
   }
+  return $sync_fields;
 }
 
 /**
- * Location module
+ * Node module. Implements hook_i18n_sync_options().
  */
-function location_i18n_sync_node_fields($type) {
-  $fields['locations'] = array('title' => t('Location information'));
-  return $fields;
+function node_i18n_sync_options($entity_type, $bundle_name) {
+  if ($entity_type == 'node') {
+    return array(
+      'name' => array('title' => t('Author')),
+      'status' => array('title' => t('Status')),
+      'promote' => array('title' => t('Promote')),
+      'moderate' =>  array('title' => t('Moderate')),
+      'sticky' => array('title' => t('Sticky')),
+      'revision' =>  array('title' => t('Revision'), 'description' => t('Create also new revision for translations')),
+    );
+  }
 }

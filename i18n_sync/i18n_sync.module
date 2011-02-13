@@ -262,33 +262,29 @@ function i18n_sync_node_fields($type, $field = NULL) {
  *   Node type.
  */
 function i18n_sync_node_options($type) {
-  $cache = &drupal_static(__FUNCTION__);
-
-  if (!isset($cache[$type])) {
-    module_load_include('modules.inc', 'i18n_sync');
-    $fields = module_invoke_all('i18n_sync_node_fields', $type);
-    // Give a chance to modules to change/remove/add their own fields
-    drupal_alter('i18n_sync_node_fields', $fields, $type);
-    $cache[$type] = $fields;
-  }
-
-  return $cache[$type];
+  return i18n_sync_entity_fields('node', $type);
 }
 
 /**
- * Implements hook_i18n_sync_node_options()
+ * Returns list of available fields for given entity / bundle.
+ *
+ * Fields can also be changed using hook_i18n_sync_fields_alter($fields, $type)
+ *
+ * @param $type
+ *   Node type.
  */
-function i18n_sync_i18n_sync_node_fields($type) {
-  return array(
-    'name' => array('title' => t('Author')),
-    'status' => array('title' => t('Status')),
-    'promote' => array('title' => t('Promote')),
-    'moderate' =>  array('title' => t('Moderate')),
-    'sticky' => array('title' => t('Sticky')),
-    'revision' =>  array('title' => t('Revision'), 'description' => t('Create also new revision for translations')),
-    'parent' => array('title' =>t('Book outline'), 'description' => t('Set the translated parent for each translation if possible.')),
-  );
-  return $fields;
+function i18n_sync_entity_fields($entity_type, $bundle_name) {
+  $cache = &drupal_static(__FUNCTION__);
+
+  if (!isset($cache[$entity_type][$bundle_name])) {
+    module_load_include('modules.inc', 'i18n_sync');
+    $fields = module_invoke_all('i18n_sync_options', $entity_type, $bundle_name);
+    // Give a chance to modules to change/remove/add their own fields
+    drupal_alter('i18n_sync_entity_fields', $fields, $entity_type, $bundle_name);
+    $cache[$entity_type][$bundle_name] = $fields;
+  }
+
+  return $cache[$entity_type][$bundle_name];
 }
 
 /**
