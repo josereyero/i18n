@@ -175,7 +175,7 @@ function i18n_sync_node_load($nodes) {
   foreach ($nodes as $node) {
     // Add instance count for cck fields so we can use the information later, see hook_file_references()
     if (i18n_sync_node_check($node) && !empty($node->tnid) && ($sync_fields = i18n_sync_node_fields($node->type))) {
-      if ($translations = _i18n_sync_node_translations($node, TRUE)) {
+      if ($translations = i18n_sync_node_translations($node)) {
         $count = count($translations);
         foreach ($sync_fields as $field) {
           if (isset($content_fields[$field]) && !empty($node->$field) && is_array($node->$field)) {
@@ -206,11 +206,22 @@ function i18n_sync_node_insert($node) {
 }
 
 /**
+ * Get node translations if any, excluding the node itself
+ */
+function i18n_sync_node_translations($node, $exclude = FALSE) {
+  // Maybe translations are already here
+  if (!empty($node->tnid) && ($translations = translation_node_get_translations($node->tnid))) {
+    unset($translations[$node->language]);
+    return $translations;
+  }
+}
+
+/**
  * Implements hook_node_update().
  */
 function i18n_sync_node_update($node) {
   // Let's go with field synchronization.
-  if (i18n_sync_node_check($node) && !empty($node->tnid) && ($fields = i18n_sync_node_fields($node->type)) && ($translations = _i18n_sync_node_translations($node, TRUE))) {
+  if (i18n_sync_node_check($node) && !empty($node->tnid) && ($fields = i18n_sync_node_fields($node->type)) && ($translations = i18n_sync_node_translations($node))) {
     // If we have fields we need to reload them so we have the full data (fid, etc...)
     if (!empty($node->files) && in_array('files', $fields)) {
       $node->files = upload_load($node);
@@ -286,17 +297,6 @@ function i18n_sync_options($entity_type, $bundle_name) {
   }
 
   return $cache[$entity_type][$bundle_name];
-}
-
-/**
- * Get node translations if any, excluding the node itself
- */
-function i18n_sync_node_translations($node, $exclude = FALSE) {
-  // Maybe translations are already here
-  if (!empty($node->tnid) && ($translations = translation_node_get_translations($node->tnid))) {
-    unset($translations[$node->language]);
-    return $translations;
-  }
 }
 
 /**
