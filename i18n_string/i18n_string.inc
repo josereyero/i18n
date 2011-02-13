@@ -58,8 +58,7 @@ class i18n_string_default {
    *   Text format key or NULL if not format (will be allowed)
    */
   public static function allowed_format($format = NULL) {
-    $allowed_formats = variable_get('i18n_string_allowed_formats', array(variable_get('filter_default_format', 1)));
-    return !isset($format) || in_array($format, $allowed_formats);
+    return !$format || in_array($format, i18n_string_allowed_formats());
   }
   /**
    * Add source string to the locale tables for translation.
@@ -482,7 +481,7 @@ class i18n_string_default {
    *   - 'messages', Whether to print out status messages
    */
   public function update($context, $string, $options = array()) {
-    $options += array('format' => 0, 'messages' => TRUE, 'watchdog' => TRUE);
+    $options += array('format' => FALSE, 'messages' => TRUE, 'watchdog' => TRUE);
     $i18nstring = $this->build_string($context, $string, $options);
     $i18nstring->format = $options['format'];
     if (!$this->check_string($i18nstring, $options)) {

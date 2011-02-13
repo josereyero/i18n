@@ -120,7 +120,7 @@ function i18n_string_admin_settings() {
     '#title' => t('Translatable text formats'),
     '#options' => $format_list,
     '#type' => 'checkboxes',
-    '#default_value' => variable_get('i18n_string_allowed_formats', array(variable_get('filter_default_format', 1))),
+    '#default_value' => i18n_string_allowed_formats(),
     '#description' => t('Only the strings that have the text formats selected will be allowed by the translation system. All the others will be deleted next time the strings are refreshed.'),
   );
   // Whitelist text groups without formatted strings for backwards compatibility
