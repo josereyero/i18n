@@ -150,18 +150,18 @@ function i18n_taxonomy_i18n_string_refresh($group) {
 }
 
 /**
- * Implements hook_alter_translation_link().
- *
+ * Implements hook_language_switch_links_alter().
+ * 
  * Replaces links with pointers to translated versions of the content.
  */
-function i18n_taxonomy_translation_link_alter(&$links, $path) {
+function i18n_taxonomy_language_switch_links_alter(array &$links, $type, $path) {
   if (preg_match("/^(taxonomy\/term\/)([^\/]*)(.*)$/", $path, $matches)) { //or at a taxonomy-listing?
     foreach ($links as $langcode => $link) {
       if ($str_tids = i18n_taxonomy_translation_tids($matches[2], $langcode)) {
         $links[$langcode]['href'] = "taxonomy/term/$str_tids". $matches[3];
       }
     }
-  }
+  }  
 }
 
 /**
@@ -292,7 +292,7 @@ function i18n_taxonomy_taxonomy_vocabulary_udpate($vocabulary) {
       $update['language'] = $vocabulary->language;
       break;
     case I18N_MODE_NONE:
-      $update['language'] = '';
+      $update['language'] = LANGUAGE_NONE;
       break;
   }
   if (isset($update)) {
@@ -303,7 +303,7 @@ function i18n_taxonomy_taxonomy_vocabulary_udpate($vocabulary) {
     drupal_set_message(t('Reset language for all terms.'));
   }
   // Update strings, always add translation if no language
-  if (empty($vocabulary->language)) {
+  if (!i18n_object_langcode($vocabulary)) {
     i18n_string_update(array('taxonomy', 'vocabulary', $vocabulary->vid), array(
       'name' => $vocabulary->name,
       'description' => $vocabulary->description
@@ -400,7 +400,7 @@ function i18n_taxonomy_form_taxonomy_form_term_alter(&$form, &$form_state) {
         '#type' => 'value',
         '#value' => $vocabulary->language
       );
-      $form['identification']['language_info'] = array('#value' => t('All terms in this vocabulary have a fixed language: %language', array('%language' => i18n_language_property($vocabulary->language, 'name'))));
+      $form['identification']['language_info'] = array('#value' => t('All terms in this vocabulary have a fixed language: %language', array('%language' => i18n_language_name($vocabulary->language))));
       break;
 
     case I18N_MODE_LOCALIZE:

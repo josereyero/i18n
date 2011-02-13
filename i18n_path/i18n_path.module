@@ -63,12 +63,27 @@ function i18n_path_menu() {
 /**
  * Implements hook_url_outbound_alter()
  */
+/*
 function i18n_path_url_outbound_alter(&$path, &$options, $original_path) {
   if (!empty($options['language'])) {
     $langcode = $options['language']->language;
     $original = $options['alias'] ? drupal_get_normal_path($path, $langcode) : $original_path;
     if (($translations = i18n_path_get_translations($path)) && !empty($translations[$langcode])) {
       $path = $options['alias'] ? drupal_get_path_alias($translations[$langcode], $langcode) : $translations[$langcode];
+    }
+  }
+}
+*/
+
+/**
+ * Implements hook_language_switch_links_alter().
+ */
+function i18n_path_language_switch_links_alter(array &$links, $type, $path) {
+  if (($translations = i18n_path_get_translations($path))) {
+    foreach ($links as $lang => &$link) {
+      if (!empty($translations[$lang])) {
+        $link['href'] = $translations[$lang];
+      }
     }
   }
 }
