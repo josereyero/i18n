@@ -1,0 +1,74 @@
+<?php
+// $Id: i18n.module,v 1.41.2.49.2.1 2010/09/14 11:30:30 jareyero Exp $
+
+/**
+ * @file
+ * Internationalization (i18n) module - Path translation
+ */
+
+/**
+ * Get translations for path
+ */
+function i18n_path_get_translations($path) {
+  static $translations;
+
+  if (!isset($translations)) {
+    $translations = drupal_static(__FUNCTION__, array());
+  }
+  if (!isset($translations[$path])) {
+    $translations[$path] = db_query('SELECT p.language, p.path FROM {i18n_path} p INNER JOIN {i18n_path} ps ON p.tpid = ps.tpid WHERE ps.path = :path',
+      array(':path' => $path)
+    )->fetchAllKeyed();
+  }
+  return $translations[$path];
+}
+
+/**
+ * Implements hook_menu()
+ */
+function i18n_path_menu() {
+  $items['admin/config/regional/i18n/path'] = array(
+    'title' => 'Paths',
+    'description' => 'Path translation.',
+    'page callback' => 'i18n_path_admin_overview',
+    'access arguments' => array('administer site configuration'),
+    'file' => 'i18n_path.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 10,
+  );
+  $items['admin/config/regional/i18n/path/list'] = array(
+    'title' => 'Paths',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
+  );
+  $items['admin/config/regional/i18n/path/add'] = array(
+    'title' => 'Add path translation',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('i18n_path_admin_form'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'i18n_path.admin.inc',
+    'type' => MENU_LOCAL_ACTION,
+  );
+  $items['admin/config/regional/i18n/path/edit/%'] = array(
+    'title' => 'Edit path translation',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('i18n_path_admin_form', 6),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'i18n_path.admin.inc',
+    'type' => MENU_CALLBACK,
+  );
+  return $items;  
+}
+
+/**
+ * Implements hook_url_outbound_alter()
+ */
+function i18n_path_url_outbound_alter(&$path, &$options, $original_path) {
+  if (!empty($options['language'])) {
+    $langcode = $options['language']->language;
+    $original = $options['alias'] ? drupal_get_normal_path($path, $langcode) : $original_path;
+    if (($translations = i18n_path_get_translations($path)) && !empty($translations[$langcode])) {
+      $path = $options['alias'] ? drupal_get_path_alias($translations[$langcode], $langcode) : $translations[$langcode];
+    }
+  }
+}

@@ -1,0 +1,58 @@
+<?php
+// $Id: text.install,v 1.4 2010/10/20 15:57:42 webchick Exp $
+
+/**
+ * @file
+ * Install, update and uninstall functions for the text module.
+ */
+
+/**
+ * Implements hook_install()
+ */
+function i18n_path_install() {
+  
+}
+
+/**
+ * Implements hook_schema()
+ */
+function i18n_path_schema() {
+  $schema['i18n_path'] = array(
+    'description' => 'Path translation',
+    'fields' => array(
+      'tpid' => array(
+        'description' => 'The primary identifier for a translation set.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'path' => array(
+        'description' => 'The Drupal path this alias is for; e.g. node/12.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'language' => array(
+        'description' => "The language for which this path is a translation.",
+        'type' => 'varchar',
+        'length' => 12,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'pid' => array(
+        'description' => 'A unique path alias identifier if the path has an alias.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'indexes' => array(
+      'path' => array('path'),
+      'path_language' => array('language', 'path'),
+    ),
+    'primary key' => array('tpid', 'language'),
+  );
+  return $schema;
+}

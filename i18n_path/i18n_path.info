@@ -1,0 +1,6 @@
+; $Id: i18nvariable.info,v 1.1.2.1 2010/09/05 10:39:15 jareyero Exp $
+name = Path translation
+description = Define translations for generic paths
+dependencies[] = i18n
+package = Multilanguage
+core = 7.x
