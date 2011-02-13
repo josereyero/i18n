@@ -165,7 +165,7 @@ function i18n_sync_node_delete_prepare($nid) {
  * Check whether this node is to be synced
  */
 function i18n_sync_node_check($node) {
-  return translation_supported_type($node->type) && !empty($node->language) && i18n_sync();
+  return translation_supported_type($node->type) && i18n_object_langcode($node) && i18n_sync();
 }
 
 /**
@@ -262,25 +262,26 @@ function i18n_sync_node_fields($type, $field = NULL) {
  *   Node type.
  */
 function i18n_sync_node_options($type) {
-  return i18n_sync_entity_fields('node', $type);
+  return i18n_sync_options('node', $type);
 }
 
 /**
  * Returns list of available fields for given entity / bundle.
  *
- * Fields can also be changed using hook_i18n_sync_fields_alter($fields, $type)
+ * Fields can also be changed using hook_i18n_sync_options_alter($fields, $type)
  *
- * @param $type
- *   Node type.
+ * @param $entity_type
+ *   Entity type.
+ * @param 
  */
-function i18n_sync_entity_fields($entity_type, $bundle_name) {
+function i18n_sync_options($entity_type, $bundle_name) {
   $cache = &drupal_static(__FUNCTION__);
 
   if (!isset($cache[$entity_type][$bundle_name])) {
     module_load_include('modules.inc', 'i18n_sync');
     $fields = module_invoke_all('i18n_sync_options', $entity_type, $bundle_name);
     // Give a chance to modules to change/remove/add their own fields
-    drupal_alter('i18n_sync_entity_fields', $fields, $entity_type, $bundle_name);
+    drupal_alter('i18n_sync_options', $fields, $entity_type, $bundle_name);
     $cache[$entity_type][$bundle_name] = $fields;
   }
 
@@ -288,16 +289,12 @@ function i18n_sync_entity_fields($entity_type, $bundle_name) {
 }
 
 /**
- * Get node translations if any, optionally excluding this node
- *
- * Translations will be stored in the node itself so we have them cached
+ * Get node translations if any, excluding the node itself
  */
-function _i18n_sync_node_translations($node, $exclude = FALSE) {
+function i18n_sync_node_translations($node, $exclude = FALSE) {
   // Maybe translations are already here
   if (!empty($node->tnid) && ($translations = translation_node_get_translations($node->tnid))) {
-    if ($exclude && $node->language) {
-      unset($translations[$node->language]);
-    }
+    unset($translations[$node->language]);
     return $translations;
   }
 }
