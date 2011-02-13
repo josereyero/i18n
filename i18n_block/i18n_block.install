@@ -10,7 +10,8 @@
  * Implements hook_install()
  */
 function i18n_block_install() {
-  db_add_field('block', 'i18n_mode', array('type' => 'int', 'not null' => TRUE, 'default' => 0, 'description' => 'Block multilingual mode.'));
+  module_load_install('i18n');
+  i18n_install_create_fields('block', array('i18n_mode'));
   // Set module weight for it to run after all block visibility modules have run
   db_query("UPDATE {system} SET weight = 100 WHERE name = 'i18n_block' AND type = 'module'");
   // If updating from D6, module changed name
