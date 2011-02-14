@@ -102,29 +102,24 @@ function theme_i18n_taxonomy_term_page($tids, $result) {
 /**
  * Helper function for autocompletion
  */
-function i18n_taxonomy_autocomplete($field_name, $tags_typed = '') {
-  $field = field_info_field($field_name);
+function i18n_taxonomy_autocomplete($vocabulary, $langcode, $tags_typed = '') {
 
   // The user enters a comma-separated list of tags. We only autocomplete the last tag.
   $tags_typed = drupal_explode_tags($tags_typed);
   $tag_last = drupal_strtolower(array_pop($tags_typed));
 
   $matches = array();
-  if ($tag_last != '') {
+  if ($vocabulary && $langcode && $tag_last != '') {
 
     // Part of the criteria for the query come from the field's own settings.
-    $vids = array();
-    $vocabularies = taxonomy_vocabulary_get_names();
-    foreach ($field['settings']['allowed_values'] as $tree) {
-      $vids[] = $vocabularies[$tree['vocabulary']]->vid;
-    }
+    $vids = array($vocabulary->vid);
 
     $query = db_select('taxonomy_term_data', 't');
     $query->addTag('translatable');
     $query->addTag('term_access');
     
     // Add language condition
-    $query->condition('t.language', array(i18n_langcode(), ''));
+    $query->condition('t.language', i18n_langcode($langcode));
     
     // Do not select already entered terms.
     if (!empty($tags_typed)) {

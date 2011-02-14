@@ -70,15 +70,33 @@ function _i18n_taxonomy_vocabulary_options() {
  * Implements hook_menu().
  */
 function i18n_taxonomy_menu() {
-  $items['admin/content/taxonomy/%taxonomy_vocabulary/translation'] = array(
+  $items['admin/structure/taxonomy/%taxonomy_vocabulary_machine_name/translation'] = array(
     'title' => 'Translation',
-    'page callback' => 'i18n_taxonomy_page_vocabulary',
-    'page arguments' => array(3, 5, 6),
+    'page callback' => 'i18n_taxonomy_translation_overview',
+    'page arguments' => array(3),
     'access callback' => '_i18n_taxonomy_translation_tab',
     'access arguments' => array(3),
     'type' => MENU_LOCAL_TASK,
-    'parent' => 'admin/content/taxonomy/%taxonomy_vocabulary',
+    //'parent' => 'admin/content/taxonomy/%taxonomy_vocabulary',
     'file' => 'i18n_taxonomy.admin.inc',
+  );
+  $items['admin/structure/taxonomy/%taxonomy_vocabulary_machine_name/translation/add'] = array(
+    'title' => 'Create new translation',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('i18n_taxonomy_translation_term_form', 3),
+    'access callback' => '_i18n_taxonomy_translation_tab',
+    'access arguments' => array(3),
+    'type' => MENU_LOCAL_ACTION,
+    //'parent' => 'admin/content/taxonomy/%taxonomy_vocabulary',
+    'file' => 'i18n_taxonomy.admin.inc',
+  );
+  $items['i18n/taxonomy/autocomplete/%taxonomy_vocabulary_machine_name'] = array(
+    'title' => 'Autocomplete taxonomy',
+    'page callback' => 'i18n_taxonomy_autocomplete',
+    'page arguments' => array(3),
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+    'file' => 'i18n_taxonomy.pages.inc',
   );
   return $items;
 }
@@ -107,7 +125,7 @@ function i18n_taxonomy_menu_alter(&$items) {
  * Menu access callback. Show tab only for full multilingual vocabularies.
  */
 function _i18n_taxonomy_translation_tab($vocabulary) {
-  return i18n_taxonomy_vocabulary_mode($vocabulary->vid) & I18N_MODE_TRANSLATE;
+  return user_access('administer taxonomy') && i18n_taxonomy_vocabulary_mode($vocabulary->vid) & I18N_MODE_TRANSLATE;
 }
 
 /**
@@ -653,6 +671,23 @@ function i18n_taxonomy_term_get_translations($params, $getall = TRUE) {
 }
 
 /**
+ * Load translation set
+ */
+function i18n_taxonomy_translation_load($trid) {
+  $translations = db_select('taxonomy_term_data', 't')
+    ->fields('t')
+    ->condition('trid', $trid)
+    ->execute()
+    ->fetchAll(PDO::FETCH_OBJ, 'language');
+  if ($translations) {
+    return array(
+      'trid' => $trid,
+      'translations' => $translations,
+    );
+  }
+}
+
+/**
  * Like nat_get_terms() but without caching.
  */
 function i18n_taxonomy_nat_get_terms($nid) {
@@ -883,39 +918,96 @@ function i18n_taxonomy_vocabulary_get_terms($vid, $lang, $status = 'all') {
  * @param $parent
  *   Parent term id for the tree
  */
-function i18n_taxonomy_get_tree($vid, $lang, $parent = 0, $depth = -1, $max_depth = NULL) {
-  static $children, $parents, $terms;
-
-  $depth++;
+function i18n_taxonomy_get_tree($vid, $langcode, $parent = 0, $max_depth = NULL, $load_entities = FALSE) {
+  $children = &drupal_static(__FUNCTION__, array());
+  $parents = &drupal_static(__FUNCTION__ . ':parents', array());
+  $terms = &drupal_static(__FUNCTION__ . ':terms', array());
 
   // We cache trees, so it's not CPU-intensive to call get_tree() on a term
   // and its children, too.
-  if (!isset($children[$vid][$lang])) {
-    $children[$vid][$lang] = array();
+  if (!isset($children[$vid][$langcode])) {
+    $children[$vid][$langcode] = array();
+    $parents[$vid][$langcode] = array();
+    $terms[$vid][$langcode] = array();
 
-    $result = db_query(db_rewrite_sql("SELECT t.tid, t.*, parent FROM {term_data} t INNER JOIN {term_hierarchy} h ON t.tid = h.tid WHERE t.vid = %d AND t.language = '%s' ORDER BY weight, name", 't', 'tid'), $vid, $lang);
-    while ($term = db_fetch_object($result)) {
-      $children[$vid][$lang][$term->parent][] = $term->tid;
-      $parents[$vid][$lang][$term->tid][] = $term->parent;
-      $terms[$vid][$term->tid] = $term;
+    $query = db_select('taxonomy_term_data', 't');
+    $query->join('taxonomy_term_hierarchy', 'h', 'h.tid = t.tid');
+    $result = $query
+      ->addTag('translatable')
+      ->addTag('term_access')
+      ->fields('t')
+      ->fields('h', array('parent'))
+      ->condition('t.vid', $vid)
+      ->condition('t.language', $langcode)
+      ->orderBy('t.weight')
+      ->orderBy('t.name')
+      ->execute();
+
+    foreach ($result as $term) {
+      $children[$vid][$langcode][$term->parent][] = $term->tid;
+      $parents[$vid][$langcode][$term->tid][] = $term->parent;
+      $terms[$vid][$langcode][$term->tid] = $term;
     }
   }
 
-  $max_depth = (is_null($max_depth)) ? count($children[$vid][$lang]) : $max_depth;
-  $tree = array();
-  if (!empty($children[$vid][$lang][$parent])) {
-    foreach ($children[$vid][$lang][$parent] as $child) {
-      if ($max_depth > $depth) {
-        $term = drupal_clone($terms[$vid][$child]);
-        $term->depth = $depth;
-        // The "parent" attribute is not useful, as it would show one parent only.
-        unset($term->parent);
-        $term->parents = $parents[$vid][$lang][$child];
-        $tree[] = $term;
+  // Load full entities, if necessary. The entity controller statically
+  // caches the results.
+  if ($load_entities) {
+    $term_entities = taxonomy_term_load_multiple(array_keys($terms[$vid][$langcode]));
+  }
 
-        if (!empty($children[$vid][$lang][$child])) {
-          $tree = array_merge($tree, i18n_taxonomy_get_tree($vid, $lang, $child, $depth, $max_depth));
+  $max_depth = (!isset($max_depth)) ? count($children[$vid][$langcode]) : $max_depth;
+  $tree = array();
+
+  // Keeps track of the parents we have to process, the last entry is used
+  // for the next processing step.
+  $process_parents = array();
+  $process_parents[] = $parent;
+
+  // Loops over the parent terms and adds its children to the tree array.
+  // Uses a loop instead of a recursion, because it's more efficient.
+  while (count($process_parents)) {
+    $parent = array_pop($process_parents);
+    // The number of parents determines the current depth.
+    $depth = count($process_parents);
+    if ($max_depth > $depth && !empty($children[$vid][$langcode][$parent])) {
+      $has_children = FALSE;
+      $child = current($children[$vid][$langcode][$parent]);
+      do {
+        if (empty($child)) {
+          break;
         }
+        $term = $load_entities ? $term_entities[$child] : $terms[$vid][$langcode][$child];
+        if (count($parents[$vid][$langcode][$term->tid]) > 1) {
+          // We have a term with multi parents here. Clone the term,
+          // so that the depth attribute remains correct.
+          $term = clone $term;
+        }
+        $term->depth = $depth;
+        unset($term->parent);
+        $term->parents = $parents[$vid][$langcode][$term->tid];
+        $tree[] = $term;
+        if (!empty($children[$vid][$term->tid])) {
+          $has_children = TRUE;
+
+          // We have to continue with this parent later.
+          $process_parents[] = $parent;
+          // Use the current term as parent for the next iteration.
+          $process_parents[] = $term->tid;
+
+          // Reset pointers for child lists because we step in there more often
+          // with multi parents.
+          reset($children[$vid][$langcode][$term->tid]);
+          // Move pointer so that we get the correct term the next time.
+          next($children[$vid][$langcode][$parent]);
+          break;
+        }
+      } while ($child = next($children[$vid][$langcode][$parent]));
+
+      if (!$has_children) {
+        // We processed all terms in this hierarchy-level, reset pointer
+        // so that this function works the next time it gets called.
+        reset($children[$vid][$langcode][$parent]);
       }
     }
   }
