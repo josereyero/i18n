@@ -130,11 +130,12 @@ function i18n_taxonomy_translation_term_form_submit($form, &$form_state) {
 
     case t('Delete'):
       // Delete old translations for this trid.
-     db_update('term_data')
+      db_update('taxonomy_term_data')
         ->fields(array('trid' => 0))
         ->condition('trid', $form_state['values']['trid'])
         ->execute();
       drupal_set_message(t('The term translation has been deleted.'));
+      $form_state['redirect'] = 'admin/structure/taxonomy/' . $form_state['values']['vocabulary']->machine_name . '/translation';
       break;
   }
 }
@@ -228,7 +229,7 @@ function i18n_taxonomy_translation_overview($vocabulary) {
         $thisrow[] = '--';
       }
     }
-    $thisrow[] = l(t('edit'), "admin/content/taxonomy/$vocabulary->machine_name/translation/edit/$trid");
+    $thisrow[] = l(t('edit'), "admin/structure/taxonomy/$vocabulary->machine_name/translation/edit/$trid");
     $rows[] = $thisrow;
   }
   if ($rows) {

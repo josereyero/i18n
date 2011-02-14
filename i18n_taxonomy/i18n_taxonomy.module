@@ -90,6 +90,16 @@ function i18n_taxonomy_menu() {
     //'parent' => 'admin/content/taxonomy/%taxonomy_vocabulary',
     'file' => 'i18n_taxonomy.admin.inc',
   );
+  $items['admin/structure/taxonomy/%taxonomy_vocabulary_machine_name/translation/edit/%i18n_taxonomy_translation'] = array(
+    'title' => 'Edit translation',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('i18n_taxonomy_translation_term_form', 3, 6),
+    'access callback' => '_i18n_taxonomy_translation_tab',
+    'access arguments' => array(3),
+    'type' => MENU_CALLBACK,
+    //'parent' => 'admin/content/taxonomy/%taxonomy_vocabulary',
+    'file' => 'i18n_taxonomy.admin.inc',
+  );
   $items['i18n/taxonomy/autocomplete/%taxonomy_vocabulary_machine_name'] = array(
     'title' => 'Autocomplete taxonomy',
     'page callback' => 'i18n_taxonomy_autocomplete',
@@ -678,27 +688,13 @@ function i18n_taxonomy_translation_load($trid) {
     ->fields('t')
     ->condition('trid', $trid)
     ->execute()
-    ->fetchAll(PDO::FETCH_OBJ, 'language');
+    ->fetchAllAssoc('language');
   if ($translations) {
     return array(
       'trid' => $trid,
       'translations' => $translations,
     );
   }
-}
-
-/**
- * Like nat_get_terms() but without caching.
- */
-function i18n_taxonomy_nat_get_terms($nid) {
-  $return = array();
-
-  $result = db_query("SELECT td.* FROM {nat} n INNER JOIN {term_data} td USING (tid) WHERE n.nid = %d", $nid);
-  while ($term = db_fetch_object($result)) {
-    $return[$term->tid] = $term;
-  }
-
-  return $return;
 }
 
 /**
