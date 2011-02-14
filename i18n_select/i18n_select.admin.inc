@@ -1,5 +1,5 @@
 <?php
-// $Id: i18n_select.admin.inc,v 1.1.2.1 2010/11/09 10:31:32 brucepearson Exp $
+// $Id: i18n_select.admin.inc,v 1.1.2.3 2011/02/14 11:36:29 jareyero Exp $
 
 function i18n_select_admin_settings() {
   // Content selection options.

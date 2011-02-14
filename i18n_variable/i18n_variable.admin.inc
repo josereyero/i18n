@@ -1,5 +1,5 @@
 <?php
-// $Id: i18nvariable.module,v 1.1.2.2 2010/09/14 11:30:29 jareyero Exp $
+// $Id: i18n_variable.admin.inc,v 1.1.2.1 2011/02/14 11:36:29 jareyero Exp $
 /**
  * @file
  * Administration pages for multilingual variables. Internationalization (i18n) package.

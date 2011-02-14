@@ -1,5 +1,5 @@
 <?php
-// $Id: i18n.admin.inc,v 1.2.2.7 2009/01/21 13:08:35 jareyero Exp $
+// $Id: i18n.admin.inc,v 1.2.2.7.2.1 2011/02/14 11:36:29 jareyero Exp $
 
 /**
  * @file

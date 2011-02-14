@@ -1,5 +1,5 @@
 <?php
-// $Id: i18n.pages.inc,v 1.1.2.7 2010/06/01 14:15:16 jareyero Exp $
+// $Id: i18n_node.pages.inc,v 1.1.2.3 2011/02/14 11:36:29 jareyero Exp $
 
 /**
  * @file

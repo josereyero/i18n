@@ -1,5 +1,5 @@
 <?php
-// $Id: drupal_i18n_test_case.php,v 1.1.2.5 2010/03/31 21:13:06 jareyero Exp $
+// $Id: drupal_i18n_test_case.php,v 1.1.2.5.2.3 2011/02/14 11:36:29 jareyero Exp $
 // Core: Id: drupal_web_test_case.php,v 1.96 2009/04/22 09:57:10 dries Exp
 /**
  * @file

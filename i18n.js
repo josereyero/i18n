@@ -1,4 +1,4 @@
-// $Id: i18n.js,v 1.1.2.3 2009/01/20 20:35:55 nedjo Exp $
+// $Id: i18n.js,v 1.1.2.3.2.3 2011/02/14 11:36:29 jareyero Exp $
 
 (function ($) {
 

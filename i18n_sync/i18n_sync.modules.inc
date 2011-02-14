@@ -1,5 +1,5 @@
 <?php
-// $Id: i18n_sync.module,v 1.1.2.35 2010/03/04 20:11:10 jareyero Exp $
+// $Id: i18n_sync.modules.inc,v 1.1.2.1 2011/02/14 11:36:29 jareyero Exp $
 
 /**
  * @file

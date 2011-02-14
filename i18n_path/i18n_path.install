@@ -1,5 +1,5 @@
 <?php
-// $Id: text.install,v 1.4 2010/10/20 15:57:42 webchick Exp $
+// $Id: i18n_path.install,v 1.1.2.1 2011/02/14 11:36:29 jareyero Exp $
 
 /**
  * @file

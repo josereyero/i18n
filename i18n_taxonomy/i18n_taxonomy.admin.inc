@@ -1,5 +1,5 @@
 <?php
-// $Id: i18n_taxonomy.admin.inc,v 1.1.2.10 2009/08/29 21:08:24 hass Exp $
+// $Id: i18n_taxonomy.admin.inc,v 1.1.2.3 2011/02/14 11:36:29 jareyero Exp $
 
 /**
  * @file

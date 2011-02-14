@@ -1,5 +1,5 @@
 <?php
-// $Id: i18nvariable.module,v 1.1.2.2 2010/09/14 11:30:29 jareyero Exp $
+// $Id: i18n_variable.module,v 1.1.2.3 2011/02/14 11:36:29 jareyero Exp $
 /**
  * @file
  * Internationalization (i18n) package. Multilingual variables API.

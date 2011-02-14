@@ -1,4 +1,4 @@
-; $Id: i18n_sync.info,v 1.2.2.5 2008/09/25 19:16:11 jareyero Exp $
+; $Id: i18n_sync.info,v 1.1.2.3 2011/02/14 11:36:29 jareyero Exp $
 name = Synchronize translations
 description = Synchronizes taxonomy and fields accross translations of the same content.
 dependencies[] = i18n
