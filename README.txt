@@ -22,4 +22,4 @@ For support, please create a support request for this module's project:
 Support questions by email to the module maintainer will be simply ignored. Use the issue tracker.
 
 ====================================================================
-Jose A. Reyero, drupal at reyero dot net, http://www.reyero.net
+Jose A. Reyero, drupal at reyero dot net, http://reyero.net
