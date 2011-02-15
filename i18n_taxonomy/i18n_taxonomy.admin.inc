@@ -32,19 +32,9 @@ function i18n_taxonomy_page_vocabulary($vocabulary, $op = NULL, $tid = NULL) {
  * Produces a vocabulary translation form.
  */
 function i18n_taxonomy_translation_term_form($form, $form_state, $vocabulary, $translation_set = NULL) {
-  if ($translation_set) {
-    $trid = $translation_set['trid'];
-    $translations = $translation_set['translations'];
-  }
-  else {
-    $trid = 0;
-    $translations = array();
-  }
+  $form['translation_set'] = array('#type' => 'value', '#value' => $translation_set);  
+  $translations = $translation_set ? $translation_set->get_translations() : array();
   $form['vocabulary'] = array('#type' => 'value', '#value' => $vocabulary);
-  $form['trid'] = array(
-    '#type' => 'hidden',
-    '#value' => $trid
-  );
   $form['translations'] = array('#tree' => TRUE);
   // List of terms for languages.
   foreach (i18n_language_list() as $lang => $langname) {
@@ -64,16 +54,12 @@ function i18n_taxonomy_translation_term_form($form, $form_state, $vocabulary, $t
     '#type' => 'submit',
     '#value' => t('Save')
   );
-  if ($trid) {
+  if ($translation_set) {
     $form['delete'] = array(
       '#type' => 'submit',
       '#value' => t('Delete')
     );
   }
-  $form['destination'] = array(
-    '#type' => 'hidden',
-    '#value' => 'admin/content/taxonomy/'. arg(3) .'/translation'
-  );
   return $form;
 }
 
@@ -118,51 +104,13 @@ function i18n_taxonomy_autocomplete_validate($element, &$form_state) {
  * Form callback: Process vocabulary translation form.
  */
 function i18n_taxonomy_translation_term_form_submit($form, &$form_state) {
+  $translation_set = $form_state['values']['translation_set'];
+  $vocabulary = $form_state['values']['vocabulary'];
   switch ($form_state['values']['op']) {
     case t('Save'):
-      if (i18n_taxonomy_translation_save($form_state['values']['translations'], $form_state['values']['trid'])) {
-        drupal_set_message(t('Term translations have been updated.'));
-      }
-      else {
-        drupal_set_message(t('Cannot update term translations'), 'error');
-      }
-      break;
-
-    case t('Delete'):
-      // Delete old translations for this trid.
-      db_update('taxonomy_term_data')
-        ->fields(array('trid' => 0))
-        ->condition('trid', $form_state['values']['trid'])
-        ->execute();
-      drupal_set_message(t('The term translation has been deleted.'));
-      $form_state['redirect'] = 'admin/structure/taxonomy/' . $form_state['values']['vocabulary']->machine_name . '/translation';
-      break;
-  }
-}
-
-/**
- * Save taxonomy term translations.
- *
- * @param $terms
- *   Array of terms indexed by language.
- * @param $trid
- *   Optional translation set id.
- */
-function i18n_taxonomy_translation_save($terms, $trid = 0) {
-  // Now set a translation set with all these terms. We need some table locking to avoid race conditions.
-  // when other translations created simulaneously. @TODO Find a better way.
-  if (lock_acquire('i18n_taxonomy')) {
-    // Delete old translations for this trid.
-    if ($trid) {
-      db_update('taxonomy_term_data')
-        ->fields(array('trid' => 0))
-        ->condition('trid', $trid)
-        ->execute();
-    }
-    // Now pick up all the tids in an array.
-    $translations = array();
-    foreach (i18n_language_list() as $lang => $name) {
-      if (!empty($terms[$lang]) && ($item = reset($terms[$lang]))) {
+      $term_translations = array_filter($form_state['values']['translations']);
+      foreach ($term_translations as $lang => $lang_terms) {
+        $item = reset($lang_terms);
         if ($item['tid'] == 'autocreate') {
           $term = (object) $item;
           unset($term->tid);
@@ -171,31 +119,25 @@ function i18n_taxonomy_translation_save($terms, $trid = 0) {
         else {
           $term = (object) $item;
         }
-        $translations[$lang] = $term->tid;
+        $translations[$lang] = $term;    
       }
-    }
+      if (!empty($translations)) {
+        $translation_set = $translation_set ? $translation_set : i18n_translation_set_create('taxonomy_term', $vocabulary->machine_name);
+        $translation_set->translations = $translations;
+        $translation_set->save(TRUE);
+        drupal_set_message(t('Term translations have been updated.'));
+      }
+      else {
+        drupal_set_message(t('There are no translations to be saved.'), 'error');
+      }
+      break;
 
-    if (count($translations)) {
-      $trid = (is_numeric($trid) && $trid) ? $trid : i18n_taxonomy_next_trid();
-      $params = array_merge(array($trid), $translations);
-      db_update('taxonomy_term_data')
-        ->fields(array('trid' => $trid))
-        ->condition('tid', $translations)
-        ->execute();
-    }
-    lock_release('i18n_taxonomy');
-    return $trid;
+    case t('Delete'):
+      $translation_set->delete(TRUE);
+      drupal_set_message(t('The term translation has been deleted.'));
+      $form_state['redirect'] = 'admin/structure/taxonomy/' . $form_state['values']['vocabulary']->machine_name . '/translation';
+      break;
   }
-  else {
-    return FALSE;
-  }
-}
-
-/**
- * Get next free trid.
- */
-function i18n_taxonomy_next_trid() {
-  return 1 + (int)db_query('SELECT MAX(trid) FROM {taxonomy_term_data}')->fetchField();
 }
 
 /**
@@ -210,11 +152,11 @@ function i18n_taxonomy_translation_overview($vocabulary) {
   $links = array();
   $types = array();
   // Get terms/translations for this vocab.
-  $result = db_query('SELECT * FROM {taxonomy_term_data} t WHERE vid = :vid', array(':vid' => $vocabulary->vid));
+  $result = db_query('SELECT * FROM {taxonomy_term_data} t WHERE vid = :vid AND i18n_tsid > 0', array(':vid' => $vocabulary->vid));
   $terms = $messages = array();
   foreach($result as $term) {
-    if ($term->trid && $term->language) {
-      $terms[$term->trid][$term->language] = $term;
+    if ($term->i18n_tsid && $term->language) {
+      $terms[$term->i18n_tsid][$term->language] = $term;
     }
   }
   // Reorder data for rows and languages.

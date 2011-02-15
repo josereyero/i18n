@@ -90,7 +90,7 @@ function i18n_taxonomy_menu() {
     //'parent' => 'admin/content/taxonomy/%taxonomy_vocabulary',
     'file' => 'i18n_taxonomy.admin.inc',
   );
-  $items['admin/structure/taxonomy/%taxonomy_vocabulary_machine_name/translation/edit/%i18n_taxonomy_translation'] = array(
+  $items['admin/structure/taxonomy/%taxonomy_vocabulary_machine_name/translation/edit/%i18n_taxonomy_translation_set'] = array(
     'title' => 'Edit translation',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('i18n_taxonomy_translation_term_form', 3, 6),
@@ -247,7 +247,10 @@ function i18n_taxonomy_translate_vocabulary_name($vid, $name = '', $langcode = N
  *   Translated term tid if exists, or $default.
  */
 function i18n_taxonomy_translation_term_tid($tid, $language = NULL, $default = NULL) {
-  $translation = db_result(db_query("SELECT t.tid FROM {term_data} t INNER JOIN {term_data} a ON t.trid = a.trid AND t.tid <> a.tid WHERE a.tid = %d AND t.language = '%s' AND t.trid > 0", $tid, $language ? $language : i18n_language()->language));
+  $translation = db_query('SELECT t.tid FROM {taxonomy_term_data} t INNER JOIN {taxonomy_term_data} a ON t.i18n_tsid = a.i18n_tsid AND t.tid <> a.tid WHERE a.tid = :tid AND t.language = :language AND t.trid > 0', array(
+    ':tid' => $tid,
+    ':language' =>$language ? $language : i18n_language()->language
+  ))->fetchField();
   return $translation ? $translation : $default;
 }
 
@@ -1149,4 +1152,23 @@ function _i18n_taxonomy_filter_terms($term) {
   else {
     return is_object($term) ? $term : taxonomy_get_term($term);
   }
+}
+
+/**
+ * Implements hook_i18n_translation_set_info().
+ */
+function i18n_taxonomy_i18n_translation_set_info() {
+  return array(
+    'taxonomy_term' => array(
+      'title' => t('Taxonomy terms'),
+      'class' => 'i18n_taxonomy_translation_set',
+    )
+  );
+}
+
+/**
+ * Load translation set. Menu loading callback.
+ */
+function i18n_taxonomy_translation_set_load($tsid) {
+  return i18n_translation_set_load($tsid, 'taxonomy_term');
 }

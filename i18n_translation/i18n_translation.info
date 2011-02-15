@@ -1,0 +1,8 @@
+; $Id: i18nvariable.info,v 1.1.2.1 2010/09/05 10:39:15 jareyero Exp $
+name = Translation sets
+description = Simple translation sets API for generic objects
+dependencies[] = i18n
+package = Multilanguage
+core = 7.x
+
+files[] = i18n_translation.inc

@@ -21,6 +21,12 @@ function i18n_path_schema() {
     'description' => 'Path translation',
     'fields' => array(
       'tpid' => array(
+        'description' => 'The primary identifier for a path in the translation set.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'tsid' => array(
         'description' => 'The primary identifier for a translation set.',
         'type' => 'int',
         'unsigned' => TRUE,
@@ -50,9 +56,21 @@ function i18n_path_schema() {
     ),
     'indexes' => array(
       'path' => array('path'),
-      'path_language' => array('language', 'path'),
     ),
-    'primary key' => array('tpid', 'language'),
+    'unique keys' => array(
+      'set_language' => array('tsid', 'language'),
+    ),
+    'foreign keys' => array(
+      'path_language' => array(
+        'table' => 'languages',
+        'columns' => array('language' => 'language'),
+      ),
+      'translation_set' => array(
+        'table' => 'i18n_translation',
+        'columns' => array('tsid' => 'tsid'),
+      ),
+    ),
+    'primary key' => array('tpid'),
   );
   return $schema;
 }

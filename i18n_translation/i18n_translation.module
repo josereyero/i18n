@@ -1,0 +1,144 @@
+<?php
+// $Id: i18n.module,v 1.41.2.49.2.1 2010/09/14 11:30:30 jareyero Exp $
+
+/**
+ * @file
+ * Internationalization (i18n) module - Entity translations
+ */
+
+// Language list with only enabled languages
+define('I18N_ENTITY_LANGUAGES_ENABLED', 0);
+// Language list with all languages
+define('I18N_ENTITY_LANGUAGES_EXTENDED', 1);
+
+/**
+ * Default entity controller for notifications objects
+ */
+class I18nTranslationSetController extends DrupalDefaultEntityController {
+  /**
+   * Builds objects of specific classes upon loading.
+   *
+   * @param $queried_entities
+   *   Associative array of query results, keyed on the entity ID.
+   * @param $revision_id
+   *   ID of the revision that was loaded, or FALSE if teh most current revision
+   *   was loaded.
+   */
+  protected function attachLoad(&$queried_entities, $revision_id = FALSE) {
+    foreach ($queried_entities as $id => $entity) {
+      $queried_entities[$id] = i18n_translation_set_build($entity->type, $entity); 
+    }
+    return parent::attachLoad($queried_entities, $revision_id);
+  }
+}
+
+/**
+ * Implements hook_entity_info().
+ */
+function i18n_translation_entity_info() {
+  $bundles = array();
+  foreach (i18n_translation_set_info() as $type => $info) {
+    $bundles[$type] = array(
+      'label' => $info['title'],
+    );
+  }
+  $return = array(
+    'i18n_translation' => array(
+      'label' => t('Translation set'),
+      'controller class' => 'I18nTranslationSetController',
+      'base table' => 'i18n_translation_set',
+      //'uri callback' => 'taxonomy_term_uri',
+      'fieldable' => FALSE,
+      'entity keys' => array(
+        'id' => 'tsid',
+        'bundle' => 'type',
+        'label' => 'title',
+      ),
+      'bundle keys' => array(
+        'bundle' => 'type',
+      ),
+      'bundles' => $bundles,
+    ),
+  );
+
+  return $return;
+}
+
+/**
+ * Implements hook_menu()
+ */
+function i18n_translation_menu() {
+  $items['admin/config/regional/i18n_translation'] = array(
+    'title' => 'Translation sets',
+    'description' => 'Translation sets overview.',
+    'page callback' => 'i18n_translation_admin_overview',
+    'access arguments' => array('administer site configuration'),
+    'file' => 'i18n_translation.admin.inc',
+    'weight' => 10,
+  );
+  $items['admin/config/regional/i18n_translation/configure'] = array(
+    'title' => 'Translation sets',
+    'description' => 'Overview of existing translation sets.',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+  return $items;  
+}
+
+/**
+ * Get information about translation sets
+ */
+function i18n_translation_set_info($type = NULL) {
+  $info = &drupal_static(__FUNCTION__);
+  if (!$info) {
+    $info = module_invoke_all('i18n_translation_set_info');
+    drupal_alter('i18n_translation_set_info', $info);
+  }
+  if ($type) {
+    return isset($info[$type]) ? $info[$type] : array();
+  }
+  else {
+    return $info;
+  }
+}
+
+/**
+ * Build a translation set from type, data
+ */
+function i18n_translation_set_build($type, $data = array()) {
+  $info = i18n_translation_set_info($type);
+  $class = isset($info['class']) ? $info['class'] : 'i18n_translation_set';
+  return new $class((array)$data);  
+}
+
+/**
+ * Create a new translation set
+ */
+function i18n_translation_set_create($type, $bundle = '', $translations = NULL, $master_id = 0) {
+  $set = i18n_translation_set_build($type, array('type' => $type, 'bundle' => $bundle, 'master_id' => $master_id, 'translations' => $translations));
+  $set->insert();
+  return $set;
+}
+
+/**
+ * Load single translation set
+ */
+function i18n_translation_set_load($tsid, $type = NULL) {
+  $conditions['tsid'] = $tsid;
+  if ($type) {
+    $conditions['type'] = $type;
+  }
+  return reset(entity_load('i18n_translation', FALSE, $conditions));
+}
+
+/**
+ * Index objects in translation set by language
+ */
+function i18n_translation_set_index($translations) {
+  $list = array();
+  foreach ($translations as $object) {
+    if ($lang = i18n_object_langcode($object)) {
+      $list[$lang] = $object;
+    }
+  }
+  return $list;
+}

@@ -40,8 +40,8 @@ function i18n_variable_schema() {
  * Implements hook_install()
  */
 function i18n_variable_install() {
-  // Set module weight for it to run after core modules
-  db_query("UPDATE {system} SET weight = -1000 WHERE name = 'i18n_variable' AND type = 'module'");
+  // Set module weight for it to run before most modules, but after variable_realm
+  db_query("UPDATE {system} SET weight = -900 WHERE name = 'i18n_variable' AND type = 'module'");
   // Update from d6, module changed name
   if (variable_get('i18n_drupal6_update')) {
     i18n_variable_update_7000();

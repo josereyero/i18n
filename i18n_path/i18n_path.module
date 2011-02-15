@@ -16,7 +16,7 @@ function i18n_path_get_translations($path) {
     $translations = drupal_static(__FUNCTION__, array());
   }
   if (!isset($translations[$path])) {
-    $translations[$path] = db_query('SELECT p.language, p.path FROM {i18n_path} p INNER JOIN {i18n_path} ps ON p.tpid = ps.tpid WHERE ps.path = :path',
+    $translations[$path] = db_query('SELECT p.language, p.path FROM {i18n_path} p INNER JOIN {i18n_path} ps ON p.tsid = ps.tsid WHERE ps.path = :path',
       array(':path' => $path)
     )->fetchAllKeyed();
   }
@@ -27,7 +27,7 @@ function i18n_path_get_translations($path) {
  * Implements hook_menu()
  */
 function i18n_path_menu() {
-  $items['admin/config/regional/i18n/path'] = array(
+  $items['admin/config/regional/i18n_translation/path'] = array(
     'title' => 'Paths',
     'description' => 'Path translation.',
     'page callback' => 'i18n_path_admin_overview',
@@ -36,26 +36,28 @@ function i18n_path_menu() {
     'type' => MENU_LOCAL_TASK,
     'weight' => 10,
   );
-  $items['admin/config/regional/i18n/path/list'] = array(
+  $items['admin/config/regional/i18n_translation/path/list'] = array(
     'title' => 'Paths',
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'weight' => -10,
   );
-  $items['admin/config/regional/i18n/path/add'] = array(
+  $items['admin/config/regional/i18n_translation/path/add'] = array(
     'title' => 'Add path translation',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('i18n_path_admin_form'),
     'access arguments' => array('administer site configuration'),
     'file' => 'i18n_path.admin.inc',
     'type' => MENU_LOCAL_ACTION,
+    'parent' => 'admin/config/regional/i18n_translation',
   );
-  $items['admin/config/regional/i18n/path/edit/%'] = array(
+  $items['admin/config/regional/i18n_translation/path/edit/%i18n_path_translation_set'] = array(
     'title' => 'Edit path translation',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('i18n_path_admin_form', 6),
     'access arguments' => array('administer site configuration'),
     'file' => 'i18n_path.admin.inc',
     'type' => MENU_CALLBACK,
+    'parent' => 'admin/config/regional/i18n_translation',
   );
   return $items;  
 }
@@ -86,4 +88,23 @@ function i18n_path_language_switch_links_alter(array &$links, $type, $path) {
       }
     }
   }
+}
+
+/**
+ * Implements hook_i18n_translation_set_info().
+ */
+function i18n_path_i18n_translation_set_info() {
+  return array(
+    'path' => array(
+      'title' => t('Paths'),
+      'class' => 'i18n_path_translation_set',
+    )
+  );
+}
+
+/**
+ * Load translation set. Menu loading callback.
+ */
+function i18n_path_translation_set_load($tsid) {
+  return i18n_translation_set_load($tsid, 'path');
 }

@@ -4,8 +4,10 @@ description = Enables multilingual taxonomy.
 dependencies[] = i18n
 dependencies[] = taxonomy
 dependencies[] = i18n_string
+dependencies[] = i18n_translation
 package = Multilanguage
 core = 7.x
 
+files[] = i18n_taxonomy.inc
 files[] = i18n_taxonomy.pages.inc
 files[] = i18n_taxonomy.admin.inc
