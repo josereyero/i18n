@@ -7,6 +7,14 @@
  */
 
 /**
+ * Implements hook_field_schema().
+ */
+function i18n_taxonomy_field_schema($field) {
+  module_load_install('taxonomy');
+  return taxonomy_field_schema($field);
+}
+
+/**
  * Set language field in its own table.
  * Do not drop node.language now, just in case.
  * TO-DO: Drop old tables, fields
