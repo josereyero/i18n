@@ -501,13 +501,14 @@ function i18n_string_format($i18nstring, $options = array()) {
   if (!isset($debug)) {
     $debug = variable_get('i18n_string_debug', FALSE);
   }
+  $options += array('sanitize' => TRUE, 'cache' => FALSE);
   if (is_string($i18nstring)) {
     $string = $i18nstring;
   }
   elseif (!empty($i18nstring->translation)) {
     $string = $i18nstring->translation;
     if (!empty($i18nstring->format)) {
-      $string = check_markup($string, $i18nstring->format, $options['langcode'], FALSE);
+      $options += array('format' => $i18nstring->format);
     }
     if (isset($options['filter'])) {
       $string = call_user_func($options['filter'], $string);
@@ -516,9 +517,14 @@ function i18n_string_format($i18nstring, $options = array()) {
   else {
     $string = isset($i18nstring->source) ? $i18nstring->source : '';
   }
-  // Apply callback to any of the strings
-  if ($string && isset($options['callback'])) {
-    $string = call_user_func($options['callback'], $string);
+  // Apply filter and callback to any of the strings
+  if ($string) {
+    if (!empty($options['format']) && !empty($options['sanitize'])) {
+      $string = check_markup($string, $options['format'], $options['langcode'], $options['cache']);
+    }
+    if (isset($options['callback'])) {
+      $string = call_user_func($options['callback'], $string);
+    }
   }
   // Add debug information if enabled
   if ($debug && is_object($i18nstring)) {
@@ -544,7 +550,7 @@ function i18n_string_format($i18nstring, $options = array()) {
  *   Array with additional options.
  */
 function i18n_string_text($name, $default, $options = array()) {
-  $options += array('format' => filter_fallback_format());
+  $options += array('format' => filter_fallback_format(), 'sanitize' => TRUE);
   return i18n_string_translate($name, $default, $options);
 }
 

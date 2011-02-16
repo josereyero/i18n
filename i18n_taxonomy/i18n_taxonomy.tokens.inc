@@ -57,7 +57,8 @@ function i18n_taxonomy_token_info() {
 function i18n_taxonomy_tokens($type, $tokens, array $data = array(), array $options = array()) {
   $replacements = array();
   $sanitize = !empty($options['sanitize']);
-
+  $langcode = isset($options['language']) ? $options['language']->language : i18n_langcode();
+  
   if ($type == 'term' && !empty($data['term'])) {
     $term = $data['term'];
 
@@ -65,22 +66,23 @@ function i18n_taxonomy_tokens($type, $tokens, array $data = array(), array $opti
       switch ($name) {
 
         case 'i18n-name':
-          $replacements[$original] = $sanitize ? check_plain($term->name) : $term->name;
+          $name = i18n_taxonomy_term_name($term, $langcode);
+          $replacements[$original] = $sanitize ? check_plain($name) : $name;
           break;
 
         case 'i18n-description':
-          $replacements[$original] = $sanitize ? check_markup($term->description, $term->format, '', TRUE) : $term->description;
+          $replacements[$original] = i18n_string_text(array('taxonomy', 'term', $term->tid, 'description'), $term->description, array('langcode' => $langcode, 'format' => $term->format, 'sanitize' => $sanitize, 'cache' => TRUE));
           break;
 
         case 'i18n-vocabulary':
           $vocabulary = taxonomy_vocabulary_load($term->vid);
-          $replacements[$original] = check_plain(i18n_taxonomy_vocabulary_name($vocabulary));
+          $replacements[$original] = check_plain(i18n_taxonomy_vocabulary_name($vocabulary, $langcode));
           break;
 
         case 'i18n-parent':
           if ($parents = taxonomy_get_parents($term->tid)) {
             $parent = array_pop($parents);
-            $replacements[$original] = check_plain(i18n_taxonomy_term_name($parent));
+            $replacements[$original] = check_plain(i18n_taxonomy_term_name($parent, $langcode));
           }
           break;
       }
