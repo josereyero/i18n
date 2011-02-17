@@ -43,28 +43,6 @@ function i18n_variable_language_init() {
 }
 
 /**
- * Implements hook_exit().
- * 
- * Save multilingual variables that may have been changed by other methods than settings pages.
- */
-function i18n_variable_exit() {
-  global $conf;
-  $langcode = i18n_variable_language()->language;
-  $default = variable_realm('global', 'default');
-  $variables = variable_store('language', $langcode);
-  /*
-  if ($variables) {
-    // Rewritten because array_diff_assoc may fail with array variables.
-    foreach (i18n_variable_list() as $name) {
-      if (isset($variables[$name]) && isset($conf[$name]) && $conf[$name] != $default[$name] && $conf[$name] != $variables[$name]) {  
-        i18n_variable_set($name, $conf[$name], $langcode);
-      }
-    }
-  }
-  */
-}
-
-/**
  * Initialization of multilingual variables.
  *
  * @param $langcode
