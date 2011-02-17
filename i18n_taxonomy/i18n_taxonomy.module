@@ -217,22 +217,7 @@ function i18n_taxonomy_field_extra_fields() {
   foreach (array_keys($info['bundles']) as $bundle) {
     $vocabulary = taxonomy_vocabulary_machine_name_load($bundle);
     if (i18n_taxonomy_vocabulary_mode($vocabulary, I18N_MODE_TRANSLATE)) {
-      $return['taxonomy_term'][$bundle] = array(
-        'form' => array(
-          'language' => array(
-            'label' => t('Language'),
-            'description' => t('Term language selection'),
-            'weight' => 0,
-          ),
-        ),
-        'display' => array(
-          'language' => array(
-            'label' => t('Language'),
-            'description' => t('Term language'),
-            'weight' => 0,
-          ),
-        ),
-      );
+      $return['taxonomy_term'][$bundle] = i18n_language_field_extra();
     }
   }
   return $return;
