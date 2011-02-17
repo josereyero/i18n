@@ -52,7 +52,6 @@ function i18n_select_admin_settings() {
   }  
   $form['pages']['i18n_select_page_mode'] = array(
     '#type' => 'radios',
-    '#title' => t('Show block on specific pages'),
     '#options' => $options,
     '#default_value' => variable_get('i18n_select_page_mode', I18N_SELECT_PAGE_NOTLISTED),
   );
@@ -61,6 +60,11 @@ function i18n_select_admin_settings() {
     '#title' => '<span class="element-invisible">' . $title . '</span>',
     '#default_value' => variable_get('i18n_select_page_list', 'admin/*'),
     '#description' => $description,
+  );
+  $form['pages']['i18n_select_page_block'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enable always for block content though it may be disabled for the page'),
+    '#default_value' => variable_get('i18n_select_page_block', TRUE),
   );
   return system_settings_form($form);
 }
