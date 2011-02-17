@@ -209,6 +209,49 @@ function i18n_taxonomy_field_formatter_view($entity_type, $entity, $field, $inst
 }
 
 /**
+ * Implements hook_field_extra_fields().
+ */
+function i18n_taxonomy_field_extra_fields() {
+  $return = array();
+  $info = entity_get_info('taxonomy_term');
+  foreach (array_keys($info['bundles']) as $bundle) {
+    $vocabulary = taxonomy_vocabulary_machine_name_load($bundle);
+    if (i18n_taxonomy_vocabulary_mode($vocabulary, I18N_MODE_TRANSLATE)) {
+      $return['taxonomy_term'][$bundle] = array(
+        'form' => array(
+          'language' => array(
+            'label' => t('Language'),
+            'description' => t('Term language selection'),
+            'weight' => 0,
+          ),
+        ),
+        'display' => array(
+          'language' => array(
+            'label' => t('Language'),
+            'description' => t('Term language'),
+            'weight' => 0,
+          ),
+        ),
+      );
+    }
+  }
+  return $return;
+}
+
+/**
+ * Implements hook_field_attach_view_alter().
+ */
+function i18n_taxonomy_field_attach_view_alter(&$output, $context) {
+  if ($context['entity_type'] == 'taxonomy_term' && i18n_taxonomy_vocabulary_mode($context['entity']->vid, I18N_MODE_TRANSLATE)) {
+    $output['language'] = array(
+      '#type' => 'item',
+      '#title' => t('Language'),
+      '#markup' => i18n_language_name($context['entity']->language),
+    );
+  }
+}
+
+/**
  * Implements hook_field_info_alter()
  */
 function i18n_taxonomy_field_info_alter(&$info) {
