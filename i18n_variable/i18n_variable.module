@@ -14,7 +14,7 @@ define('I18N_VARIABLE_CACHE', 'cache_bootstrap');
  * Initialize variables, that will be used to decide on site_frontpage
  */
 function i18n_variable_boot() {
-
+  
 }
 
 /**
@@ -56,12 +56,10 @@ function i18n_variable_exit() {
  *   Language to retrieve variables. Defaults to current language.
  */
 function i18n_variable_initialize($language = NULL) {
-  global $conf;
-
   $language = $language ? $language : i18n_variable_language();
   $GLOBALS['language_variable'] = $language;
   if ($variables = i18n_variable_load($language->language)) {
-    $conf = array_merge(i18n_variable_global(), $variables);
+    variable_realm_switch('language', $language->language, $variables);
   }
 }
 
@@ -82,17 +80,7 @@ function i18n_variable_language($initialize = TRUE) {
  * Get original value for global variable/s
  */
 function i18n_variable_global($name = NULL, $default = NULL) {
-  static $original;
-  if (!isset($original)) {
-    $original = &drupal_static('i18n_variable_global', array());
-    $original += $GLOBALS['conf'];
-  }
-  if ($name) {
-    return isset($original[$name]) ? $original[$name] : $default;
-  }
-  else {
-    return $original;
-  }
+  return variable_realm_global_get($name, $default);
 }
 
 /**
