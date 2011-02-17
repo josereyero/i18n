@@ -7,36 +7,6 @@
  */
 
 /**
- * Implements hook_schema().
- */
-function i18n_variable_schema() {
-  $schema['i18n_variable'] = array(
-    'description' => 'Multilingual variables.',
-    'fields' => array(
-      'name' => array(
-        'description' => 'The name of the variable.',
-        'type' => 'varchar',
-        'length' => 128,
-        'not null' => TRUE,
-        'default' => ''),
-      'language' => array(
-        'description' => 'The language of the variable.',
-        'type' => 'varchar',
-        'length' => 12,
-        'not null' => TRUE,
-        'default' => ''),
-      'value' => array(
-        'description' => 'The value of the variable.',
-        'type' => 'text',
-        'not null' => TRUE,
-        'size' => 'big'),
-      ),
-    'primary key' => array('name', 'language'),
-    );
-  return $schema;
-}
-
-/**
  * Implements hook_install()
  */
 function i18n_variable_install() {
@@ -45,6 +15,7 @@ function i18n_variable_install() {
   // Update from d6, module changed name
   if (variable_get('i18n_drupal6_update')) {
     i18n_variable_update_7000();
+    i18n_variable_update_7001();
   }
 }
 
@@ -55,4 +26,14 @@ function i18n_variable_update_7000() {
   variable_set('i18n_variable_list', variable_get('i18n_variables', array()));
   variable_set('i18n_variable_conf', variable_get('i18n_variables', array()));
   variable_del('i18n_variables');
+}
+
+/**
+ * Move variables from old storage to new table
+ */
+function i18n_variable_update_7001() {
+  foreach (db_select('i18n_variable', 'v')->fields('v')->execute()->fetchAll() as $variable) {
+    variable_store_set('language', $variable->language, $variable->name, unserialize($variable->value));
+  }
+  // @todo Delete obsoleted table i18n_variable
 }

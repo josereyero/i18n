@@ -44,9 +44,24 @@ function i18n_variable_language_init() {
 
 /**
  * Implements hook_exit().
+ * 
+ * Save multilingual variables that may have been changed by other methods than settings pages.
  */
 function i18n_variable_exit() {
-  _i18n_variable_exit();
+  global $conf;
+  $langcode = i18n_variable_language()->language;
+  $default = variable_realm('global', 'default');
+  $variables = variable_store('language', $langcode);
+  /*
+  if ($variables) {
+    // Rewritten because array_diff_assoc may fail with array variables.
+    foreach (i18n_variable_list() as $name) {
+      if (isset($variables[$name]) && isset($conf[$name]) && $conf[$name] != $default[$name] && $conf[$name] != $variables[$name]) {  
+        i18n_variable_set($name, $conf[$name], $langcode);
+      }
+    }
+  }
+  */
 }
 
 /**
@@ -58,9 +73,8 @@ function i18n_variable_exit() {
 function i18n_variable_initialize($language = NULL) {
   $language = $language ? $language : i18n_variable_language();
   $GLOBALS['language_variable'] = $language;
-  if ($variables = i18n_variable_load($language->language)) {
-    variable_realm_switch('language', $language->language, $variables);
-  }
+  $variables = i18n_variable_load($language->language);
+  variable_realm_switch('language', $language->language, $variables);
 }
 
 /**
@@ -120,6 +134,21 @@ function i18n_variable_list($name = NULL) {
     $variables = &drupal_static(__FUNCTION__, variable_get('i18n_variable_list', array()));
   }
   return $name ? in_array($name, $variables) : $variables;
+}
+
+/**
+* Load language variables into array.
+* 
+* Pull variables from the store but filter out the ones that are not multilingual.
+*/
+function i18n_variable_load($langcode) {
+  $variables = array();
+  foreach (variable_store('language', $langcode) as $name => $value) {
+    if (i18n_variable_list($name)) {
+      $variables[$name] = $value;
+    }
+  }
+  return $variables;
 }
 
 /**
@@ -211,27 +240,14 @@ function i18n_variable_theme_form_submit($form, &$form_state) {
  *   Language code.
  */
 function i18n_variable_set($name, $value, $langcode) {
-  global $conf;
-  $i18n_conf = &drupal_static('i18n_variable');
-
-  db_merge('i18n_variable')->key(array('name' => $name, 'language' => $langcode))->fields(array('value' => serialize($value)))->execute();
-
-  cache_clear_all('variables:' . $langcode, I18N_VARIABLE_CACHE);
-
-  $conf[$name] = $value;
-  $i18n_conf[$langcode][$name] = $value;
+  variable_store_set('language', $langcode, $name, $value);
 }
 
 /**
  * Get single multilingual variable
  */
 function i18n_variable_get($name, $langcode, $default = NULL) {
-  if ($variables = i18n_variable_load($langcode)) {
-    return isset($variables[$name]) ? $variables[$name] : $default;
-  }
-  else {
-    return $default;
-  }
+  return variable_store_get('language', $langcode, $name, $default);
 }
 
 /**
@@ -243,67 +259,5 @@ function i18n_variable_get($name, $langcode, $default = NULL) {
  *   Language code.
  */
 function i18n_variable_del($name, $langcode) {
-  global $conf;
-  $i18n_conf = &drupal_static('i18n_variable');
-
-  db_delete('variable')
-    ->condition('name', $name)
-    ->condition('language', $langcode)
-    ->execute();
-
-  cache_clear_all('variables:' . $langcode, I18N_VARIABLE_CACHE);
-
-  unset($conf[$name]);
-  unset($i18n_conf[$langcode][$name]);
-}
-
-/**
- * Load language variables into array.
- */
-function i18n_variable_load($langcode) {
-  $i18n_conf = &drupal_static('i18n_variable');
-  if (!isset($i18n_conf[$langcode])) {
-    $cacheid = 'variables:' . $langcode;
-    if ($cached = cache_get($cacheid, I18N_VARIABLE_CACHE)) {
-      $i18n_conf[$langcode] = $cached->data;
-    }
-    else {
-      $result = db_select('i18n_variable')
-        ->fields('i18n_variable')
-        ->condition('language', $langcode)
-        ->execute();
-      $i18n_conf[$langcode] = array();
-      foreach ($result as $variable) {
-        if (i18n_variable_list($variable->name)) {
-          $i18n_conf[$langcode][$variable->name] = unserialize($variable->value);
-        }
-      }
-      cache_set($cacheid, $i18n_conf[$langcode], I18N_VARIABLE_CACHE);
-    }
-  }
-  return $i18n_conf[$langcode];
-}
-
-/**
- * Save multilingual variables that may have been changed by other methods than settings pages.
- */
-function _i18n_variable_exit() {
-  global $conf;
-  $i18n_conf = &drupal_static('i18n_variable');
-
-  $langcode = i18n_variable_language()->language;
-  if (isset($i18n_conf[$langcode])) {  
-    $refresh = FALSE;
-    // Rewritten because array_diff_assoc may fail with array variables.
-    foreach (i18n_variable_list() as $name) {
-      if (isset($conf[$name]) && isset($i18n_conf[$langcode][$name]) && $conf[$name] != $i18n_conf[$langcode][$name]) {  
-        $refresh = TRUE;
-        $i18n_conf[$langcode][$name] = $conf[$name];
-        i18n_variable_set($name, $conf[$name], $langcode);
-      }
-    }
-    if ($refresh) {
-      cache_set('variables:' . $langcode, $i18n_conf[$langcode], I18N_VARIABLE_CACHE);
-    }
-  }
+  variable_store_del('language', $langcode, $name);
 }
