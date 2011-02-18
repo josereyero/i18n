@@ -402,12 +402,7 @@ function i18n_node_node_type_update($info) {
     if(!empty($info->old_type) && $info->old_type != $info->type) {
       i18n_string_update_context("node:type:$info->old_type:*", "node:type:$info->type:*");
     }
-    i18n_string_update(array('node', 'type', $info->type), array(
-      'name' => $info->name,
-      'title_label' => $info->title_label, 
-      'description' => $info->description,
-      'help' => $info->help,
-    ));
+    i18n_string_object_update('node_type', $info);
   }
 }
 
@@ -415,10 +410,7 @@ function i18n_node_node_type_update($info) {
  * Implements hook_node_type_delete()
  */
 function i18n_node_node_type_delete($info) {
-  module_invoke('i18n_string', 'remove', 
-    array('node', 'type', $info->type), 
-    array('title_label', 'name', 'description', 'help')
-  );
+  i18n_string_object_remove('node_type', $info);
 }
 
 /**

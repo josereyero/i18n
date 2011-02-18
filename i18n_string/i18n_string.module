@@ -316,16 +316,6 @@ function i18n_string_update_context($oldname, $newname) {
 }
 
 /**
- * Update object properties
- */
-function i18n_string_update_object($type, $object) {
-  $info = i18n_object_info($type);
-  if ($info && !empty($info['string translation'])) {
-    return i18n_string_textgroup($info['string translation']['textgroup'])->update_object($type, $object);
-  }
-}
-
-/**
  * Convert string name into textgroup and string context
  * 
  * @param $name
@@ -483,27 +473,6 @@ function i18n_string_translate($name, $string, $options = array()) {
 }
 
 /**
- * Translate object properties
- * 
- * We clone the object previously so we don't risk translated properties being saved
- */
-function i18n_string_translate_object($type, $object, $options = array()) {
-  // If the object is marked as translation do nothing
-  if (!empty($object->i18n_string)) {
-    return $object;
-  }
-  $info = i18n_object_info($type);
-  if ($info && !empty($info['string translation'])) {
-    $clone = clone $object;
-    $clone->i18n_string = TRUE;
-    return i18n_string_textgroup($info['string translation']['textgroup'])->translate_object($type, $clone, $options);
-  }
-  else {
-    return $object;
-  }
-}
-
-/**
  * Format the resulting translation or the default string applying callbacks
  * 
  * There's a hidden variable, 'i18n_string_debug', that when set to TRUE will display additional info
@@ -632,17 +601,6 @@ function i18n_string_remove($name, $string = NULL, $options = array()) {
 }
 
 /**
- * Remove object strings, because object is deleted
- */
-function i18n_string_remove_object($type, $object, $options = array()) {
-  $info = i18n_object_info($type);
-  if ($info && !empty($info['string translation'])) {
-    $string_info = $info['string translation'];
-    return i18n_string_remove(array($string_info['textgroup'], $string_info['type'], $object->{$info['key']}, '*'), array_keys($string_info['properties']), $options);
-  }  
-}
-
-/**
  * @} End of "ingroup i18napi".
  */
 
@@ -672,5 +630,60 @@ function i18n_string_l10n_client_add($context, $options) {
         l10_client_add_string_to_page($string, $translation, $context->textgroup);
       }
     }
+  }
+}
+
+/**
+ * Translate object properties
+ * 
+ * We clone the object previously so we don't risk translated properties being saved
+ * 
+ * @param $type
+ *   Object type
+ * @param $object
+ *   Object or array
+ */
+function i18n_string_object_translate($type, $object, $options = array()) {
+  // If the object is marked as translation do nothing
+  if (is_object($object) && !empty($object->i18n_string) || is_array($object) && !empty($object['i18n_string'])) {
+    return $object;
+  }
+  $info = i18n_object_info($type);
+  if ($info && !empty($info['string translation'])) {
+    $translate = is_object($object) ? clone $object : (object)$object;
+    $translate->i18n_string = TRUE;
+    $result = i18n_string_textgroup($info['string translation']['textgroup'])->translate_object($type, $translate, $options);
+    return is_array($object) ? (array)$result : $result;
+  }
+  else {
+    return $object;
+  }
+}
+
+/**
+ * Remove object strings, because object is deleted
+ * 
+ * @param $type
+ *   Object type
+ * @param $object
+ *   Object or array
+ */
+function i18n_string_object_remove($type, $object, $options = array()) {
+  $info = i18n_object_info($type);
+  if ($info && !empty($info['string translation'])) {
+    $string_info = $info['string translation'];
+    $object = is_array($object) ? (object)$object : $object;
+    return i18n_string_remove(array($string_info['textgroup'], $string_info['type'], $object->{$info['key']}, '*'), array_keys($string_info['properties']), $options);
+  }  
+}
+
+/**
+ * Update object properties
+ */
+function i18n_string_object_update($type, $object) {
+  $info = i18n_object_info($type);
+  if ($info && !empty($info['string translation'])) {
+    $object = is_array($object) ? (object)$object : $object;
+    return i18n_string_textgroup($info['string translation']['textgroup'])->update_object($type, $object);
   }
 }

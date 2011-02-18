@@ -160,7 +160,7 @@ function i18n_string_refresh_group($group, $delete = FALSE) {
     $result = TRUE;
   }
   // Invoke refresh hook
-  $result = $result && module_invoke_all('i18n_string_refresh', $group);
+  $result = $result || module_invoke_all('i18n_string_refresh', $group);
 
   // Now delete all source strings that were not refreshed (they don't have a row in i18n_strings)
   if ($result && $delete) {

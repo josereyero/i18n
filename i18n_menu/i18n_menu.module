@@ -24,6 +24,37 @@ function i18n_menu_block_view_alter(&$data, $block) {
 }
 
 /**
+ * Implements hook i18n_object_info()
+ */
+function i18n_menu_i18n_object_info() {
+  $info['menu'] = array(
+    'title' => t('Menu'),
+    'key' => 'menu_name',
+    'string translation' => array(
+      'textgroup' => 'menu',
+      'type' => 'menu',
+      'properties' => array(
+        'title' => t('Title'),
+        'description' => t('Description'),
+      ),
+    )
+  );
+  $info['menu_link'] = array(
+    'title' => t('Menu link'),
+    'key' => 'mlid',
+    'string translation' => array(
+      'textgroup' => 'menu',
+      'type' => 'item',
+      'properties' => array(
+        'title' => t('Title'),
+        'description' => t('Description'),
+      ),
+    )
+  );
+  return $info;
+}
+
+/**
  * Implements hook_i18n_string_info()
  */
 function i18n_menu_i18n_string_info() {
@@ -100,17 +131,14 @@ function i18n_menu_menu_insert($menu) {
  * Implements hook_menu_update()
  */
 function i18n_menu_menu_update($menu) {
-  i18n_string_update(array('menu', 'menu', $menu['menu_name']), array(
-    'title' => $menu['title'],
-    'description' => $menu['description'],
-  ));
+  i18n_string_object_update('menu', $menu);
 }
 
 /**
  * Implements hook_menu_insert()
  */
 function i18n_menu_menu_delete($menu) {
-  i18n_string_remove(array('menu', 'menu', $menu['menu_name']), array('title', 'description'));
+  i18n_string_object_remove('menu', $menu);
 }
 
 /**
@@ -142,7 +170,7 @@ function i18n_menu_menu_link_update($link) {
  * Implements hook_menu_insert()
  */
 function i18n_menu_menu_link_delete($link) {
-  i18n_string_remove(array('menu', 'item', $link['mlid']), array('title', 'description'));
+  i18n_string_object_remove('menu_link', $link);
 }
 
 /**

@@ -356,11 +356,11 @@ function i18n_taxonomy_i18n_string_refresh($group) {
   if ($group == 'taxonomy' || $group == 'all') {
     foreach (taxonomy_get_vocabularies() as $vid => $vocabulary) {
       if (empty($vocabulary->language)) {
-        i18n_string_update_object('taxonomy_vocabulary', $vocabulary);
+        i18n_string_object_update('taxonomy_vocabulary', $vocabulary);
       }
       if (i18n_taxonomy_vocabulary_mode($vid) & I18N_MODE_LOCALIZE) {
         foreach (taxonomy_get_tree($vid, 0) as $term) {
-          i18n_string_update_object('taxonomy_term', $term);
+          i18n_string_object_update('taxonomy_term', $term);
         }
       }
     }
@@ -466,7 +466,7 @@ function i18n_taxonomy_taxonomy_term_insert($term) {
  */
 function i18n_taxonomy_taxonomy_term_update($term) {
   if (i18n_taxonomy_vocabulary_mode($term->vid, I18N_MODE_LOCALIZE)) {
-    i18n_string_update_object('taxonomy_term', $term);
+    i18n_string_object_update('taxonomy_term', $term);
   }  
 }
 
@@ -474,7 +474,7 @@ function i18n_taxonomy_taxonomy_term_update($term) {
  * Implements hook_taxonomy_term_delete()
  */
 function i18n_taxonomy_taxonomy_term_delete($term) {
-  i18n_string_remove_object('taxonomy_term', $term);
+  i18n_string_object_remove('taxonomy_term', $term);
 }
 
 /**
@@ -506,7 +506,7 @@ function i18n_taxonomy_taxonomy_vocabulary_udpate($vocabulary) {
   }
   // Update strings, always add translation if no language
   if (!i18n_object_langcode($vocabulary)) {
-    i18n_string_update_object('taxonomy_vocabulary', $vocabulary);
+    i18n_string_object_update('taxonomy_vocabulary', $vocabulary);
   }
 }
 
@@ -514,7 +514,7 @@ function i18n_taxonomy_taxonomy_vocabulary_udpate($vocabulary) {
  * Implements hook_taxonomy_vocabulary_insert()
  */
 function i18n_taxonomy_taxonomy_vocabulary_delete($vocabulary) {
-  i18n_string_remove_object('taxonomy_vocabulary', $vocabulary);
+  i18n_string_object_remove('taxonomy_vocabulary', $vocabulary);
 }
 
 /**
