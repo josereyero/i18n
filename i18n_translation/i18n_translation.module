@@ -88,16 +88,19 @@ function i18n_translation_menu() {
  * Get information about translation sets
  */
 function i18n_translation_set_info($type = NULL) {
-  $info = &drupal_static(__FUNCTION__);
-  if (!$info) {
-    $info = module_invoke_all('i18n_translation_set_info');
-    drupal_alter('i18n_translation_set_info', $info);
-  }
   if ($type) {
-    return isset($info[$type]) ? $info[$type] : array();
+    if ($info = i18n_object_info($type) && !empty($info['translation set'])) {
+      return $info;
+    }
   }
   else {
-    return $info;
+    $list = array();
+    foreach (i18n_object_info() as $type => $info) {
+      if (!empty($info['translation set'])) {
+        $list[$type] = $info;
+      }
+    }
+    return $list;
   }
 }
 
@@ -106,7 +109,7 @@ function i18n_translation_set_info($type = NULL) {
  */
 function i18n_translation_set_build($type, $data = array()) {
   $info = i18n_translation_set_info($type);
-  $class = isset($info['class']) ? $info['class'] : 'i18n_translation_set';
+  $class = isset($info['translation set']['class']) ? $info['translation set']['class'] : 'i18n_translation_set';
   return new $class((array)$data);  
 }
 

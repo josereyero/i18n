@@ -1097,19 +1097,6 @@ function _i18n_taxonomy_filter_terms($term) {
 }
 
 /**
- * Implements hook_i18n_translation_set_info().
- */
-function i18n_taxonomy_i18n_translation_set_info() {
-  return array(
-    'taxonomy_term' => array(
-      'title' => t('Taxonomy terms'),
-      'class' => 'i18n_taxonomy_translation_set',
-      'entity' => 'taxonomy_term',
-    )
-  );
-}
-
-/**
  * Implements hook i18n_object_info()
  */
 function i18n_taxonomy_i18n_object_info() {
