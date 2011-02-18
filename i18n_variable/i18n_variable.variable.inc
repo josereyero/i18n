@@ -8,7 +8,7 @@
  * Implements hook_variable_info()
  */
 function i18n_variable_variable_info($options = array()) {
-  $variables['i18n_variable_conf'] = array(
+  $variables['i18n_language_list'] = array(
     'title' => t('Multilingual variables, main variable names.', array(), $options),
     'type' => 'array',
     'group' => 'i18n',
