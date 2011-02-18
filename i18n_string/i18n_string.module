@@ -302,20 +302,6 @@ function i18n_string_translate_object($context, &$object, $properties = array(),
 }
 
 /**
- * Update / create object properties.
- */
-function i18n_string_update_object($context, $object, $properties = array()) {
-  $context = i18n_string_context($context);
-  foreach ($properties as $property) {
-    $context->property = $property;
-    $context->location = i18n_string_location($context);
-    if (!empty($object->$property)) {
-      i18n_string_update_string($context, $object->$property);
-    }
-  }
-}
-
-/**
  * Update / create translation source for user defined strings.
  *
  * @param $name
@@ -339,6 +325,21 @@ function i18n_string_update($name, $string, $options = array()) {
 }
 
 /**
+ * Update context for strings.
+ *
+ * As some string locations depend on configurable values, the field needs sometimes to be updated
+ * without losing existing translations. I.e:
+ * - profile fields indexed by field name.
+ * - content types indexted by low level content type name.
+ *
+ * Example:
+ *  'profile:field:oldfield:*' -> 'profile:field:newfield:*'
+ */
+function i18n_string_update_context($oldname, $newname) {
+  return i18n_string_default::update_context($oldname, $newname);
+}
+
+/**
  * Convert string name into textgroup and string context
  * 
  * @param $name
@@ -346,6 +347,10 @@ function i18n_string_update($name, $string, $options = array()) {
  * @param $replace
  *   Parameter to replace the placeholder ('*') if we are dealing with multiple strings
  *   Or parameter to append to context if there's no placeholder
+ * 
+ * @return array
+ *   The first element will be the text group name
+ *   The second one will be an array with string name elements, without textgroup
  */
 function i18n_string_context($name, $replace = NULL) {
   $parts = is_array($name) ? $name : explode(':', $name);

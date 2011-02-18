@@ -379,7 +379,7 @@ function i18n_node_node_type_insert($info) {
 function i18n_node_node_type_update($info) {
   if (module_exists('i18n_string')) {
     if(!empty($info->old_type) && $info->old_type != $info->type) {
-      i18n_string_update_context("nodetype:type:$old_type:*", "nodetype:type:$type:*");
+      i18n_string_update_context("node:type:$info->old_type:*", "node:type:$info->type:*");
     }
     i18n_string_update(array('node', 'type', $info->type), array(
       'name' => $info->name,
