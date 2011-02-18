@@ -468,6 +468,29 @@ class i18n_string_default {
       return $i18nstring;
     }
   }
+  
+  /**
+   * Translate object properties
+   */
+  public function translate_object($type, $object, $options = array()) {
+    $info = i18n_object_info($type);
+    $key = $info['key'];
+    $properties = array_keys($info['string translation']['properties']);
+    foreach ($properties as $field) {
+      if (!empty($object->$field)) {
+        $strings[$field] = $object->$field;
+      }
+    }
+    if (!empty($strings)) {
+      $context = array($info['string translation']['type'], $object->$key, '*');
+      $translations = $this->multiple_translate($context, $strings, $options);
+      foreach ($translation as $field => $value) {
+        $object->$field = i18n_string_format($value, $options);
+      }
+    }
+    return $object;
+  }
+
   /**
    * Update / create translation source for user defined strings.
    *
@@ -540,6 +563,22 @@ class i18n_string_default {
         ->execute();
     }
   }
+
+  /**
+   * Update object properties
+   */
+  public function update_object($type, $object, $options = array()) {
+    $info = i18n_object_info($type);
+    $key = $info['key'];
+    foreach ($info['string translation']['properties'] as $field => $property) {
+      if (isset($object->$field)) {
+        $context = array($info['string translation']['type'], $object->$key, $field);
+        $field_options = is_array($property) && !empty($property['format']) ? array('format' => $object->{$property['format']}) : array();
+        $this->update($context, $object->$field, $field_options + $options);
+      }
+    }
+  }
+
   /**
    * Update context for strings.
    *

@@ -316,6 +316,16 @@ function i18n_string_update_context($oldname, $newname) {
 }
 
 /**
+ * Update object properties
+ */
+function i18n_string_update_object($type, $object) {
+  $info = i18n_object_info($type);
+  if ($info && !empty($info['string translation'])) {
+    return i18n_string_textgroup($info['string translation']['textgroup'])->update_object($type, $object);
+  }
+}
+
+/**
  * Convert string name into textgroup and string context
  * 
  * @param $name
@@ -473,6 +483,27 @@ function i18n_string_translate($name, $string, $options = array()) {
 }
 
 /**
+ * Translate object properties
+ * 
+ * We clone the object previously so we don't risk translated properties being saved
+ */
+function i18n_string_translate_object($type, $object, $options = array()) {
+  // If the object is marked as translation do nothing
+  if (!empty($object->i18n_string)) {
+    return $object;
+  }
+  $info = i18n_object_info($type);
+  if ($info && !empty($info['string translation'])) {
+    $clone = clone $object;
+    $clone->i18n_string = TRUE;
+    return i18n_string_textgroup($info['string translation']['textgroup'])->translate_object($type, $clone, $options);
+  }
+  else {
+    return $object;
+  }
+}
+
+/**
  * Format the resulting translation or the default string applying callbacks
  * 
  * There's a hidden variable, 'i18n_string_debug', that when set to TRUE will display additional info
@@ -600,7 +631,16 @@ function i18n_string_remove($name, $string = NULL, $options = array()) {
   }
 }
 
-
+/**
+ * Remove object strings, because object is deleted
+ */
+function i18n_string_remove_object($type, $object, $options = array()) {
+  $info = i18n_object_info($type);
+  if ($info && !empty($info['string translation'])) {
+    $string_info = $info['string translation'];
+    return i18n_string_remove(array($string_info['textgroup'], $string_info['type'], $object->{$info['key']}, '*'), array_keys($string_info['properties']), $options);
+  }  
+}
 
 /**
  * @} End of "ingroup i18napi".

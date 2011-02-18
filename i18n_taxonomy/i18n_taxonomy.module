@@ -356,17 +356,11 @@ function i18n_taxonomy_i18n_string_refresh($group) {
   if ($group == 'taxonomy' || $group == 'all') {
     foreach (taxonomy_get_vocabularies() as $vid => $vocabulary) {
       if (empty($vocabulary->language)) {
-        i18n_string_update("taxonomy:vocabulary:$vid:name", $vocabulary->name);
-        if (!empty($vocabulary->help)) {
-          i18n_string_update("taxonomy:vocabulary:$vid:description", $vocabulary->help);
-        }
+        i18n_string_update_object('taxonomy_vocabulary', $vocabulary);
       }
       if (i18n_taxonomy_vocabulary_mode($vid) & I18N_MODE_LOCALIZE) {
         foreach (taxonomy_get_tree($vid, 0) as $term) {
-          i18n_string_update("taxonomy:term:$term->tid:name", $term->name);
-          if ($term->description) {
-            i18n_string_update("taxonomy:term:$term->tid:description", $term->description);
-          }
+          i18n_string_update_object('taxonomy_term', $term);
         }
       }
     }
@@ -472,11 +466,7 @@ function i18n_taxonomy_taxonomy_term_insert($term) {
  */
 function i18n_taxonomy_taxonomy_term_update($term) {
   if (i18n_taxonomy_vocabulary_mode($term->vid, I18N_MODE_LOCALIZE)) {
-    i18n_string_update(array('taxonomy', 'term', $term->tid, 'name'), $term->name);
-    // Sometimes, like when tagging content we have no description.
-    if (isset($term->description)) {
-      i18n_string_update(array('taxonomy', 'term', $term->tid, 'description'), $term->description, array('format' => $term->format));
-    }
+    i18n_string_update_object('taxonomy_term', $term);
   }  
 }
 
@@ -484,7 +474,7 @@ function i18n_taxonomy_taxonomy_term_update($term) {
  * Implements hook_taxonomy_term_delete()
  */
 function i18n_taxonomy_taxonomy_term_delete($term) {
-  i18n_string_remove(array('taxonomy', 'term', $term->tid), array('name', 'description'));
+  i18n_string_remove_object('taxonomy_term', $term);
 }
 
 /**
@@ -516,10 +506,7 @@ function i18n_taxonomy_taxonomy_vocabulary_udpate($vocabulary) {
   }
   // Update strings, always add translation if no language
   if (!i18n_object_langcode($vocabulary)) {
-    i18n_string_update(array('taxonomy', 'vocabulary', $vocabulary->vid), array(
-      'name' => $vocabulary->name,
-      'description' => $vocabulary->description
-    ));
+    i18n_string_update_object('taxonomy_vocabulary', $vocabulary);
   }
 }
 
@@ -527,7 +514,7 @@ function i18n_taxonomy_taxonomy_vocabulary_udpate($vocabulary) {
  * Implements hook_taxonomy_vocabulary_insert()
  */
 function i18n_taxonomy_taxonomy_vocabulary_delete($vocabulary) {
-  i18n_string_remove(array('taxonomy', 'vocabulary', $vocabulary->vid), array('name', 'description'));
+  i18n_string_remove_object('taxonomy_vocabulary', $vocabulary);
 }
 
 /**
@@ -1120,6 +1107,47 @@ function i18n_taxonomy_i18n_translation_set_info() {
       'entity' => 'taxonomy_term',
     )
   );
+}
+
+/**
+ * Implements hook i18n_object_info()
+ */
+function i18n_taxonomy_i18n_object_info() {
+  $info['taxonomy_term'] = array(
+    'title' => t('Taxonomy term'),
+    'entity' => 'taxonomy_term',
+    'key' => 'tid',
+    'translation set' => array(
+      'class' => 'i18n_taxonomy_translation_set',
+      'table' => 'taxonomy_term_data',
+      'field' => 'i18n_tsid',
+    ),
+    'string translation' => array(
+      'textgroup' => 'taxonomy',
+      'type' => 'term',
+      'properties' => array(
+        'name' => t('Name'),
+        'description' => array(
+          'title' => t('Description'),
+          'format' => 'format',
+        ),
+      ),
+    )
+  );
+  $info['taxonomy_vocabulary'] = array(
+    'title' => t('Vocabulary'),
+    'entity' => 'taxonomy_vocabulary',
+    'key' => 'vid',
+    'string translation' => array(
+      'textgroup' => 'taxonomy',
+      'type' => 'vocabulary',
+      'properties' => array(
+        'name' => t('Name'),
+        'description' => t('Description'),
+      ),
+    )
+  );
+  return $info;
 }
 
 /**
