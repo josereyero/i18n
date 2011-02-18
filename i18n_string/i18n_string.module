@@ -278,30 +278,6 @@ function i18n_string_translate_langcode($langcode, $reset = FALSE) {
 }
 
 /**
- * Translate object properties.
- * 
- * @param $options
- *   An associative array of additional options
- */
-function i18n_string_translate_object($context, &$object, $properties = array(), $options = array()) {
-  global $language;
-
-  $langcode = $langcode ? $langcode : $language->language;
-  // If language is default, just return.
-  if (i18n_string_translate_langcode($langcode)) {
-    $context = i18n_string_context($context);
-    // @ TODO Object prefetch
-    foreach ($properties as $property) {
-      $context->property = $property;
-      $context->location = i18n_string_location($context);
-      if (!empty($object->$property)) {
-        $object->$property = i18n_string_translate_string($context, $object->$property, $langcode);
-      }
-    }
-  }
-}
-
-/**
  * Update / create translation source for user defined strings.
  *
  * @param $name
