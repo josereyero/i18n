@@ -182,7 +182,7 @@ function i18n_block_form_block_admin_configure_alter(&$form, &$form_state, $form
   $form['i18n_block']['languages']['i18n_mode'] = array(
     '#type' => 'checkbox',
     '#title' => $form['module']['#value'] == 'block' ? t("Make this block's title and content translatable.") : t("Make this block's title translatable."),
-    '#default_value' => (int) @$block->i18n_mode,
+    '#default_value' => isset($block->i18n_mode) ? $block->i18n_mode : 0,
     '#access' => module_exists('i18n_string'),
   );
 

@@ -153,4 +153,8 @@ function i18n_string_update_7000() {
  * Profile:
  * profile:field:$field_name:title|explanation|options
  * "profile:category", $field->category
+ * 
+ * Node type
+ *  nodetype:type:[type]:[property] -> node:type:[type]:[property]
+ *  Property names: title -> title_label
  */

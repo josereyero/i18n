@@ -396,7 +396,7 @@ function i18n_node_node_type_update($info) {
 function i18n_node_node_type_delete($info) {
   module_invoke('i18n_string', 'remove', 
     array('node', 'type', $info->type), 
-    array('title', 'name', 'description', 'help')
+    array('title_label', 'name', 'description', 'help')
   );
 }
 
@@ -569,7 +569,7 @@ function _i18n_node_form_node_form_alter($form, $form_state) {
   // Translate field names for title and body for the node edit form.
   $type = $form['#node']->type;
   if (!empty($form['title']['#title'])) {
-    $form['title']['#title'] = i18n_node_translate_type($type, 'title', $form['title']['#title']);
+    $form['title']['#title'] = i18n_node_translate_type($type, 'title_label', $form['title']['#title']);
   }
   if (!empty($form['body_field']['body']['#title'])) {
     $form['body_field']['body']['#title'] = i18n_node_translate_type($type, 'body', $form['body_field']['body']['#title']);
