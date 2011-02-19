@@ -1,5 +1,5 @@
 <?php
-// $Id: i18n.module,v 1.41.2.49.2.1 2010/09/14 11:30:30 jareyero Exp $
+// $Id: i18n_path.inc,v 1.1.2.1 2011/02/19 17:50:42 jareyero Exp $
 /**
  * @file
  * Internationalization (i18n) module - Translation set
