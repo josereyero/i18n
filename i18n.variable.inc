@@ -33,6 +33,25 @@ function i18n_variable_info($options = array()) {
 }
 
 /**
+ * Implements hook_variable_type_info()
+ */
+function i18n_variable_type_info() {
+  // Multiple variable per language options
+  $types['multiple_language'] = array(
+    'title' => t('Multiple'),
+    'element' => array('#type' => 'fieldset'),
+    'build callback' => 'variable_build_multiple',
+    'format callback' => 'variable_format_multiple',
+    'element callback' => 'variable_form_element_multiple',
+    'value callback' => 'variable_multiple_get_value',
+    'default callback' => 'variable_multiple_get_default',
+    'multiple callback' => 'i18n_variable_multiple_language_options',
+    'language list' => I18N_LANGUAGE_EXTENDED,
+  );
+  return $types;
+}
+
+/**
  * Options for content languages
  */
 function i18n_variable_option_list($variable, $options = array()) {
@@ -40,4 +59,13 @@ function i18n_variable_option_list($variable, $options = array()) {
     I18N_LANGUAGE_ENABLED => t('Enabled languages only.', array(), $options),
     I18N_LANGUAGE_EXTENDED => t('All defined languages will be allowed.', array(), $options),
   );
+}
+
+
+
+/**
+ * Callback for multiple per-language variables
+ */
+function i18n_variable_multiple_language_options($variable, $options = array()) {
+  return i18n_language_list('name', $variable['language list']);
 }

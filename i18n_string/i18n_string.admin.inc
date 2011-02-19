@@ -123,16 +123,6 @@ function i18n_string_admin_settings() {
     '#default_value' => i18n_string_allowed_formats(),
     '#description' => t('Only the strings that have the text formats selected will be allowed by the translation system. All the others will be deleted next time the strings are refreshed.'),
   );
-  // Whitelist text groups without formatted strings for backwards compatibility
-  $textgroups = module_invoke_all('locale', 'groups');
-  unset($textgroups['default']);
-  foreach (array_keys($textgroups) as $group) {
-    $format = i18n_string_group_info($group, 'format');
-    if (isset($format)) {
-      // This one already has format information, so remove from list
-      unset($textgroups[$group]);
-    }
-  }
   $form['array_filter'] = array('#type' => 'value', '#value' => TRUE);
   return system_settings_form($form);
 }

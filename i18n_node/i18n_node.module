@@ -87,9 +87,8 @@ function i18n_node_menu() {
     'title' => 'Node options',
     'description' => 'Configure extended options for multilingual content and translations.',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('i18n_node_admin_settings'),
+    'page arguments' => array('variable_module_form', 'i18n_node'),
     'access arguments' => array('administer site configuration'),
-    'file' => 'i18n_node.admin.inc',
     'type' => MENU_LOCAL_TASK,
     'weight' => 10,
   );
