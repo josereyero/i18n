@@ -366,16 +366,17 @@ function i18n_node_node_view_alter(&$build) {
   $language_support = i18n_node_language_mode($node);
   
   // Hide node translation links.
-  if (variable_get('i18n_hide_translation_links', 0) == 1) {
+  if (variable_get('i18n_hide_translation_links', 0)) {
     unset($build['links']['translation']);
   }
-  //dpm($build);
-  if (!empty($node->tnid)) {
+  elseif (!empty($node->tnid) && !empty($build['links']['translation'])) {
+    // Set the right languages depending on language mode (extended)
     $links = $build['links']['translation']['#links'];
     foreach (i18n_node_language_list($node) as $langcode => $langname) {
       $index = 'translation_'. $langcode;
-      if (!empty($links[$index])) {
+      if ($langcode != $node->language && !empty($links[$index])) {
         if (!($language_support & I18N_LANGUAGE_EXTENDED) && $links[$index]['language']->enabled == 0) {
+          // Remove disabled language if not language extended
           unset($build['links']['translation']['#links'][$index]);
         }
         else {
