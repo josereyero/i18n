@@ -206,7 +206,8 @@ function i18n_select_check_query($query, $table_alias, $field_name = 'language')
     $fields = $query->getFields();
     $table_field = $table_alias . '.' . $field_name;
     foreach ($query->conditions() as $condition) {
-      if (is_array($condition) && isset($condition['field']) && ($condition['field'] == $field_name || $condition['field'] == $table_field)) {
+      // @todo Research under which conditions field is not string, see http://drupal.org/node/1062054
+      if (is_array($condition) && isset($condition['field']) && is_string($condition['field']) && ($condition['field'] == $field_name || $condition['field'] == $table_field)) {
         return FALSE;
       }
     }
