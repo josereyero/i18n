@@ -16,7 +16,7 @@ function i18n_translation_admin_overview() {
 /**
  * Admin form
  */
-function i18n_translation_admin_form($form, &$form_state, $type = NULL) {
+function i18n_translation_admin_form($form, &$form_state, $type = NULL, $tsids = NULL) {
     // Build the sortable table header.
   $header['title'] = array('data' => t('Title'), 'field' => 't.title');
   if (!$type) {
@@ -29,6 +29,9 @@ function i18n_translation_admin_form($form, &$form_state, $type = NULL) {
   $query = db_select('i18n_translation_set', 't')->extend('PagerDefault')->extend('TableSort');
   if ($type) {
     $query->condition('t.type', $type);
+  }
+  if ($tsids) {
+    $query->condition('t.tsid', $tsids);
   }
   $tsids = $query
     ->fields('t',array('tsid'))

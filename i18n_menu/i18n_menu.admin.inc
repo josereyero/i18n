@@ -10,20 +10,19 @@
  * Generate a tabular listing of translations for vocabularies.
  */
 function i18n_menu_translation_overview($menu) {
-  drupal_set_title(check_plain($menu['menu_name']));
-  $output = '';
-
-  if ($rows) {
-    $build['translations'] = array(
-      '#theme' => 'table',
-      '#header' => $header,
-      '#rows' => $rows
-    );
+  // Get translation sets with elements in this menu
+  $query =db_select('i18n_translation_set', 's')
+    ->distinct()
+    ->fields('s', array('tsid'))
+    ->condition('s.type', 'menu_link');
+  $query->join('menu_links', 'ml', 's.tsid = ml.i18n_tsid');
+  $query->condition('ml.menu_name', $menu['menu_name']);
+  if ($tsids = $query->execute()->fetchColumn()) {
+    return drupal_get_form('i18n_translation_set_overview', 'menu_link', $tsids);
   }
   else {
-    $build['message']['#markup'] = t('No translations defined for this menu.');
+    return t('No translations for this menu items.');
   }
-  return $build;
 }
 
 /**
