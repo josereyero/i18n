@@ -5,11 +5,17 @@
  * Internationalization (i18n) module - Translation set
  */
 class i18n_menu_link_translation_set extends i18n_translation_set {
-    /**
+  /**
    * Get title from item
    */
   protected function item_title($item) {
     return $item['title'];
+  }
+  /**
+   * Get link for item
+   */
+  protected function item_path($item) {
+    return $item['link_path'];
   }
   /**
    * Load all path translations

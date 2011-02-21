@@ -34,4 +34,16 @@ class i18n_path_translation_set extends i18n_translation_set {
       $this->translations[$lang] = $path;
     }
   }
+  /**
+   * Get title from item
+   */
+  protected function item_title($item) {
+    return $item['path'];
+  }
+  /**
+   * Get link for item
+   */
+  protected function item_path($item) {
+    return check_url($item['path']);
+  }
 }

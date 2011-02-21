@@ -282,15 +282,8 @@ function i18n_context_language() {
  *   What value to return if the object doesn't have a valid language
  */
 function i18n_object_langcode($object, $default = FALSE, $field = 'language') {
-  if (is_object($object)) {
-    return !empty($object->$field) && $object->$field != LANGUAGE_NONE ? $object->$field : $default;
-  }
-  elseif (is_array($object)) {
-    return !empty($object[$field]) && $object[$field] != LANGUAGE_NONE ? $object[$field] : $default;
-  }
-  else {
-    return $object && $object != LANGUAGE_NONE ? $object : $default;
-  }
+  $value = i18n_object_field($object, $field, $default);
+  return $value && $value != LANGUAGE_NONE ? $value : $default;
 }
 
 /**
@@ -307,5 +300,20 @@ function i18n_object_info($type = NULL) {
   }
   else {
     return $info;
+  }
+}
+
+/**
+ * Get field value from object/array
+ */
+function i18n_object_field($object, $field, $default = NULL) {
+  if (is_object($object)) {
+    return isset($object->$field) ? $object->$field : $default;
+  }
+  elseif (is_array($object)) {
+    return isset($object[$field]) ? $object[$field] : $default;
+  }
+  else {
+    return $default;
   }
 }

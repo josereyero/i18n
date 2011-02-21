@@ -145,7 +145,7 @@ class i18n_translation_set {
   public function get_translations_keys() {
     $keys = array();
     foreach ($this->get_translations() as $lang => $item) {
-      if ($id = $this->item_field($item)) {
+      if ($id = i18n_object_field($item, $this->key_field())) {
         $keys[$lang] = $id;
       }
     }
@@ -197,16 +197,27 @@ class i18n_translation_set {
     return entity_label($this->type, $item);
   }
   /**
-   * Get field from item
+   * Get link for item
    */
-  protected function item_field($item, $field = NULL) {
-    $field = $field ? $field : $this->key_field();
-    if (is_object($item)) {
-      return isset($item->$field) ? $item->$field : NULL;
+  protected function item_path($item) {
+    return entity_uri($this->type, $item);
+  }
+  /**
+   * Get item list
+   */
+  public function item_list() {
+    $items = array();
+    foreach ($this->get_translations() as $langcode => $item) {
+      $title = $this->item_title($item);
+      $path = $this->item_path($item);
+      if ($title && $path) {
+        $items[$langcode] = l($title, $path);
+      }
+      elseif ($title) {
+        $items[$langcode] = check_plain($title);
+      }
     }
-    elseif (is_array($item)) {
-      return isset($item[$field]) ? $item[$field] : NULL;
-    }
+    return $items;
   }
   /**
    * Add translations

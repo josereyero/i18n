@@ -10,7 +10,7 @@
  * Overview page
  */
 function i18n_translation_admin_overview() {
-  return 'Not implemented';
+
 }
 
 /**
@@ -46,6 +46,7 @@ function i18n_translation_admin_form($form, &$form_state, $type = NULL) {
       'type' => isset($info['title']) ? $info['title'] : t('Unknown'),
       'created' => format_date($set->created, 'short'),
       'changed' => format_date($set->changed, 'short'),
+      'operations' => '',
     );
     // Build a list of all the accessible operations for the current set.
     $operations = array();

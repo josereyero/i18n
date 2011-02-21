@@ -71,7 +71,8 @@ function i18n_translation_menu() {
   $items['admin/config/regional/i18n_translation'] = array(
     'title' => 'Translation sets',
     'description' => 'Translation sets overview.',
-    'page callback' => 'i18n_translation_admin_overview',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('i18n_translation_set_overview'),
     'access arguments' => array('administer site configuration'),
     'file' => 'i18n_translation.admin.inc',
     'weight' => 10,
@@ -94,6 +95,50 @@ function i18n_translation_options() {
     I18N_MODE_TRANSLATE => t('Translate. Different items will be allowed for each language and they can be translated.'),
     I18N_MODE_LANGUAGE => t('Language. Items will have a global language and they will only show up for pages in that language.'),
   );  
+}
+
+/**
+ * Build translation fieldset for object
+ */
+function i18n_translation_set_element($type, $object) {
+  $element = array(
+    '#type' => 'item',
+    '#title' => t('Translations'),
+  );
+  if ($set = i18n_translation_object($type, $object)) {
+    $element['#markup'] = i18n_translation_format_items($set->item_list());
+  }
+  else {
+    $element['#markup'] = t('No translations');
+  }
+  return $element;
+}
+
+/**
+ * Format translation set info as table
+ */
+function i18n_translation_format_items($translations) {
+  foreach ($translations as $langcode => $item) {
+    $rows[] = array(i18n_language_name($langcode), $item);
+  }
+  return !empty($rows) ? theme('table', array('rows' => $rows)) : '';
+}
+
+/**
+ * Get translation set for object
+ */
+function i18n_translation_object($type, $object, $create = FALSE) {
+  $info = i18n_translation_set_info($type);
+  if ($tsid = i18n_object_field($object, $info['translation set']['field'])) {
+    return i18n_translation_set_load($tsid, $type);
+  }
+  elseif ($create) {
+    $set = i18n_translation_set_build($type);
+    if ($langcode = i18n_object_langcode($object)) {
+      $set->add_item($object, $langcode);
+    }
+    return $set;
+  }
 }
 
 /**

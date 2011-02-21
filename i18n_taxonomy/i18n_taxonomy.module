@@ -851,7 +851,7 @@ function i18n_taxonomy_localize_terms($terms, $fields = array('name')) {
 function i18n_taxonomy_vocabulary_mode($vid, $mode = NULL) {
   $modes = &drupal_static(__FUNCTION__);
   if (is_object($vid)) {
-    $vid_mode = isset($vid->i18n_mode) ? $vid->i18n_mode : I18N_MODE_NONE;
+    $vid_mode = i18n_object_field($vid, 'i18n_mode', I18N_MODE_NONE);
     return isset($mode) ? $mode & $vid_mode : $vid_mode;
   }
   else {
