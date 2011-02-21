@@ -10,6 +10,61 @@
  */
 
 /**
+ * Implements hook_menu()
+ */
+function i18n_menu_menu() {
+  $items['admin/structure/menu/manage/%menu/translation'] = array(
+    'title' => 'Translation',
+    'page callback' => 'i18n_menu_translation_overview',
+    'page arguments' => array(4),
+    'access callback' => 'i18n_menu_translation_menu_access',
+    'access arguments' => array(4),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'i18n_menu.admin.inc',
+  );
+  $items['admin/structure/menu/manage/%menu/translation/add'] = array(
+    'title' => 'Translation',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('i18n_menu_translation_form', 4, NULL, NULL),
+    'access callback' => 'i18n_menu_translation_menu_access',
+    'access arguments' => array(4),
+    'type' => MENU_LOCAL_ACTION,
+    'file' => 'i18n_menu.admin.inc',
+  );
+  $items['admin/structure/menu/translation/%i18n_menu_translation'] = array(
+    'title' => 'Translation',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('i18n_menu_translation_form', NULL, NULL, 4),
+    'access arguments' => array('administer menu'),
+    'type' => MENU_CALLBACK,
+    'file' => 'i18n_menu.admin.inc',
+  );
+  $items['admin/structure/menu/item/%menu_link/translate'] = array(
+    'title' => 'Translate menu link',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('i18n_menu_translation_form', 4, NULL),
+    'access callback' => 'i18n_menu_translation_item_access',
+    'access arguments' => array(4),
+    'file' => 'i18n_menu.admin.inc',
+  );  
+  
+  return $items;
+}
+
+/**
+ * Menu access callback 
+ */
+function i18n_menu_translation_menu_access($menu) {
+  return user_access('administer menu') && $menu['i18n_mode'] & I18N_MODE_TRANSLATE;
+}
+/**
+ * Menu access callback 
+ */
+function i18n_menu_translation_item_access($item) {
+  return user_access('administer menu') && i18n_object_langcode($item);
+}
+
+/**
  * Implements hook_block_view()
  */
 function i18n_menu_block_view_alter(&$data, $block) {
@@ -49,7 +104,14 @@ function i18n_menu_i18n_object_info() {
         'title' => t('Title'),
         'description' => t('Description'),
       ),
-    )
+    ),
+    'translation set' => array(
+      'class' => 'i18n_menu_link_translation_set',
+      'table' => 'menu_links',
+      'field' => 'i18n_tsid',
+      'parent' => 'menu',
+      'edit path' => 'admin/structure/menu/translation',
+    ),
   );
   return $info;
 }
@@ -131,7 +193,27 @@ function i18n_menu_menu_insert($menu) {
  * Implements hook_menu_update()
  */
 function i18n_menu_menu_update($menu) {
-  i18n_string_object_update('menu', $menu);
+  db_update('menu_custom')
+    ->fields(array('language' => $menu['language'], 'i18n_mode' => $menu['i18n_mode']))
+    ->condition('menu_name', $menu['menu_name'])
+    ->execute();
+  if (!$menu['i18n_mode']) {
+    $update['language'] = LANGUAGE_NONE;
+  }
+  elseif ($menu['i18n_mode'] & I18N_MODE_LANGUAGE) {
+    $update['language'] = $menu['language'];
+  }
+  if (!empty($update)) {
+    db_update('menu_links')
+      ->fields(array('language' => $menu['language']))
+      ->condition('menu_name', $menu['menu_name'])
+      ->condition('customized', 1)
+      ->execute();    
+  }
+  // Update strings, always add translation if no language
+  if (!i18n_object_langcode($menu)) {
+    i18n_string_object_update('menu', $menu);
+  }
 }
 
 /**
@@ -171,6 +253,19 @@ function i18n_menu_menu_link_update($link) {
  */
 function i18n_menu_menu_link_delete($link) {
   i18n_string_object_remove('menu_link', $link);
+}
+
+/**
+ * Get menu mode or compare with given one
+ */
+function i18n_menu_mode($name, $mode = NULL) {
+  $menu = menu_load($name);
+  if (isset($mode)) {
+    return $menu ? $menu['i18n_mode'] & $mode : FALSE;
+  }
+  else {
+    return $menu ? $menu['i18n_mode'] : I18N_MODE_NONE;
+  }
 }
 
 /**
@@ -392,29 +487,56 @@ function i18n_menu_get_router($path, $reset = FALSE) {
 }
 
 /**
- * Implements hook_form_form_id_alter().
+ * Implements hook_form_FORM_ID_alter().
+ */
+function i18n_menu_form_menu_edit_menu_alter(&$form, &$form_state) {
+  $menu = menu_load($form['old_name']['#value']);
+  $i18n_mode = $menu && isset($menu['i18n_mode']) ? $menu['i18n_mode'] : I18N_MODE_NONE;
+  $form['i18n'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Multilingual options'),
+    '#collapsible' => TRUE,
+    '#weight' => 10,
+  );
+  $form['i18n']['i18n_mode'] = array(
+    '#type' => 'radios',
+    '#title' => t('Translation mode'),
+    '#options' => i18n_translation_options(),
+    '#default_value' => $i18n_mode,
+    '#description' => t('For localizable menus, to have all items available for translation visit the <a href="@locale-refresh">translation refresh</a> page.', array('@locale-refresh' => url('admin/build/translate/refresh'))),
+  );
+  $form['i18n']['language'] = array(
+    '#default_value' => $menu && isset($menu['language']) ? $menu['language'] : LANGUAGE_NONE,
+    '#description' => t('Language for this menu. If set, it will apply to all items in this menu.'),
+    '#disabled' => !($i18n_mode & I18N_MODE_LANGUAGE),
+  ) + i18n_element_language_select();  
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
  *
  * Add a language selector to the menu_edit_item form and register a submit
  * callback to process items.
  */
 function i18n_menu_form_menu_edit_item_alter(&$form, &$form_state) {
-  /*
-  if (!empty($form) && isset($form['options']['langcode'])) {
-    $language = $form['options']['langcode'];
-  }
-  else {
-    $language = '';
-  }
-  */
   $item = &$form['original_item']['#value'];
   $item['language'] = i18n_menu_item_get_language($item);
-  $form['language'] = array(
-    '#type' => 'select',
-    '#title' => t('Language'),
-    '#description' => t('Select a language for this menu item. Choose "All languages" to make the menu item translatable into different languages.'),
-    '#options' => array('' => t('All languages')) + i18n_language_list(),
-    '#default_value' => $item['language'],
-  );
+
+  if (i18n_menu_mode($item['menu_name'], I18N_MODE_TRANSLATE)) {
+    $form['language'] = array(
+      '#description' => t('This item belongs to a multilingual menu. You can set a language for it.'),
+    ) + i18n_element_language_select($item);
+  }
+  else {
+    $form['language'] = array(
+      '#type' => 'value',
+      '#value' => $menu['language'],
+    );
+  }
+  if (i18n_menu_mode($item['menu_name'], I18N_MODE_LOCALIZE)) {
+      i18n_string_element_mark($form['title']);
+      i18n_string_element_mark($form['description']);
+  }
   array_unshift($form['#validate'], 'i18n_menu_menu_item_prepare_normal_path');
 }
 
@@ -438,15 +560,26 @@ function i18n_menu_item_get_language($item) {
   if (isset($item['language'])) {
     return $item['language'];
   }
-  elseif (!empty($item['mlid'])) {
-    return db_select('menu_links', 'm')
-      ->fields('m', array('language'))
-      ->condition('mlid', $item['mlid'])
-      ->execute()
-      ->fetchField();
-  }
   else {
-    return '';
+    $menu = menu_load($item['menu_name']);
+    switch ($menu['i18n_mode']) {
+      case I18N_MODE_LANGUAGE:
+        return $menu['language'];
+      case I18N_MODE_NONE:
+      case I18N_MODE_LOCALIZE:
+        return LANGUAGE_NONE;
+      default:
+        if (!empty($item['mlid'])) {
+          return db_select('menu_links', 'm')
+            ->fields('m', array('language'))
+            ->condition('mlid', $item['mlid'])
+            ->execute()
+            ->fetchField();
+        }
+        else {
+          return LANGUAGE_NONE;
+        }
+    }
   }
 }
 
@@ -503,3 +636,9 @@ function i18n_menu_edit_item_form_submit($form, &$form_state) {
   return 'admin/build/menu';
 }
 */
+/**
+ * Load translation set. Menu loading callback.
+ */
+function i18n_menu_translation_load($tsid) {
+  return i18n_translation_set_load($tsid, 'menu_link');
+}

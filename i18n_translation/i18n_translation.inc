@@ -82,22 +82,55 @@ class i18n_translation_set {
   }
 
   /**
-   * Clean all terms in this translation set
+   * Clean all items in this translation set
+   * 
+   * Unlink other items (not current translations from this translation set)
    */
   public function clean_translations() {
+    list($table, $field) = $this->table_field();
+    if ($table && $field) {
+      $query = db_update($table)
+        ->fields(array($field => 0))
+        ->condition($table . '.' . $field, $this->tsid);
+      if ($translations = $this->get_translations()) {  
+        $query->condition('language', array_keys($translations), 'NOT IN');
+      }
+      return $query->execute();
+    }
   }
   /**
    * Save translations in this translation set
    */
   public function save_translations() {
+    list($table, $field) = $this->table_field();
+    if ($table && $field) {
+      if ($keys = $this->get_translations_keys()) {
+        return db_update($table)
+          ->fields(array($field => $this->tsid))
+          ->condition($this->key_field(), $keys)
+          ->execute();
+      }
+      else {
+        return $this->delete_translations();
+      }
+    }
   }
   /**
-   * Delete translations
+   * Delete translations in this translation set
+   * 
+   * It won't delete objects, just unlink them from translation set
    */
   public function delete_translations() {
+    list($table, $field) = $this->table_field();
+    if ($table && $field) {
+      return db_update($table)
+        ->fields(array($field => 0))
+        ->condition($field, $this->tsid)
+        ->execute();
+    }
   }
   /**
-   * Get translations
+   * Get translations, indexed by language
    */
   public function get_translations() {
     if (!isset($this->translations)) {
@@ -106,17 +139,87 @@ class i18n_translation_set {
     return $this->translations;
   }
   /**
+   * Get translations keys, indexed by language
+   */
+  public function get_translations_keys() {
+    $field = $this->key_field();
+    $keys = array();
+    foreach ($this->get_translations() as $lang => $item) {
+      if (is_object($item)) {
+        $keys[$lang] = !empty($item->$field) ? $item->$field : NULL;
+      }
+      elseif (is_array($item)) {
+        $keys[$lang] = !empty($item[$field]) ? $item[$field] : NULL;
+      }
+    }
+    return array_filter($keys);
+  }
+  /**
    * Add translations
    */
   public function add_translations($translations) {
-    foreach ($translations as $object) {
-      $this->translations[$object->language] = $object;
+    array_map(array($this, 'add_item'), $translations);
+  }
+  /**
+   * Add translation item
+   */
+  public function add_item($item, $langcode = NULL) {
+    $item = $this->check_item($item);
+    $langcode = $langcode ? $langcode : i18n_object_langcode($item);
+    if ($item && $langcode) {
+      $this->translations[$langcode] = $item;
+      return TRUE;
+    }
+    else {
+      return FALSE;
     }
   }
   /**
-   * Load all translations
+   * Check item has translation set property
+   */
+  public function check_item($item) {
+    list($table, $field) = $this->table_field();
+    if (is_object($item)) {
+      $item->$field = $this->tsid;
+    }
+    elseif (is_array($item)) {
+      $item[$field] = $this->tsid;
+    }
+    return $item;
+  }
+  /**
+   * Load all translations as objects indexed by language
    */
   public function load_translations() {
-    return array();
+    list($table, $field) = $this->table_field();
+    if ($table && $field) {
+      return db_select($table)
+        ->fields($table)
+        ->condition($table . '.' . $field, $this->tsid)
+        ->execute()
+        ->fetchAllAssoc('language');
+    }
+    else {
+      return array();
+    }
+  }
+
+  /**
+   * Get table / field for this translation type
+   */
+  protected function table_field() {
+    $table = $field = NULL;
+    if ($info = i18n_translation_set_info($this->type)) {
+      $table = isset($info['translation set']['table']) ? $info['translation set']['table'] : NULL;
+      $field = isset($info['translation set']['field']) ? $info['translation set']['field'] : NULL;
+    }
+    return array($table, $field);
+  }
+  /**
+   * Get key field for this translation items
+   */
+  protected function key_field() {
+    $info = i18n_object_info($this->type);
+    return $info['key'];    
   }
 }

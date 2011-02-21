@@ -7,3 +7,5 @@ dependencies[] = i18n_block
 dependencies[] = i18n_string
 package = Multilanguage
 core = 7.x
+
+files[] = i18n_menu.inc

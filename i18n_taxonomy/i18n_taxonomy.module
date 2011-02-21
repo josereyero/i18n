@@ -559,13 +559,9 @@ function i18n_taxonomy_form_taxonomy_form_vocabulary_alter(&$form, &$form_state)
     '#description' => t('For localizable vocabularies, to have all terms available for translation visit the <a href="@locale-refresh">translation refresh</a> page.', array('@locale-refresh' => url('admin/build/translate/refresh'))),
   );
   $form['i18n']['language'] = array(
-    '#type' => 'select',
-    '#title' => t('Language'),
-    '#default_value' => !empty($vocabulary->language) ? $vocabulary->language : LANGUAGE_NONE,
-    '#options' => array(LANGUAGE_NONE => '') + i18n_language_list(),
     '#description' => t('Language for this vocabulary. If set, it will apply to all terms in this vocabulary.'),
     '#disabled' => $vocabulary && !i18n_taxonomy_vocabulary_mode($vocabulary, I18N_MODE_LANGUAGE),
-  );
+  ) + i18n_element_language_select($vocabulary);
   $form['#validate'][] = 'i18n_taxonomy_form_vocabulary_validate';
 }
 
@@ -586,12 +582,8 @@ function i18n_taxonomy_form_taxonomy_form_term_alter(&$form, &$form_state) {
   switch (i18n_taxonomy_vocabulary_mode($vocabulary->vid)) {
     case I18N_MODE_TRANSLATE:
       $form['language'] = array(
-        '#type' => 'select',
-        '#title' => t('Language'),
-        '#default_value' => isset($term) && !empty($term->language) ? $term->language : '',
-        '#options' => array('' => '') + i18n_language_list(),
         '#description' => t('This term belongs to a multilingual vocabulary. You can set a language for it.'),
-      );
+      ) + i18n_element_language_select($term);
       break;
 
     case I18N_MODE_LANGUAGE:
@@ -1044,6 +1036,7 @@ function i18n_taxonomy_i18n_object_info() {
       'class' => 'i18n_taxonomy_translation_set',
       'table' => 'taxonomy_term_data',
       'field' => 'i18n_tsid',
+      'parent' => 'taxonomy_vocabulary',
     ),
     'string translation' => array(
       'textgroup' => 'taxonomy',

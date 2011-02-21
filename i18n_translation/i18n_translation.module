@@ -85,6 +85,18 @@ function i18n_translation_menu() {
 }
 
 /**
+ * Get list of translation modes
+ */
+function i18n_translation_options() {
+  return array(
+    I18N_MODE_NONE => t('None. No multilingual options.'),
+    I18N_MODE_LOCALIZE => t('Localize. Items are common for all languages, but their name and description may be localized.'),
+    I18N_MODE_TRANSLATE => t('Translate. Different items will be allowed for each language and they can be translated.'),
+    I18N_MODE_LANGUAGE => t('Language. Items will have a global language and they will only show up for pages in that language.'),
+  );  
+}
+
+/**
  * Get information about translation sets
  */
 function i18n_translation_set_info($type = NULL) {
@@ -110,7 +122,9 @@ function i18n_translation_set_info($type = NULL) {
 function i18n_translation_set_build($type, $data = array()) {
   $info = i18n_translation_set_info($type);
   $class = isset($info['translation set']['class']) ? $info['translation set']['class'] : 'i18n_translation_set';
-  return new $class((array)$data);  
+  $set = new $class((array)$data);
+  $set->type = $type;
+  return $set;
 }
 
 /**

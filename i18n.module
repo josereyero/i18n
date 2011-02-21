@@ -66,6 +66,21 @@ function i18n_language($language = NULL) {
 }
 
 /**
+ * Get language selector form element
+ */
+function i18n_element_language_select($default = LANGUAGE_NONE) {
+  if (is_object($default)) {
+    $default = i18n_object_langcode($default, LANGUAGE_NONE);
+  }
+  return array(
+    '#type' => 'select',
+    '#title' => t('Language'),
+    '#default_value' => $default,
+    '#options' => array(LANGUAGE_NONE => '') + i18n_language_list(),
+  );
+}
+
+/**
  * Get language field for hook_fields_extra_fields()
  */
 function i18n_language_field_extra() {
@@ -263,16 +278,18 @@ function i18n_context_language() {
  * 
  * @param $object
  *   Object or array having language field or plain language field
+ * @param $default
+ *   What value to return if the object doesn't have a valid language
  */
-function i18n_object_langcode($object, $field = 'language') {
+function i18n_object_langcode($object, $default = FALSE, $field = 'language') {
   if (is_object($object)) {
-    return !empty($object->$field) && $object->$field != LANGUAGE_NONE ? $object->$field : FALSE;
+    return !empty($object->$field) && $object->$field != LANGUAGE_NONE ? $object->$field : $default;
   }
   elseif (is_array($object)) {
-    return !empty($object[$field]) && $object[$field] != LANGUAGE_NONE ? $object[$field] : FALSE;
+    return !empty($object[$field]) && $object[$field] != LANGUAGE_NONE ? $object[$field] : $default;
   }
   else {
-    return $object && $object != LANGUAGE_NONE ? $object : FALSE;
+    return $object && $object != LANGUAGE_NONE ? $object : $default;
   }
 }
 

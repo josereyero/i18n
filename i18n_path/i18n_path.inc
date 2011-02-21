@@ -6,7 +6,9 @@
  */
 class i18n_path_translation_set extends i18n_translation_set {
   /**
-   * Clean path translations
+   * Clean path translations.
+   * 
+   * Unlike other translation sets this actually deletes paths
    */
   public function clean_translations() {
     $delete = db_delete('i18n_path')
@@ -22,18 +24,6 @@ class i18n_path_translation_set extends i18n_translation_set {
       ->condition('tsid', $this->tsid)
       ->execute();
   }
-
-  /**
-   * Load all path translations
-   */
-  public function load_translations() {
-    return db_select('i18n_path', 'p')
-      ->fields('p')
-      ->condition('p.tsid', $this->tsid)
-      ->execute()
-      ->fetchAllAssoc('language');
-  }
-
   /**
    * Save all path translations
    */
