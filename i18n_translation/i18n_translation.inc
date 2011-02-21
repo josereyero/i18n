@@ -177,14 +177,10 @@ class i18n_translation_set {
       $title = $this->title;
     }
     elseif ($translations = $this->get_translations()) {
-      // If we don't have an explicit title, get it from translations
-      if (isset($translations[language_default('language')])) {
-        $item = $translations[language_default('language')];
+      foreach ($translations as $item) {
+        $names[] = $this->item_title($item);
       }
-      else {
-        $item = reset($translations);
-      }
-      return $this->item_title($item);
+      return implode(' / ', $names);
     }
     else {
       return t('Undefined');
