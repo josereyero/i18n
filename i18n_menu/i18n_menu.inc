@@ -5,6 +5,12 @@
  * Internationalization (i18n) module - Translation set
  */
 class i18n_menu_link_translation_set extends i18n_translation_set {
+    /**
+   * Get title from item
+   */
+  protected function item_title($item) {
+    return $item['title'];
+  }
   /**
    * Load all path translations
    */
@@ -17,7 +23,7 @@ class i18n_menu_link_translation_set extends i18n_translation_set {
     $query->addField('ml', 'weight', 'link_weight');
     $query->fields('m');
     $query->condition('ml.i18n_tsid', $this->tsid);
-    while ($item = $query->execute()->fetchAssoc()) {
+    foreach ($query->execute()->fetchAll(PDO::FETCH_ASSOC) as $item) {
       $item['weight'] = $item['link_weight'];
       _menu_link_translate($item);
       $translations[$item['language']] = $item;

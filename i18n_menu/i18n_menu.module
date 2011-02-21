@@ -31,6 +31,13 @@ function i18n_menu_menu() {
     'type' => MENU_LOCAL_ACTION,
     'file' => 'i18n_menu.admin.inc',
   );
+  $items['admin/structure/menu/translation'] = array(
+    'title' => 'Translations',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('i18n_translation_set_overview', 'menu_link'),
+    'access arguments' => array('administer menu'),
+    'type' => MENU_LOCAL_TASK,   
+  );
   $items['admin/structure/menu/translation/%i18n_menu_translation'] = array(
     'title' => 'Translation',
     'page callback' => 'drupal_get_form',

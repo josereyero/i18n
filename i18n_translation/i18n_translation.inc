@@ -114,6 +114,7 @@ class i18n_translation_set {
         return $this->delete_translations();
       }
     }
+    
   }
   /**
    * Delete translations in this translation set
@@ -142,17 +143,70 @@ class i18n_translation_set {
    * Get translations keys, indexed by language
    */
   public function get_translations_keys() {
-    $field = $this->key_field();
     $keys = array();
     foreach ($this->get_translations() as $lang => $item) {
-      if (is_object($item)) {
-        $keys[$lang] = !empty($item->$field) ? $item->$field : NULL;
-      }
-      elseif (is_array($item)) {
-        $keys[$lang] = !empty($item[$field]) ? $item[$field] : NULL;
+      if ($id = $this->item_field($item)) {
+        $keys[$lang] = $id;
       }
     }
     return array_filter($keys);
+  }
+  /**
+   * Get edit path for this translation set
+   */
+  public function get_edit_path() {
+    if ($path = $this->get_info('edit path')) {
+      return $path . '/' . $this->tsid;
+    }
+    else {
+      return '';
+    }
+  }
+  /**
+   * Get property from translation set info
+   */
+  public function get_info($property, $default = NULL) {
+    $info = i18n_translation_set_info($this->type);
+    return $info && isset($info['translation set'][$property]) ? $info['translation set'][$property] : $default;
+  }
+  /**
+   * Get title for this set
+   */
+  public function get_title() {
+    if (!empty($this->title)) {
+      $title = $this->title;
+    }
+    elseif ($translations = $this->get_translations()) {
+      // If we don't have an explicit title, get it from translations
+      if (isset($translations[language_default('language')])) {
+        $item = $translations[language_default('language')];
+      }
+      else {
+        $item = reset($translations);
+      }
+      return $this->item_title($item);
+    }
+    else {
+      return t('Undefined');
+    }
+  }
+  /**
+   * Get title from item
+   */
+  protected function item_title($item) {
+    return entity_label($this->type, $item);
+  }
+  /**
+   * Get field from item
+   */
+  protected function item_field($item, $field = NULL) {
+    $field = $field ? $field : $this->key_field();
+    if (is_object($item)) {
+      return isset($item->$field) ? $item->$field : NULL;
+    }
+    elseif (is_array($item)) {
+      return isset($item[$field]) ? $item[$field] : NULL;
+    }
   }
   /**
    * Add translations
@@ -208,12 +262,7 @@ class i18n_translation_set {
    * Get table / field for this translation type
    */
   protected function table_field() {
-    $table = $field = NULL;
-    if ($info = i18n_translation_set_info($this->type)) {
-      $table = isset($info['translation set']['table']) ? $info['translation set']['table'] : NULL;
-      $field = isset($info['translation set']['field']) ? $info['translation set']['field'] : NULL;
-    }
-    return array($table, $field);
+    return array($this->get_info('table'), $this->get_info('field'));
   }
   /**
    * Get key field for this translation items
