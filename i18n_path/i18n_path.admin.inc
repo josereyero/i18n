@@ -1,5 +1,5 @@
 <?php
-// $Id: i18n_path.admin.inc,v 1.1.2.1 2011/02/14 11:36:29 jareyero Exp $
+// $Id: i18n_path.admin.inc,v 1.1.2.2 2011/02/19 17:50:42 jareyero Exp $
 /**
  * @file
  * Administration pages for path translation.

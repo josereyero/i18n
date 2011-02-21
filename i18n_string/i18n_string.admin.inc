@@ -1,5 +1,5 @@
 <?php
-// $Id: i18n_string.admin.inc,v 1.1.2.3 2011/02/14 11:36:29 jareyero Exp $
+// $Id: i18n_string.admin.inc,v 1.1.2.4 2011/02/19 17:50:43 jareyero Exp $
 
 // Load locale library
 include_once './includes/locale.inc';
