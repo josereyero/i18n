@@ -102,14 +102,14 @@ function i18n_translation_options() {
  */
 function i18n_translation_set_element($type, $object) {
   $element = array(
-    '#type' => 'item',
+    '#type' => 'fieldset',
     '#title' => t('Translations'),
   );
   if ($set = i18n_translation_object($type, $object)) {
-    $element['#markup'] = i18n_translation_format_items($set->item_list());
+    $element['values']['#markup'] = i18n_translation_format_items($set->item_list());
   }
   else {
-    $element['#markup'] = t('No translations');
+    $element['message']['#markup'] = t('No translations');
   }
   return $element;
 }

@@ -23,7 +23,7 @@ function i18n_menu_menu() {
     'file' => 'i18n_menu.admin.inc',
   );
   $items['admin/structure/menu/manage/%menu/translation/add'] = array(
-    'title' => 'Translation',
+    'title' => 'Add translation',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('i18n_menu_translation_form', 4, NULL, NULL),
     'access callback' => 'i18n_menu_translation_menu_access',
@@ -47,9 +47,9 @@ function i18n_menu_menu() {
     'file' => 'i18n_menu.admin.inc',
   );
   $items['admin/structure/menu/item/%menu_link/translate'] = array(
-    'title' => 'Translate menu link',
+    'title' => 'Translations',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('i18n_menu_translation_form', 4, NULL),
+    'page arguments' => array('i18n_menu_translation_form', NULL, 4, NULL),
     'access callback' => 'i18n_menu_translation_item_access',
     'access arguments' => array(4),
     'file' => 'i18n_menu.admin.inc',
@@ -534,6 +534,9 @@ function i18n_menu_form_menu_edit_item_alter(&$form, &$form_state) {
       '#description' => t('This item belongs to a multilingual menu. You can set a language for it.'),
     ) + i18n_element_language_select($item);
     $form['translations'] = i18n_translation_set_element('menu_link', $item);
+    if (!empty($item['mlid']) && i18n_object_langcode($item)) {
+      $form['translations']['add']['#markup'] = l(t('Add translations'), 'admin/structure/menu/item/' . $item['mlid'] . '/translate');
+    }
   }
   else {
     $form['language'] = array(

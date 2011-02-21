@@ -35,14 +35,13 @@ function i18n_menu_translation_form($form, $form_state, $menu = NULL, $item = NU
     $translations[$lang] = $item;
   }
   $item = $item ? $item : array('mlid' => 0, 'menu_name' => '', 'plid' => 0);
-
+  $item_lang = i18n_object_langcode($item); 
   $form['title'] = array(
     '#title' => t('Title'),
     '#type' => 'textfield',
     '#default_value' => $translation_set ? $translation_set->title : '',
     '#description' => t('Optional descriptive name for this set.'),
   );
-
   $form['translations'] = array(
     '#type' => 'fieldset',
     '#title' => t('Translations'),
@@ -50,20 +49,31 @@ function i18n_menu_translation_form($form, $form_state, $menu = NULL, $item = NU
     '#description' => t('Enter items that will be considered as translations of each other.'),
   );
   foreach (i18n_language_list() as $langcode => $language_name) {
-    // Generate a list of possible parents (not including this link or descendants).
-    $options = i18n_menu_parent_options(menu_get_menus(), $item, $langcode);
-    $default = isset($translations[$langcode]) ? $translations[$langcode]['menu_name'] . ':' . $translations[$langcode]['mlid'] : 'navigation:0';
-    if (!isset($options[$default])) {
-      $default = 'navigation:0';
+    if ($langcode == $item_lang) {
+      // We've got a predefined item for this language
+      $form['translations'][$langcode] = array('#type' => 'value', '#value' => $item['menu_name'] . ':' . $item['mlid']);
+      $form['translations']['display'] = array(
+        '#type' => 'item',
+        '#title' => $language_name,
+        '#markup' => check_plain($item['link_title']),
+      );
     }
-    $form['translations'][$langcode] = array(
-      '#type' => 'select',
-      '#title' => $language_name,
-      '#default_value' => $default,
-      '#options' => $options,
-      '#description' => t('The maximum depth for a link and all its children is fixed at !maxdepth. Some menu links may not be available as parents if selecting them would exceed this limit.', array('!maxdepth' => MENU_MAX_DEPTH)),
-      '#attributes' => array('class' => array('menu-title-select')),  
-    );
+    else {
+      // Generate a list of possible parents (not including this link or descendants).
+      $options = i18n_menu_parent_options(menu_get_menus(), $item, $langcode);
+      $default = isset($translations[$langcode]) ? $translations[$langcode]['menu_name'] . ':' . $translations[$langcode]['mlid'] : 'navigation:0';
+      if (!isset($options[$default])) {
+        $default = 'navigation:0';
+      }
+      $form['translations'][$langcode] = array(
+        '#type' => 'select',
+        '#title' => $language_name,
+        '#default_value' => $default,
+        '#options' => $options,
+        '#description' => t('The maximum depth for a link and all its children is fixed at !maxdepth. Some menu links may not be available as parents if selecting them would exceed this limit.', array('!maxdepth' => MENU_MAX_DEPTH)),
+        '#attributes' => array('class' => array('menu-title-select')),  
+      );
+    }
   }
   $form['controls']['update'] = array('#type' => 'submit', '#value' => t('Save'));
   if ($translation_set) {
@@ -97,7 +107,6 @@ function i18n_menu_translation_form_submit($form, &$form_state) {
         list($menu_name, $mlid) = explode(':', $item_name);
         $translation_set->translations[$lang] = menu_link_load($mlid);
       }
-      dpm($translation_set);
       $translation_set->save(TRUE);
       drupal_set_message(t('The item translation has been saved.'));
       break;
