@@ -82,10 +82,8 @@ function i18n_path_url_outbound_alter(&$path, &$options, $original_path) {
  */
 function i18n_path_language_switch_links_alter(array &$links, $type, $path) {
   if (($translations = i18n_path_get_translations($path))) {
-    foreach ($links as $lang => &$link) {
-      if (!empty($translations[$lang])) {
-        $link['href'] = $translations[$lang];
-      }
+    foreach ($translations as $lang => $translated_path) {
+      $links[$lang] = i18ntranslation_link($path, $langcode);
     }
   }
 }

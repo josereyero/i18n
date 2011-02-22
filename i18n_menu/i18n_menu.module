@@ -672,12 +672,7 @@ function i18n_menu_language_switch_links_alter(array &$links, $type, $path) {
   if ($item && ($set = i18n_translation_object('menu_link', $item))) {
     foreach ($set->get_translations() as $lang => $link) {
       if (!isset($links[$lang]) || !isset($links[$lang]['href']) || $links[$lang]['href'] == $path) {
-        $language = i18n_language($lang);
-        $links[$lang]['href'] = $link['link_path'];
-        $links[$lang]['title'] = $language->native;
-        $links[$lang]['language'] = $language;
-        $links[$lang]['i18n_translate'] = TRUE;
-        $links[$lang]['attributes']['class'] = array('language-link');
+        $links[$lang] = i18n_translation_link($link['link_path'], $lang);
       }
     }
   }
