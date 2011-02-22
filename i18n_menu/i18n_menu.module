@@ -661,3 +661,43 @@ function i18n_menu_edit_item_form_submit($form, &$form_state) {
 function i18n_menu_translation_load($tsid) {
   return i18n_translation_set_load($tsid, 'menu_link');
 }
+
+/**
+ * Implements hook_language_switch_links_alter().
+ *
+ * Replaces links with pointers to translated versions of the content.
+ */
+function i18n_menu_language_switch_links_alter(array &$links, $type, $path) {
+  $item = i18n_menu_link_load($path, i18n_langcode());
+  if ($item && ($set = i18n_translation_object('menu_link', $item))) {
+    foreach ($set->get_translations() as $lang => $link) {
+      if (!isset($links[$lang]) || !isset($links[$lang]['href']) || $links[$lang]['href'] == $path) {
+        $language = i18n_language($lang);
+        $links[$lang]['href'] = $link['link_path'];
+        $links[$lang]['title'] = $language->native;
+        $links[$lang]['language'] = $language;
+        $links[$lang]['i18n_translate'] = TRUE;
+        $links[$lang]['attributes']['class'] = array('language-link');
+      }
+    }
+  }
+}
+
+/**
+ * Load menu item by path, language
+ */
+function i18n_menu_link_load($path, $langcode) {
+  $query = db_select('menu_links', 'ml');
+  $query->leftJoin('menu_router', 'm', 'm.path = ml.router_path');
+  $query->fields('ml');
+  // Weight should be taken from {menu_links}, not {menu_router}.
+  $query->addField('ml', 'weight', 'link_weight');
+  $query->fields('m');
+  $query->condition('ml.link_path', $path);
+  $query->condition('ml.language', $langcode);
+  if ($item = $query->execute()->fetchAssoc()) {
+    $item['weight'] = $item['link_weight'];
+    _menu_link_translate($item);
+    return $item;
+  }
+}
