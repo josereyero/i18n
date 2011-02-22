@@ -197,6 +197,18 @@ function i18n_node_i18n_object_info() {
 }
 
 /**
+ * Implements hook_i18n_translate_path()
+ */
+function i18n_node_i18n_translate_path($path, $language) {
+  if (preg_match("!^node/(\d+)(/.+|)!", $path, $matches) && ($node = node_load((int) $matches[1])) && i18n_object_langcode($node) && !empty($node->tnid)) {
+    $translations = translation_node_get_translations($node->tnid);
+    if (!empty($translations[$language->language])) {
+      return 'node/' . $translations[$language->language]->nid . $matches[2];
+    }
+  } 
+}
+
+/**
  * Implements hook_menu_alter().
  *
  * Take over the node translation page.

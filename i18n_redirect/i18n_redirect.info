@@ -1,0 +1,6 @@
+; $Id: i18n_translation.info,v 1.1.2.1 2011/02/19 17:50:42 jareyero Exp $
+name = Translation redirect
+description = Redirect to translated page when available. SEO optimization for multilingual sites
+dependencies[] = i18n
+package = Multilanguage
+core = 7.x

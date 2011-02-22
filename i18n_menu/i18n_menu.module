@@ -173,6 +173,13 @@ function i18n_menu_i18n_string_list($group) {
 }
 
 /**
+ * Implements hook_i18n_translate_path()
+ */
+function i18n_menu_i18n_translate_path($path, $language) {
+  // @todo
+}
+
+/**
  * Implements hook_menu_link_alter().
  *
  * Catch changed links, update language and set alter option.
