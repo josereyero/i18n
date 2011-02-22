@@ -9,7 +9,7 @@
  */
 
 /**
- * Implements hook_language_init()
+ * Implements hook_init()
  */
 function i18n_redirect_init() {
   $path = $_GET['q'];
