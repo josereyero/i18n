@@ -184,10 +184,6 @@ function i18n_menu() {
   $items['admin/config/regional/i18n/configure'] = array(
     'title' => 'Multilingual system',
     'description' => 'Configure extended options for multilingual content and translations.',
-    //'page callback' => 'drupal_get_form',
-    //'page arguments' => array('i18n_admin_settings'),
-    //'access arguments' => array('administer site configuration'),
-    'file' => 'i18n.admin.inc',
     'type' => MENU_DEFAULT_LOCAL_TASK,
   );
   return $items;
