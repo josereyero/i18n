@@ -52,6 +52,13 @@ function i18n_sync_help($path, $arg) {
 }
 
 /**
+ * Implements hook_field_attach_prepare_translation_alter()
+ */
+function i18n_sync_field_attach_prepare_translation_alter(&$entity, $context) {
+
+}
+
+/**
  * Implements hook_form_FORM_ID_alter().
  */
 function i18n_sync_form_node_admin_content_alter(&$form, &$form_state) {
@@ -169,27 +176,13 @@ function i18n_sync_node_check($node) {
 }
 
 /**
- * Implements hook_node_load().
+ * Get node translations if any, excluding the node itself
  */
-function i18n_sync_node_load($nodes) {
-  foreach ($nodes as $node) {
-    // Add instance count for cck fields so we can use the information later, see hook_file_references()
-    if (i18n_sync_node_check($node) && !empty($node->tnid) && ($sync_fields = i18n_sync_node_fields($node->type))) {
-      if ($translations = i18n_sync_node_translations($node)) {
-        $count = count($translations);
-        foreach ($sync_fields as $field) {
-          if (isset($content_fields[$field]) && !empty($node->$field) && is_array($node->$field)) {
-            // The node field should be an array with one or more fields
-            // Reminder: Use brackets for $node->{$field}[$key] as $node->$field[$key] won't work
-            foreach (array_keys($node->$field) as $key) {
-              if (is_array($node->{$field}[$key])) {
-                $node->{$field}[$key]['i18n_sync'] = $count;
-              }
-            }
-          }
-        }
-      }
-    }
+function i18n_sync_node_get_translations($node) {
+  // Maybe translations are already here
+  if (!empty($node->tnid) && ($translations = translation_node_get_translations($node->tnid))) {
+    unset($translations[$node->language]);
+    return $translations;
   }
 }
 
@@ -199,21 +192,8 @@ function i18n_sync_node_load($nodes) {
 function i18n_sync_node_insert($node) {
   // When creating a translation, there are some aditional steps, different from update
   if (i18n_sync_node_check($node) && !empty($node->translation_source)) {
-    // Set tnid that is not set by translation module
-    $node->tnid = $node->translation_source->tnid ? $node->translation_source->tnid : $node->translation_source->nid;
     i18n_sync_node_update($node);
   }  
-}
-
-/**
- * Get node translations if any, excluding the node itself
- */
-function i18n_sync_node_translations($node, $exclude = FALSE) {
-  // Maybe translations are already here
-  if (!empty($node->tnid) && ($translations = translation_node_get_translations($node->tnid))) {
-    unset($translations[$node->language]);
-    return $translations;
-  }
 }
 
 /**
@@ -221,11 +201,7 @@ function i18n_sync_node_translations($node, $exclude = FALSE) {
  */
 function i18n_sync_node_update($node) {
   // Let's go with field synchronization.
-  if (i18n_sync_node_check($node) && !empty($node->tnid) && ($fields = i18n_sync_node_fields($node->type)) && ($translations = i18n_sync_node_translations($node))) {
-    // If we have fields we need to reload them so we have the full data (fid, etc...)
-    if (!empty($node->files) && in_array('files', $fields)) {
-      $node->files = upload_load($node);
-    }
+  if (i18n_sync_node_check($node) && !empty($node->tnid) && ($fields = i18n_sync_node_fields($node->type)) && ($translations = i18n_sync_node_get_translations($node))) {
     module_load_include('node.inc', 'i18n_sync');
     i18n_sync_node_translation($node, $translations, $fields, 'update');
   }
@@ -297,14 +273,4 @@ function i18n_sync_options($entity_type, $bundle_name) {
   }
 
   return $cache[$entity_type][$bundle_name];
-}
-
-/**
- * Implements hook_file_references()
- *
- * Inform CCK's filefield that we have other nodes using that file so it won't be deleted
- */
-function i18n_sync_file_references($file) {
-  // We have marked the field previously on nodeapi load
-  return !empty($file->i18n_sync);
 }
