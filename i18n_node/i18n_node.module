@@ -379,7 +379,9 @@ function i18n_node_node_view_alter(&$build) {
   
   // Hide node translation links.
   if (variable_get('i18n_hide_translation_links', 0)) {
-    unset($build['links']['translation']);
+    if (isset($build['links']['translation'])) {
+      unset($build['links']['translation']);
+    }
   }
   elseif (!empty($node->tnid) && !empty($build['links']['translation'])) {
     // Set the right languages depending on language mode (extended)
