@@ -5,7 +5,7 @@ dependencies[] = i18n
 dependencies[] = taxonomy
 dependencies[] = i18n_string
 dependencies[] = i18n_translation
-package = Multilanguage
+package = Multilingual
 core = 7.x
 
 files[] = i18n_taxonomy.inc
