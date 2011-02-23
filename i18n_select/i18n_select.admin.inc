@@ -2,15 +2,15 @@
 // $Id: i18n_select.admin.inc,v 1.1.2.4 2011/02/19 17:50:43 jareyero Exp $
 
 function i18n_select_admin_settings() {
-  $form['mode'] = array(
-    '#type' => 'variable_fieldset',
-    '#title' => t('Content selection mode'),
-    '#variable_list' => array('i18n_select_missing_translation'),
-  );
   $form['types'] = array(
     '#type' => 'variable_fieldset',
     '#title' => t('Content to filter by language'),
     '#variable_list' => array('i18n_select_nodes', 'i18n_select_taxonomy', 'i18n_select_blocks'),
+  );
+  $form['mode'] = array(
+    '#type' => 'variable_fieldset',
+    '#title' => t('Content selection mode'),
+    '#variable_list' => array('i18n_select_missing_translation', 'i18n_select_skip_tags'),
   );
   // Enable for specific pages. This works pretty much like block visibility
   // Note this page requires 'administer site configuration' so we don't need to check permissions

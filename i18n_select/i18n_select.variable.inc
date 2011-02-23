@@ -57,6 +57,14 @@ function i18n_select_variable_info($options = array()) {
     'title' => t('Enable always for block content though it may be disabled for the page', array(), $options),
     'default' => TRUE,
   );
+  $variables['i18n_select_skip_tags'] = array(
+    'title' => t('Skip tags', array(), $options),
+    'type' => 'string',
+    'default' => 'views',
+    'group' => 'i18n',
+    'description' => t('Skip queries with these tags. Enter a list of tags separated by commas.'),
+    'localize' => FALSE,
+  );
   return $variables;
 }
 

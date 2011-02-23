@@ -202,17 +202,26 @@ function i18n_select_check_conditions($query, $table_alias) {
  * - The query doesn't have already a language condition
  */
 function i18n_select_check_query($query, $table_alias, $field_name = 'language') {
-  if (!$query->hasTag('i18n_select')) {
-    $fields = $query->getFields();
-    $table_field = $table_alias . '.' . $field_name;
-    foreach ($query->conditions() as $condition) {
-      // @todo Research under which conditions field is not string, see http://drupal.org/node/1062054
-      if (is_array($condition) && isset($condition['field']) && is_string($condition['field']) && ($condition['field'] == $field_name || $condition['field'] == $table_field)) {
-        return FALSE;
-      }
-    }
-    return TRUE;
+  static $tags;
+  // Skip queries with certain tags
+  if (!isset($tags)) {
+    $tags = ($skip = variable_get('i18n_select_skip_tags', 'views')) ? array_map('trim', explode(',', $skip)) : array();
+    $tags[] = 'i18n_select';
   }
+  foreach ($tags as $tag) {
+    if ($query->hasTag($tag)) {
+      return FALSE;
+    }
+  }
+  $fields = $query->getFields();
+  $table_field = $table_alias . '.' . $field_name;
+  foreach ($query->conditions() as $condition) {
+    // @todo Research under which conditions field is not string, see http://drupal.org/node/1062054
+    if (is_array($condition) && isset($condition['field']) && is_string($condition['field']) && ($condition['field'] == $field_name || $condition['field'] == $table_field)) {
+      return FALSE;
+    }
+  }
+  return TRUE;
 }
 
 /**
