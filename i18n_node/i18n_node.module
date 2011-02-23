@@ -223,12 +223,14 @@ function i18n_node_menu_alter(&$items) {
   if (module_exists('i18n_string')) {
     $items['node/add']['page callback'] =  'i18n_node_add_page';
     // @TODO avoid iterating over every router path.
-    foreach ($items as $path => $item) {
-      if (!empty($item['page callback']) && $item['page callback'] == 'node_add') {
-        $items[$path]['page callback'] = 'i18n_node_add';
-        $arg = arg(NULL, $path);
-        $items[$path]['title callback'] = 'i18n_node_translate_type';
-        $items[$path]['title arguments'] = array($arg[2], 'name', $item['title']);
+    foreach (node_type_get_types() as $type) {
+      $path = 'node/add/' . str_replace('_', '-', $type->type);
+      if (isset($items[$path])) {
+        if (!empty($items[$path]['page callback']) && $items[$path]['page callback'] == 'node_add') {
+          $items[$path]['page callback'] = 'i18n_node_add';
+        }
+        $items[$path]['title callback'] = 'i18n_node_type_name';
+        $items[$path]['title arguments'] = array($type->type, $type->name);
       }
     }
   }  
@@ -644,6 +646,17 @@ function i18n_node_translate_type($type, $property = 'name', $source = NULL, $op
   }
 }
 
+/**
+ * Translate node type name (filtered)
+ */
+function i18n_node_type_name($type, $name) {
+  if (function_exists('i18n_string_translate')) {
+    return check_plain(i18n_string_translate(array('node', 'type', $type, 'name'), $name));
+  } 
+  else {
+    return check_plain($name);
+  } 
+}
 
 /**
  * Check whether this is a language enabled node type

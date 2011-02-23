@@ -202,9 +202,11 @@ function i18n_string_form_alter(&$form, &$form_state, $form_id) {
       // Aditional submit callback
       $form['#submit'][] = 'i18n_string_translate_edit_form_submit';
       break;
+    /*
     case 'l10n_client_form':
       $form['#action'] = url('i18n_string/save');
       break;
+      */
   }
 }
 
@@ -612,23 +614,15 @@ function i18n_string_remove($name, $string = NULL, $options = array()) {
  * @param $context
  *   String object
  */
-function i18n_string_l10n_client_add($context, $options) {
-  global $language;
-
+function i18n_string_l10n_client_add($string, $options) {
   // If current language add to l10n client list for later on page translation.
   // If langcode translation was disabled we are not supossed to reach here.
-  if (($language->language == $context->language) && function_exists('l10_client_add_string_to_page')) {
-    $translation = !empty($context->translation) ? $context->translation : TRUE;
-    if (!$context->source == FALSE) {
-      // This means it is a plain string, we don't need to check the format
-      l10_client_add_string_to_page(FALSE, $context->translation, $context->textgroup);
-    }
-    else {
-      // Additional checking for text format, if its a dangerous one we ignore the string
-      $source = i18n_string_get_source($context);
-      if (!empty($source) && (i18n_string_allowed_format($source->format) || filter_access($source->format))) {
-        l10_client_add_string_to_page($string, $translation, $context->textgroup);
-      }
+  if (($string->language == i18n_langcode()) && function_exists('l10_client_add_string_to_page')) {
+    $translation = !empty($string->translation) ? $string->translation : TRUE;
+    $source = !empty($string->source) ? $string->source : FALSE;
+    // Check whether the format is allowed
+    if (empty($string->format) || in_array($string->format, i18n_string_allowed_formats())) {
+      l10_client_add_string_to_page($string->source, $translation, $string->textgroup);
     }
   }
 }

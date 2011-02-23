@@ -220,7 +220,10 @@ class i18n_string_default {
     }
     else {
       $translation = $this->load_translation($i18nstring);
-      if (!$translation) {
+      if ($translation) {
+        $translation->source = $i18nstring->source;
+      }
+      else {
         // No source, no translation     
         $translation = $i18nstring;
         $translation->translation = FALSE;
