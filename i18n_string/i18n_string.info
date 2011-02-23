@@ -8,3 +8,4 @@ core = 7.x
 
 files[] = i18n_string.admin.inc
 files[] = i18n_string.inc
+configure = admin/config/regional/i18n/strings

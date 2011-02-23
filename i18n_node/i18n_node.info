@@ -5,3 +5,4 @@ dependencies[] = translation
 dependencies[] = i18n
 package = Multilingual
 core = 7.x
+configure = admin/config/regional/i18n/node

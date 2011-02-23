@@ -4,3 +4,4 @@ description = API module for multilingual content selection
 dependencies[] = i18n
 package = Multilingual
 core = 7.x
+configure = admin/config/regional/i18n/select

@@ -5,3 +5,4 @@ dependencies[] = i18n
 dependencies[] = variable_store
 package = Multilingual
 core = 7.x
+configure = admin/config/regional/i18n/variable

@@ -10,3 +10,4 @@ files[] = i18n.module
 files[] = i18n.install
 files[] = i18n.admin.inc
 files[] = i18n.module
+configure = admin/config/regional/i18n
