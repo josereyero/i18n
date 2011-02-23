@@ -11,12 +11,15 @@
  * There are two lists of variables here. 
  * - i18n_variable_conf, list with high level variable names, some of which are multiple variables
  * - i18n_variable_list, translated list into actual variable names
+ * 
+ * Aditional variables to be make translatable can be set into $conf['i18n_variables'] as for older versions
  */
 function i18n_variable_admin_settings($form, $form_state) {
   $translatable = array();
   $current = variable_get('i18n_variable_conf', array());
+  $conf = variable_get('i18n_variables', array());
   foreach (variable_get_info() as $name => $variable) {
-    if (!empty($variable['localize'])) {
+    if (!empty($variable['localize']) || in_array($name, $conf)) {
       $translatable[] = $name;
     }
   }
