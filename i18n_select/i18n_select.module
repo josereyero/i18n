@@ -145,7 +145,7 @@ function i18n_select_query_node_access_alter(QueryAlterableInterface $query) {
       // Make sure the conditions refer to the node table. eg using 'n.promote' instead of 'promote'
       i18n_select_check_conditions($query, $table_alias);
 
-      $query->leftjoin('node', 'i18n', 'n.tnid > 0 AND n.tnid = i18n.tnid AND i18n.language = :lang', array(':lang' => $language));
+      $query->leftjoin('node', 'i18n', $table_alias . '.tnid > 0 AND ' . $table_alias . '.tnid = i18n.tnid AND i18n.language = :lang', array(':lang' => $language));
       $query->where($table_alias . '.language=:lang OR (' . $table_alias . '.language=:default_lang AND i18n.nid IS NULL)', array(':lang' => $language, ':default_lang' => $default_lang));
     } else {
       $query->condition($table_alias . '.language', i18n_select_langcodes());
