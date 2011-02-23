@@ -325,6 +325,15 @@ function i18n_menu_help($path, $arg) {
 }
 
 /**
+ * Implements hook_variable_info_alter()
+ */
+function i18n_menu_variable_info_alter(&$variables, $options) {
+  // Make menu variables translatable
+  $variables['menu_main_links_source']['localize'] = TRUE;
+  $variables['menu_secondary_links_source']['localize'] = TRUE;
+}
+
+/**
  * Get localized menu tree.
  * @param $menu_name
  *   The menu the translated tree has to be fetched from.
