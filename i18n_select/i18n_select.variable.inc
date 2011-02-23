@@ -25,6 +25,7 @@ function i18n_select_variable_info($options = array()) {
     'type' => 'boolean',
     'default' => TRUE,
     'group' => 'i18n',
+    'element' => array('#disabled' => !module_exists('i18n_taxonomy')),
   );
   $variables['i18n_select_blocks'] = array(
     'title' => t('Blocks (not implemented)', array(), $options),
