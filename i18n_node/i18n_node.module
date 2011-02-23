@@ -270,7 +270,7 @@ function i18n_node_language_list($node, $translate = FALSE) {
     }
     // Check language required for this type (no language neutral)
     elseif (!variable_get('i18n_required_node_' . $node->type, 0)) {
-      $languages = array('' => t('Language neutral')) + $languages;
+      $languages = array(LANGUAGE_NONE => t('Language neutral')) + $languages;
     }
   }
 
@@ -589,10 +589,7 @@ function _i18n_node_form_node_form_alter($form, $form_state) {
       $form['language']['#options'] = i18n_node_language_list($node, TRUE);
     }
   }
-  elseif (!isset($node->nid)) {
-    // Set language to empty for not multilingual nodes when creating
-    $form['language'] = array('#type' => 'value', '#value' => '');
-  }
+
   // Translate field names for title and body for the node edit form.
   $type = $form['#node']->type;
   if (!empty($form['title']['#title'])) {
