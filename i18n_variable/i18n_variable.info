@@ -1,4 +1,4 @@
-; $Id: i18n_variable.info,v 1.1.2.4 2011/02/19 17:50:43 jareyero Exp $
+; $Id: i18n_variable.info,v 1.1.2.5 2011/02/24 09:08:59 jareyero Exp $
 name = Multilingual variables
 description = Multilingual variables that switch language depending on page language.
 dependencies[] = i18n

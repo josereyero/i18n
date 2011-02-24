@@ -1,4 +1,4 @@
-; $Id: i18n.info,v 1.5.2.5.2.3 2011/02/14 11:36:29 jareyero Exp $
+; $Id: i18n.info,v 1.5.2.5.2.4 2011/02/24 09:08:59 jareyero Exp $
 name = Internationalization
 description = Extends Drupal support for multilingual features.
 dependencies[] = locale

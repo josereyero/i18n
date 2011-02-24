@@ -1,5 +1,5 @@
 <?php
-// $Id: i18n_select.admin.inc,v 1.1.2.4 2011/02/19 17:50:43 jareyero Exp $
+// $Id: i18n_select.admin.inc,v 1.1.2.5 2011/02/24 09:09:00 jareyero Exp $
 
 function i18n_select_admin_settings() {
   $form['types'] = array(
